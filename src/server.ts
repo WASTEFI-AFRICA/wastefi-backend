@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { config } from './config';
 import DatabaseService from './services/database.service';
 import { StellarService } from './services/stellar.service';
+import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
 import { logger } from './utils/logger.util';
 import {
   errorHandler,
@@ -30,6 +31,9 @@ DatabaseService.connect();
 
 // Initialize Stellar service
 StellarService.initialize();
+
+// Initialize Mobile Money services
+MobileMoneyService.initialize();
 
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);

@@ -99,4 +99,25 @@ router.get(
  */
 router.delete('/transactions/:id', authenticateJWT, PaymentController.cancelTransaction);
 
+/**
+ * @route   POST /api/v1/payments/callbacks/mpesa
+ * @desc    M-Pesa payment callback
+ * @access  Public (called by M-Pesa)
+ */
+router.post('/callbacks/mpesa', PaymentController.mpesaCallback);
+
+/**
+ * @route   POST /api/v1/payments/callbacks/mtn
+ * @desc    MTN Money payment callback
+ * @access  Public (called by MTN)
+ */
+router.post('/callbacks/mtn', PaymentController.mtnCallback);
+
+/**
+ * @route   POST /api/v1/payments/callbacks/airtel
+ * @desc    Airtel Money payment callback
+ * @access  Public (called by Airtel)
+ */
+router.post('/callbacks/airtel', PaymentController.airtelCallback);
+
 export default router;

@@ -1,5 +1,6 @@
 import { prisma } from './database.service';
 import { StellarService } from './stellar.service';
+import { MobileMoneyService } from './mobile-money/mobile-money.service';
 import { TransactionStatus, TransactionType, PaymentMethod } from '@prisma/client';
 import { logger } from '../utils/logger.util';
 
@@ -255,22 +256,85 @@ export class PaymentService {
   }
 
   /**
-   * Process mobile money payment (stub for now)
+   * Process mobile money payment
    */
   private static async processMobileMoneyPayment(
     transactionId: string,
     data: ProcessPaymentData
   ): Promise<PaymentResult> {
-    // TODO: Implement mobile money integration in Commit 10
-    logger.info('Mobile money payment requested', {
-      transactionId,
-      paymentMethod: data.paymentMethod,
-    });
+    try {
+      // Check if provider is available
+      if (!MobileMoneyService.isProviderAvailable(data.paymentMethod)) {
+        return {
+          success: false,
+          error: `${data.paymentMethod} is not configured`,
+        };
+      }
 
-    return {
-      success: false,
-      error: 'Mobile money integration coming soon',
-    };
+      // Get user info for phone number
+      const user = await prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { phoneNumber: true },
+      });
+
+      if (!user?.phoneNumber) {
+        return {
+          success: false,
+          error: 'User phone number not found',
+        };
+      }
+
+      // Process payment via mobile money service
+      const result = await MobileMoneyService.processPayment({
+        provider: data.paymentMethod,
+        phoneNumber: user.phoneNumber,
+        amount: data.amount,
+        currency: data.currency,
+        reference: transactionId,
+        description: data.description || 'WasteFi Payment',
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || 'Mobile money payment failed',
+        };
+      }
+
+      // Update transaction with provider reference
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: {
+          metadata: JSON.stringify({
+            ...(data.metadata || {}),
+            providerReferenceId: result.referenceId,
+            providerTransactionId: result.transactionId,
+            provider: result.provider,
+          }),
+        },
+      });
+
+      logger.info('Mobile money payment initiated', {
+        transactionId,
+        paymentMethod: data.paymentMethod,
+        referenceId: result.referenceId,
+      });
+
+      return {
+        success: true,
+        transactionHash: result.referenceId || result.transactionId,
+      };
+    } catch (error) {
+      logger.error('Mobile money payment failed', {
+        error: error as Error,
+        transactionId,
+      });
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Mobile money payment failed',
+      };
+    }
   }
 
   /**
@@ -436,25 +500,75 @@ export class PaymentService {
         },
       });
 
-      // TODO: Process actual withdrawal via mobile money in Commit 10
-      // For now, mark as pending
+      // Check if provider is available
+      if (!MobileMoneyService.isProviderAvailable(paymentMethod)) {
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: TransactionStatus.FAILED,
+            failureReason: `${paymentMethod} is not configured`,
+          },
+        });
+
+        return {
+          success: false,
+          error: `${paymentMethod} is not configured`,
+        };
+      }
+
+      // Process withdrawal via mobile money service
+      const withdrawalResult = await MobileMoneyService.processWithdrawal(
+        paymentMethod,
+        phoneNumber,
+        amount,
+        'KES',
+        transaction.id
+      );
+
+      if (!withdrawalResult.success) {
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: TransactionStatus.FAILED,
+            failureReason: withdrawalResult.error,
+          },
+        });
+
+        return {
+          success: false,
+          error: withdrawalResult.error || 'Withdrawal failed',
+        };
+      }
+
+      // Update transaction with provider info
       await prisma.transaction.update({
         where: { id: transaction.id },
         data: {
           status: TransactionStatus.PENDING,
+          metadata: JSON.stringify({
+            xlmAmount,
+            paymentMethod,
+            phoneNumber,
+            providerReferenceId: withdrawalResult.referenceId,
+            providerTransactionId: withdrawalResult.transactionId,
+            provider: withdrawalResult.provider,
+          }),
         },
       });
 
-      logger.info('Withdrawal requested', {
+      logger.info('Withdrawal initiated', {
         transactionId: transaction.id,
         userId,
         amount,
         paymentMethod,
+        referenceId: withdrawalResult.referenceId,
       });
 
       return {
         success: true,
-        transaction,
+        transaction: await prisma.transaction.findUnique({
+          where: { id: transaction.id },
+        }),
       };
     } catch (error) {
       logger.error('Withdrawal processing failed', {
@@ -568,5 +682,130 @@ export class PaymentService {
     });
 
     logger.info('Transaction cancelled', { transactionId });
+  }
+
+  /**
+   * Process mobile money callback
+   */
+  static async processMobileMoneyCallback(
+    provider: PaymentMethod,
+    callbackData: any
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      let transactionId: string | undefined;
+      let success = false;
+      let providerRef: string | undefined;
+
+      // Parse callback based on provider
+      switch (provider) {
+        case PaymentMethod.MPESA:
+          // M-Pesa STK callback format
+          if (callbackData.Body?.stkCallback) {
+            const callback = callbackData.Body.stkCallback;
+            const resultCode = callback.ResultCode;
+            const checkoutRequestID = callback.CheckoutRequestID;
+
+            success = resultCode === 0;
+            providerRef = checkoutRequestID;
+
+            // Find transaction by provider reference
+            const transactions = await prisma.transaction.findMany({
+              where: {
+                paymentMethod: PaymentMethod.MPESA,
+                status: TransactionStatus.PENDING,
+              },
+            });
+
+            const transaction = transactions.find((t) => {
+              const metadata = t.metadata ? JSON.parse(t.metadata) : {};
+              return metadata.providerReferenceId === checkoutRequestID;
+            });
+
+            transactionId = transaction?.id;
+          }
+          break;
+
+        case PaymentMethod.MTN_MONEY:
+          // MTN callback format
+          transactionId = callbackData.externalId;
+          success = callbackData.status === 'SUCCESSFUL';
+          providerRef = callbackData.financialTransactionId;
+          break;
+
+        case PaymentMethod.AIRTEL_MONEY:
+          // Airtel callback format
+          if (callbackData.transaction) {
+            transactionId = callbackData.transaction.id;
+            success = callbackData.transaction.status === 'TS';
+            providerRef = callbackData.transaction.airtel_money_id;
+          }
+          break;
+
+        default:
+          return {
+            success: false,
+            message: 'Unsupported provider',
+          };
+      }
+
+      if (!transactionId) {
+        logger.warn('Transaction not found in callback', {
+          provider,
+          providerRef,
+        });
+        return {
+          success: false,
+          message: 'Transaction not found',
+        };
+      }
+
+      // Update transaction status
+      const transaction = await prisma.transaction.findUnique({
+        where: { id: transactionId },
+      });
+
+      if (!transaction) {
+        return {
+          success: false,
+          message: 'Transaction not found',
+        };
+      }
+
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: {
+          status: success ? TransactionStatus.COMPLETED : TransactionStatus.FAILED,
+          completedAt: success ? new Date() : null,
+          failureReason: success ? null : 'Payment failed via mobile money',
+          metadata: JSON.stringify({
+            ...(transaction.metadata ? JSON.parse(transaction.metadata) : {}),
+            callbackReceived: true,
+            callbackData,
+          }),
+        },
+      });
+
+      logger.info('Mobile money callback processed', {
+        transactionId,
+        provider,
+        success,
+        providerRef,
+      });
+
+      return {
+        success: true,
+        message: 'Callback processed',
+      };
+    } catch (error) {
+      logger.error('Mobile money callback processing failed', {
+        error: error as Error,
+        provider,
+      });
+
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Callback processing failed',
+      };
+    }
   }
 }

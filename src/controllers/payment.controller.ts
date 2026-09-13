@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/auth.types';
 import { PaymentService } from '../services/payment.service';
+import { PaymentMethod } from '@prisma/client';
 import { logger } from '../utils/logger.util';
 
 export class PaymentController {
@@ -234,6 +235,77 @@ export class PaymentController {
         success: false,
         error: 'Failed to cancel transaction',
         message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * M-Pesa callback handler
+   */
+  static async mpesaCallback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      logger.info('M-Pesa callback received', { body: req.body });
+
+      await PaymentService.processMobileMoneyCallback(
+        PaymentMethod.MPESA,
+        req.body
+      );
+
+      // M-Pesa expects a response
+      res.status(200).json({
+        ResultCode: 0,
+        ResultDesc: 'Success',
+      });
+    } catch (error) {
+      logger.error('M-Pesa callback processing failed', { error: error as Error });
+      res.status(200).json({
+        ResultCode: 1,
+        ResultDesc: 'Failed',
+      });
+    }
+  }
+
+  /**
+   * MTN Money callback handler
+   */
+  static async mtnCallback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      logger.info('MTN callback received', { body: req.body });
+
+      await PaymentService.processMobileMoneyCallback(PaymentMethod.MTN_MONEY, req.body);
+
+      res.status(200).json({
+        success: true,
+      });
+    } catch (error) {
+      logger.error('MTN callback processing failed', { error: error as Error });
+      res.status(200).json({
+        success: false,
+      });
+    }
+  }
+
+  /**
+   * Airtel Money callback handler
+   */
+  static async airtelCallback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      logger.info('Airtel callback received', { body: req.body });
+
+      await PaymentService.processMobileMoneyCallback(
+        PaymentMethod.AIRTEL_MONEY,
+        req.body
+      );
+
+      res.status(200).json({
+        status: 'SUCCESS',
+        message: 'Callback processed',
+      });
+    } catch (error) {
+      logger.error('Airtel callback processing failed', { error: error as Error });
+      res.status(200).json({
+        status: 'FAILED',
+        message: 'Callback processing failed',
       });
     }
   }
