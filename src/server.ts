@@ -94,6 +94,7 @@ import userRoutes from './routes/user.routes';
 import collectionPointRoutes from './routes/collection-point.routes';
 import wasteCollectionRoutes from './routes/waste-collection.routes';
 import paymentRoutes from './routes/payment.routes';
+import adminRoutes from './routes/admin.routes';
 
 // API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
@@ -111,6 +112,7 @@ app.use(`/api/${config.app.apiVersion}/users`, userRoutes);
 app.use(`/api/${config.app.apiVersion}/collection-points`, collectionPointRoutes);
 app.use(`/api/${config.app.apiVersion}/collections`, wasteCollectionRoutes);
 app.use(`/api/${config.app.apiVersion}/payments`, paymentRoutes);
+app.use(`/api/${config.app.apiVersion}/admin`, adminRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
