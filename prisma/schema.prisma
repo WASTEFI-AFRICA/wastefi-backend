@@ -1,0 +1,295 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COLLECTOR
+  ADMIN
+  COLLECTION_POINT
+  VERIFIER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum KYCStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum TransactionType {
+  WASTE_COLLECTION
+  PAYMENT
+  WITHDRAWAL
+  REFUND
+  BONUS
+}
+
+enum PaymentMethod {
+  STELLAR
+  MPESA
+  MTN_MONEY
+  AIRTEL_MONEY
+  BANK_TRANSFER
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String?     @unique
+  phoneNumber   String      @unique
+  firstName     String
+  lastName      String
+  role          UserRole    @default(COLLECTOR)
+  status        UserStatus  @default(PENDING)
+  kycStatus     KYCStatus   @default(NOT_STARTED)
+  
+  // KYC Information
+  nationalId    String?
+  idDocumentUrl String?
+  photoUrl      String?
+  address       String?
+  city          String?
+  country       String      @default("Kenya")
+  
+  // Wallet Information
+  stellarPublicKey  String?
+  stellarSecretKey  String? // Encrypted
+  mobileMoneyNumber String?
+  
+  // Metadata
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Relations
+  transactions  Transaction[]
+  collections   WasteCollection[]
+  apiKeys       ApiKey[]
+  
+  @@index([phoneNumber])
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model CollectionPoint {
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  
+  // Location
+  latitude        Float
+  longitude       Float
+  address         String
+  city            String
+  country         String    @default("Kenya")
+  
+  // Contact
+  contactPerson   String
+  contactPhone    String
+  contactEmail    String?
+  
+  // Status
+  isActive        Boolean   @default(true)
+  verifiedAt      DateTime?
+  
+  // Metadata
+  operatingHours  String?   // JSON string
+  acceptedMaterials String? // JSON array
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  collections     WasteCollection[]
+  
+  @@index([latitude, longitude])
+  @@index([isActive])
+  @@map("collection_points")
+}
+
+model WasteCollection {
+  id                    String    @id @default(uuid())
+  
+  // Collector and Location
+  collectorId           String
+  collector             User      @relation(fields: [collectorId], references: [id])
+  collectionPointId     String
+  collectionPoint       CollectionPoint @relation(fields: [collectionPointId], references: [id])
+  
+  // Material Information
+  materialType          String    // e.g., "PET", "HDPE", "Glass"
+  materialCategory      String    // e.g., "Plastic", "Metal", "Glass"
+  weight                Float     // in kg
+  quantity              Int?      // number of items
+  
+  // Verification
+  imageUrls             String    // JSON array of image URLs
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  
+  // RecycleGraph Integration
+  materialPassportId    String?   @unique
+  recycleGraphId        String?
+  qualityGrade          String?   // A, B, C, D
+  
+  // Payment
+  paymentAmount         Float
+  paymentCurrency       String    @default("KES")
+  paymentStatus         TransactionStatus @default(PENDING)
+  transactionId         String?
+  
+  // Metadata
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([collectorId])
+  @@index([collectionPointId])
+  @@index([materialType])
+  @@index([createdAt])
+  @@map("waste_collections")
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  
+  // User and Amount
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  amount          Float
+  currency        String            @default("KES")
+  
+  // Transaction Details
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  paymentMethod   PaymentMethod
+  
+  // External References
+  externalId      String?           // Stellar transaction hash, M-Pesa ref, etc.
+  referenceNumber String?           @unique
+  
+  // Stellar Specific
+  stellarTxHash   String?
+  stellarMemo     String?
+  
+  // Mobile Money Specific
+  mobileMoneyRef  String?
+  phoneNumber     String?
+  
+  // Metadata
+  description     String?
+  metadata        String?           // JSON for additional data
+  failureReason   String?
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  completedAt     DateTime?
+  
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceNumber])
+  @@map("transactions")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  name        String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([key])
+  @@index([userId])
+  @@map("api_keys")
+}
+
+model MaterialPassport {
+  id                    String    @id @default(uuid())
+  
+  // Material Identification
+  materialType          String
+  materialCategory      String
+  productName           String?
+  manufacturer          String?
+  
+  // Physical Properties
+  weight                Float
+  dimensions            String?   // JSON
+  color                 String?
+  composition           String?   // JSON - material composition breakdown
+  
+  // Lifecycle Information
+  manufacturingDate     DateTime?
+  expiryDate            DateTime?
+  recyclingInstructions String?
+  
+  // Tracking
+  currentLocation       String?
+  chainOfCustody        String    // JSON array of custody records
+  
+  // RecycleGraph Integration
+  recycleGraphId        String?   @unique
+  digitalSignature      String?
+  
+  // Carbon Impact
+  carbonFootprint       Float?    // kg CO2
+  carbonCreditsEarned   Float?
+  
+  // Verification
+  verifiedAt            DateTime?
+  verificationMethod    String?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([materialType])
+  @@index([recycleGraphId])
+  @@map("material_passports")
+}
+
+model SystemLog {
+  id          String    @id @default(uuid())
+  level       String    // info, warn, error
+  message     String
+  service     String
+  metadata    String?   // JSON
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([level])
+  @@index([service])
+  @@index([createdAt])
+  @@map("system_logs")
+}

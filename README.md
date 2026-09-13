@@ -43,6 +43,15 @@ npm install
 cp .env.example .env
 
 # Edit .env with your configuration
+
+# Generate Prisma Client
+npm run prisma:generate
+
+# Run database migrations
+npm run prisma:migrate
+
+# (Optional) Seed the database with sample data
+npm run prisma:seed
 ```
 
 ### Development
@@ -56,6 +65,28 @@ npm run build
 
 # Start production server
 npm start
+```
+
+### Database Management
+
+```bash
+# Run migrations
+npm run prisma:migrate
+
+# Generate Prisma Client
+npm run prisma:generate
+
+# Open Prisma Studio (Database GUI)
+npm run prisma:studio
+
+# Seed database
+npm run prisma:seed
+
+# Push schema without migrations (dev only)
+npm run db:push
+
+# Reset database (WARNING: deletes all data)
+npm run db:reset
 ```
 
 ### Linting and Formatting
