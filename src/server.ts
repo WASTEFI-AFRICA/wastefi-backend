@@ -83,6 +83,7 @@ app.get('/health', async (_req, res) => {
 import authRoutes from './routes/auth.routes';
 import walletRoutes from './routes/wallet.routes';
 import userRoutes from './routes/user.routes';
+import collectionPointRoutes from './routes/collection-point.routes';
 
 // API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
@@ -97,6 +98,7 @@ app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
 app.use(`/api/${config.app.apiVersion}/auth`, authRoutes);
 app.use(`/api/${config.app.apiVersion}/wallet`, walletRoutes);
 app.use(`/api/${config.app.apiVersion}/users`, userRoutes);
+app.use(`/api/${config.app.apiVersion}/collection-points`, collectionPointRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
