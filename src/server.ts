@@ -6,6 +6,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import { config } from './config';
 import DatabaseService from './services/database.service';
+import { StellarService } from './services/stellar.service';
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,9 @@ const app: Application = express();
 
 // Initialize database connection
 DatabaseService.connect();
+
+// Initialize Stellar service
+StellarService.initialize();
 
 // Middleware
 app.use(helmet());
@@ -38,6 +42,7 @@ app.get('/health', async (_req, res) => {
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import walletRoutes from './routes/wallet.routes';
 
 // API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
@@ -50,6 +55,7 @@ app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
 
 // Mount routes
 app.use(`/api/${config.app.apiVersion}/auth`, authRoutes);
+app.use(`/api/${config.app.apiVersion}/wallet`, walletRoutes);
 
 // 404 handler
 app.use((_req, res) => {
