@@ -8,6 +8,7 @@ import { config } from './config';
 import DatabaseService from './services/database.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
+import { NotificationService } from './services/notification.service';
 import { logger } from './utils/logger.util';
 import {
   errorHandler,
@@ -34,6 +35,9 @@ StellarService.initialize();
 
 // Initialize Mobile Money services
 MobileMoneyService.initialize();
+
+// Initialize Notification services (SMS & Email)
+NotificationService.initialize();
 
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);
