@@ -15,6 +15,11 @@ WasteFi Backend provides the core API and business logic for the WasteFi platfor
 - Digital product passport generation
 - Carbon credit calculation
 - SMS notifications for offline users
+- **Comprehensive logging and monitoring**
+- **Request tracking with unique IDs**
+- **Rate limiting and DDoS protection**
+- **Input validation and sanitization**
+- **Centralized error handling**
 
 ## Tech Stack
 
@@ -107,21 +112,57 @@ wastefi-backend/
 │   ├── config/          # Configuration files
 │   ├── controllers/     # Route controllers
 │   ├── middleware/      # Express middleware
+│   │   ├── auth.middleware.ts         # Authentication
+│   │   ├── error.middleware.ts        # Error handling
+│   │   ├── rate-limiter.middleware.ts # Rate limiting
+│   │   ├── request-logger.middleware.ts # Request logging
+│   │   └── validation.middleware.ts   # Input validation
 │   ├── models/          # Database models
 │   ├── routes/          # API routes
 │   ├── services/        # Business logic
+│   │   ├── auth.service.ts       # Authentication logic
+│   │   ├── database.service.ts   # Database management
+│   │   └── stellar.service.ts    # Stellar integration
 │   ├── types/           # TypeScript types
 │   ├── utils/           # Utility functions
+│   │   ├── encryption.util.ts # Encryption utilities
+│   │   ├── jwt.util.ts        # JWT utilities
+│   │   └── logger.util.ts     # Logging system
 │   └── server.ts        # Application entry point
+├── prisma/              # Prisma schema and migrations
+├── scripts/             # Utility scripts
+├── docs/                # Documentation
 ├── dist/                # Compiled JavaScript
-├── package.json
-├── tsconfig.json
-└── README.md
+└── package.json
 ```
 
 ## API Documentation
 
 API documentation will be available at `/api/docs` once Swagger is integrated.
+
+### Key Endpoints
+
+- **Authentication**: `/api/v1/auth/*`
+  - POST `/register` - Register new user
+  - POST `/login` - Login user
+  - GET `/profile` - Get user profile
+  - POST `/api-keys` - Create API key
+
+- **Wallet**: `/api/v1/wallet/*`
+  - POST `/create` - Create Stellar wallet
+  - GET `/balance` - Get wallet balance
+  - POST `/send` - Send payment
+  - GET `/transactions` - Transaction history
+
+- **Health**: `/health` - Service health check
+
+### Documentation
+
+- [Authentication Guide](docs/AUTHENTICATION.md)
+- [Stellar Integration](docs/STELLAR_INTEGRATION.md)
+- [Wallet Setup](docs/WALLET_SETUP.md)
+- [Monitoring & Logging](docs/MONITORING.md)
+- [Database Setup](DATABASE_SETUP.md)
 
 ## Environment Variables
 
