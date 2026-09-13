@@ -20,3 +20,6 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
+
+// Re-export auth types
+export * from './auth.types';

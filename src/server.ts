@@ -36,7 +36,10 @@ app.get('/health', async (_req, res) => {
   });
 });
 
-// API routes placeholder
+// Import routes
+import authRoutes from './routes/auth.routes';
+
+// API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
   res.json({
     message: 'WasteFi Backend API',
@@ -44,6 +47,9 @@ app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
     documentation: '/api/docs',
   });
 });
+
+// Mount routes
+app.use(`/api/${config.app.apiVersion}/auth`, authRoutes);
 
 // 404 handler
 app.use((_req, res) => {
