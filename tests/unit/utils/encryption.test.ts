@@ -1,11 +1,13 @@
 import { EncryptionUtil } from '../../../src/utils/encryption.util';
 
 describe('Encryption Utility', () => {
+  const testEncryptionKey = 'test-encryption-key-32-chars-long!';
+
   describe('encrypt and decrypt', () => {
     it('should encrypt and decrypt text correctly', () => {
       const plaintext = 'sensitive data';
-      const encrypted = EncryptionUtil.encrypt(plaintext);
-      const decrypted = EncryptionUtil.decrypt(encrypted);
+      const encrypted = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
+      const decrypted = EncryptionUtil.decrypt(encrypted, testEncryptionKey);
 
       expect(decrypted).toBe(plaintext);
       expect(encrypted).not.toBe(plaintext);
@@ -13,40 +15,40 @@ describe('Encryption Utility', () => {
 
     it('should produce different ciphertext for same input', () => {
       const plaintext = 'test data';
-      const encrypted1 = EncryptionUtil.encrypt(plaintext);
-      const encrypted2 = EncryptionUtil.encrypt(plaintext);
+      const encrypted1 = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
+      const encrypted2 = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
 
       expect(encrypted1).not.toBe(encrypted2);
-      expect(EncryptionUtil.decrypt(encrypted1)).toBe(plaintext);
-      expect(EncryptionUtil.decrypt(encrypted2)).toBe(plaintext);
+      expect(EncryptionUtil.decrypt(encrypted1, testEncryptionKey)).toBe(plaintext);
+      expect(EncryptionUtil.decrypt(encrypted2, testEncryptionKey)).toBe(plaintext);
     });
 
     it('should handle empty strings', () => {
       const plaintext = '';
-      const encrypted = EncryptionUtil.encrypt(plaintext);
-      const decrypted = EncryptionUtil.decrypt(encrypted);
+      const encrypted = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
+      const decrypted = EncryptionUtil.decrypt(encrypted, testEncryptionKey);
 
       expect(decrypted).toBe(plaintext);
     });
 
     it('should handle special characters', () => {
       const plaintext = '!@#$%^&*()_+-={}[]|\\:";\'<>?,./';
-      const encrypted = EncryptionUtil.encrypt(plaintext);
-      const decrypted = EncryptionUtil.decrypt(encrypted);
+      const encrypted = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
+      const decrypted = EncryptionUtil.decrypt(encrypted, testEncryptionKey);
 
       expect(decrypted).toBe(plaintext);
     });
 
     it('should handle unicode characters', () => {
       const plaintext = '你好世界 🌍 مرحبا العالم';
-      const encrypted = EncryptionUtil.encrypt(plaintext);
-      const decrypted = EncryptionUtil.decrypt(encrypted);
+      const encrypted = EncryptionUtil.encrypt(plaintext, testEncryptionKey);
+      const decrypted = EncryptionUtil.decrypt(encrypted, testEncryptionKey);
 
       expect(decrypted).toBe(plaintext);
     });
   });
 
-  describe('hashPassword and verifyPassword', () => {
+  describe('hashPassword and comparePassword', () => {
     it('should hash password correctly', async () => {
       const password = 'MySecurePassword123!';
       const hash = await EncryptionUtil.hashPassword(password);
@@ -59,7 +61,7 @@ describe('Encryption Utility', () => {
     it('should verify correct password', async () => {
       const password = 'MySecurePassword123!';
       const hash = await EncryptionUtil.hashPassword(password);
-      const isValid = await EncryptionUtil.verifyPassword(password, hash);
+      const isValid = await EncryptionUtil.comparePassword(password, hash);
 
       expect(isValid).toBe(true);
     });
@@ -68,7 +70,7 @@ describe('Encryption Utility', () => {
       const password = 'MySecurePassword123!';
       const wrongPassword = 'WrongPassword123!';
       const hash = await EncryptionUtil.hashPassword(password);
-      const isValid = await EncryptionUtil.verifyPassword(wrongPassword, hash);
+      const isValid = await EncryptionUtil.comparePassword(wrongPassword, hash);
 
       expect(isValid).toBe(false);
     });
@@ -79,14 +81,14 @@ describe('Encryption Utility', () => {
       const hash2 = await EncryptionUtil.hashPassword(password);
 
       expect(hash1).not.toBe(hash2);
-      expect(await EncryptionUtil.verifyPassword(password, hash1)).toBe(true);
-      expect(await EncryptionUtil.verifyPassword(password, hash2)).toBe(true);
+      expect(await EncryptionUtil.comparePassword(password, hash1)).toBe(true);
+      expect(await EncryptionUtil.comparePassword(password, hash2)).toBe(true);
     });
 
     it('should handle empty password', async () => {
       const password = '';
       const hash = await EncryptionUtil.hashPassword(password);
-      const isValid = await EncryptionUtil.verifyPassword(password, hash);
+      const isValid = await EncryptionUtil.comparePassword(password, hash);
 
       expect(isValid).toBe(true);
     });
@@ -94,10 +96,10 @@ describe('Encryption Utility', () => {
     it('should be case sensitive', async () => {
       const password = 'MyPassword';
       const hash = await EncryptionUtil.hashPassword(password);
-      
-      expect(await EncryptionUtil.verifyPassword('MyPassword', hash)).toBe(true);
-      expect(await EncryptionUtil.verifyPassword('mypassword', hash)).toBe(false);
-      expect(await EncryptionUtil.verifyPassword('MYPASSWORD', hash)).toBe(false);
+
+      expect(await EncryptionUtil.comparePassword('MyPassword', hash)).toBe(true);
+      expect(await EncryptionUtil.comparePassword('mypassword', hash)).toBe(false);
+      expect(await EncryptionUtil.comparePassword('MYPASSWORD', hash)).toBe(false);
     });
   });
 });

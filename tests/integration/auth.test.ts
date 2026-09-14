@@ -33,65 +33,51 @@ describe('Authentication API', () => {
 
   describe('POST /api/v1/auth/register', () => {
     it('should return 400 if phone number is missing', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          firstName: 'John',
-          lastName: 'Doe',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        firstName: 'John',
+        lastName: 'Doe',
+      });
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if phone number is invalid', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: 'invalid-phone',
-          firstName: 'John',
-          lastName: 'Doe',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: 'invalid-phone',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if first name is missing', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: '+254712345678',
-          lastName: 'Doe',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: '+254712345678',
+        lastName: 'Doe',
+      });
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if last name is missing', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: '+254712345678',
-          firstName: 'John',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: '+254712345678',
+        firstName: 'John',
+      });
 
       expect(response.status).toBe(400);
     });
 
     it('should accept valid phone number formats', async () => {
-      const validPhoneNumbers = [
-        '+254712345678',
-        '+1234567890',
-        '+447911123456',
-      ];
+      const validPhoneNumbers = ['+254712345678', '+1234567890', '+447911123456'];
 
       for (const phoneNumber of validPhoneNumbers) {
-        const response = await request(app)
-          .post('/api/v1/auth/register')
-          .send({
-            phoneNumber,
-            firstName: 'John',
-            lastName: 'Doe',
-          });
+        const response = await request(app).post('/api/v1/auth/register').send({
+          phoneNumber,
+          firstName: 'John',
+          lastName: 'Doe',
+        });
 
         // Will fail at controller level (mocked), but should pass validation
         expect(response.status).not.toBe(400);
@@ -99,50 +85,38 @@ describe('Authentication API', () => {
     });
 
     it('should reject invalid phone number formats', async () => {
-      const invalidPhoneNumbers = [
-        '1234',
-        'abcd',
-        '+',
-        '++1234567890',
-        'phone',
-      ];
+      const invalidPhoneNumbers = ['1234', 'abcd', '+', '++1234567890', 'phone'];
 
       for (const phoneNumber of invalidPhoneNumbers) {
-        const response = await request(app)
-          .post('/api/v1/auth/register')
-          .send({
-            phoneNumber,
-            firstName: 'John',
-            lastName: 'Doe',
-          });
+        const response = await request(app).post('/api/v1/auth/register').send({
+          phoneNumber,
+          firstName: 'John',
+          lastName: 'Doe',
+        });
 
         expect(response.status).toBe(400);
       }
     });
 
     it('should accept optional email field', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: '+254712345678',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: '+254712345678',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+      });
 
       // Will fail at controller level (mocked), but validation should pass
       expect(response.status).not.toBe(400);
     });
 
     it('should reject invalid email format', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: '+254712345678',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'invalid-email',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: '+254712345678',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'invalid-email',
+      });
 
       expect(response.status).toBe(400);
     });
@@ -150,29 +124,23 @@ describe('Authentication API', () => {
 
   describe('POST /api/v1/auth/login', () => {
     it('should return 400 if phone number is missing', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({});
+      const response = await request(app).post('/api/v1/auth/login').send({});
 
       expect(response.status).toBe(400);
     });
 
     it('should return 400 if phone number is invalid', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          phoneNumber: 'invalid',
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        phoneNumber: 'invalid',
+      });
 
       expect(response.status).toBe(400);
     });
 
     it('should accept valid phone number', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          phoneNumber: '+254712345678',
-        });
+      const response = await request(app).post('/api/v1/auth/login').send({
+        phoneNumber: '+254712345678',
+      });
 
       // Will fail at controller level (mocked), but validation should pass
       expect(response.status).not.toBe(400);
@@ -181,19 +149,15 @@ describe('Authentication API', () => {
 
   describe('POST /api/v1/auth/refresh', () => {
     it('should return 400 if refresh token is missing', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/refresh')
-        .send({});
+      const response = await request(app).post('/api/v1/auth/refresh').send({});
 
       expect(response.status).toBe(400);
     });
 
     it('should accept refresh token', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/refresh')
-        .send({
-          refreshToken: 'some-token',
-        });
+      const response = await request(app).post('/api/v1/auth/refresh').send({
+        refreshToken: 'some-token',
+      });
 
       // Will fail at controller level (mocked), but validation should pass
       expect(response.status).not.toBe(400);
@@ -202,8 +166,7 @@ describe('Authentication API', () => {
 
   describe('GET /api/v1/auth/profile', () => {
     it('should return 401 if no token provided', async () => {
-      const response = await request(app)
-        .get('/api/v1/auth/profile');
+      const response = await request(app).get('/api/v1/auth/profile');
 
       expect(response.status).toBe(401);
     });
@@ -219,9 +182,7 @@ describe('Authentication API', () => {
 
   describe('POST /api/v1/auth/api-keys', () => {
     it('should return 401 if no token provided', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/api-keys')
-        .send({ name: 'Test Key' });
+      const response = await request(app).post('/api/v1/auth/api-keys').send({ name: 'Test Key' });
 
       expect(response.status).toBe(401);
     });
@@ -238,8 +199,7 @@ describe('Authentication API', () => {
 
   describe('GET /api/v1/auth/api-keys', () => {
     it('should return 401 if no token provided', async () => {
-      const response = await request(app)
-        .get('/api/v1/auth/api-keys');
+      const response = await request(app).get('/api/v1/auth/api-keys');
 
       expect(response.status).toBe(401);
     });
@@ -247,8 +207,7 @@ describe('Authentication API', () => {
 
   describe('DELETE /api/v1/auth/api-keys/:keyId', () => {
     it('should return 401 if no token provided', async () => {
-      const response = await request(app)
-        .delete('/api/v1/auth/api-keys/some-key-id');
+      const response = await request(app).delete('/api/v1/auth/api-keys/some-key-id');
 
       expect(response.status).toBe(401);
     });
