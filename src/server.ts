@@ -15,6 +15,7 @@ import { MobileMoneyService } from './services/mobile-money/mobile-money.service
 import { NotificationService } from './services/notification.service';
 import { RecycleGraphService } from './services/recyclegraph.service';
 import { WebSocketService } from './services/websocket.service';
+import MetricsService from './services/metrics.service';
 import { logger } from './utils/logger.util';
 import {
   errorHandler,
@@ -27,6 +28,7 @@ import {
 } from './middleware/request-logger.middleware';
 import { generalLimiter } from './middleware/rate-limiter.middleware';
 import { sanitizeInput } from './middleware/validation.middleware';
+import { metricsMiddleware } from './middleware/metrics.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -55,6 +57,9 @@ RecycleGraphService.initialize();
 // Initialize WebSocket service
 WebSocketService.initialize(httpServer);
 
+// Initialize Metrics service
+MetricsService.initialize();
+
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);
 
@@ -71,6 +76,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(addRequestId);
 app.use(requestLogger);
 app.use(performanceMonitor);
+
+// Metrics collection
+app.use(metricsMiddleware);
 
 // Sanitize inputs
 app.use(sanitizeInput);
@@ -114,6 +122,7 @@ import wasteCollectionRoutes from './routes/waste-collection.routes';
 import paymentRoutes from './routes/payment.routes';
 import adminRoutes from './routes/admin.routes';
 import materialPassportRoutes from './routes/material-passport.routes';
+import metricsRoutes from './routes/metrics.routes';
 
 // API Documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -145,6 +154,9 @@ app.use(`/api/${config.app.apiVersion}/collections`, wasteCollectionRoutes);
 app.use(`/api/${config.app.apiVersion}/payments`, paymentRoutes);
 app.use(`/api/${config.app.apiVersion}/admin`, adminRoutes);
 app.use(`/api/${config.app.apiVersion}/passports`, materialPassportRoutes);
+
+// Metrics endpoint (no auth required for Prometheus scraping)
+app.use('/metrics', metricsRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
