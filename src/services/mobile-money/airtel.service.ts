@@ -64,7 +64,7 @@ export class AirtelService {
    */
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove + and spaces
-    let formatted = phoneNumber.replace(/[\+\s]/g, '');
+    const formatted = phoneNumber.replace(/[+\s]/g, '');
 
     // Airtel expects country code without +
     // Example: 254XXXXXXXXX for Kenya

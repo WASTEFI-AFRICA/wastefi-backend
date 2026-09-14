@@ -71,7 +71,7 @@ export class MTNService {
    */
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove spaces and special characters
-    let formatted = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    let formatted = phoneNumber.replace(/[\s\-()]/g, '');
 
     // Add + if not present
     if (!formatted.startsWith('+')) {

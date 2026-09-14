@@ -1,4 +1,4 @@
-import { calculateDistance, isWithinRadius } from '../../../src/utils/geolocation.util';
+import { GeolocationUtil } from '../../../src/utils/geolocation.util';
 
 describe('Geolocation Utility', () => {
   describe('calculateDistance', () => {
@@ -7,7 +7,7 @@ describe('Geolocation Utility', () => {
       const nairobi = { latitude: -1.286389, longitude: 36.817223 };
       const mombasa = { latitude: -4.043477, longitude: 39.668206 };
       
-      const distance = calculateDistance(
+      const distance = GeolocationUtil.GeolocationUtil.calculateDistance(
         nairobi.latitude,
         nairobi.longitude,
         mombasa.latitude,
@@ -19,7 +19,7 @@ describe('Geolocation Utility', () => {
     });
 
     it('should return 0 for same coordinates', () => {
-      const distance = calculateDistance(0, 0, 0, 0);
+      const distance = GeolocationUtil.calculateDistance(0, 0, 0, 0);
       expect(distance).toBe(0);
     });
 
@@ -27,7 +27,7 @@ describe('Geolocation Utility', () => {
       const north = { latitude: 1, longitude: 0 };
       const south = { latitude: -1, longitude: 0 };
       
-      const distance = calculateDistance(
+      const distance = GeolocationUtil.calculateDistance(
         north.latitude,
         north.longitude,
         south.latitude,
@@ -42,7 +42,7 @@ describe('Geolocation Utility', () => {
       const east = { latitude: 0, longitude: 1 };
       const west = { latitude: 0, longitude: -1 };
       
-      const distance = calculateDistance(
+      const distance = GeolocationUtil.calculateDistance(
         east.latitude,
         east.longitude,
         west.latitude,
@@ -57,14 +57,14 @@ describe('Geolocation Utility', () => {
       const pointA = { latitude: -1.286389, longitude: 36.817223 };
       const pointB = { latitude: -4.043477, longitude: 39.668206 };
       
-      const distanceAB = calculateDistance(
+      const distanceAB = GeolocationUtil.calculateDistance(
         pointA.latitude,
         pointA.longitude,
         pointB.latitude,
         pointB.longitude
       );
       
-      const distanceBA = calculateDistance(
+      const distanceBA = GeolocationUtil.calculateDistance(
         pointB.latitude,
         pointB.longitude,
         pointA.latitude,
@@ -78,7 +78,7 @@ describe('Geolocation Utility', () => {
       const northPole = { latitude: 90, longitude: 0 };
       const equator = { latitude: 0, longitude: 0 };
       
-      const distance = calculateDistance(
+      const distance = GeolocationUtil.calculateDistance(
         northPole.latitude,
         northPole.longitude,
         equator.latitude,
@@ -93,7 +93,7 @@ describe('Geolocation Utility', () => {
       const southPole = { latitude: -90, longitude: 0 };
       const equator = { latitude: 0, longitude: 0 };
       
-      const distance = calculateDistance(
+      const distance = GeolocationUtil.calculateDistance(
         southPole.latitude,
         southPole.longitude,
         equator.latitude,
@@ -112,7 +112,7 @@ describe('Geolocation Utility', () => {
       // Point 5 km from center
       const nearbyPoint = { latitude: -1.331389, longitude: 36.817223 };
       
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         nearbyPoint.latitude,
@@ -127,7 +127,7 @@ describe('Geolocation Utility', () => {
       // Point 50 km from center
       const farPoint = { latitude: -1.736389, longitude: 36.817223 };
       
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         farPoint.latitude,
@@ -139,7 +139,7 @@ describe('Geolocation Utility', () => {
     });
 
     it('should return true for exact center point', () => {
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         center.latitude,
@@ -151,7 +151,7 @@ describe('Geolocation Utility', () => {
     });
 
     it('should handle zero radius', () => {
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         center.latitude,
@@ -166,7 +166,7 @@ describe('Geolocation Utility', () => {
       // Point on opposite side of Earth
       const opposite = { latitude: 1.286389, longitude: -143.182777 };
       
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         opposite.latitude,
@@ -180,7 +180,7 @@ describe('Geolocation Utility', () => {
     it('should handle negative radius (treat as positive)', () => {
       const nearbyPoint = { latitude: -1.331389, longitude: 36.817223 };
       
-      const isWithin = isWithinRadius(
+      const isWithin = GeolocationUtil.isWithinRadius(
         center.latitude,
         center.longitude,
         nearbyPoint.latitude,
@@ -192,3 +192,4 @@ describe('Geolocation Utility', () => {
     });
   });
 });
+
