@@ -138,7 +138,22 @@ wastefi-backend/
 
 ## API Documentation
 
-API documentation will be available at `/api/docs` once Swagger is integrated.
+### Interactive Documentation (Swagger UI)
+
+Access the interactive API documentation:
+
+```
+http://localhost:3000/api/docs
+```
+
+Features:
+- 🔍 Browse all API endpoints
+- 📝 View request/response schemas
+- ✅ Test endpoints directly in browser
+- 🔐 Built-in authentication testing
+- 📥 Download OpenAPI specification
+
+**OpenAPI Spec**: `http://localhost:3000/api/docs.json`
 
 ### Key Endpoints
 
@@ -158,9 +173,19 @@ API documentation will be available at `/api/docs` once Swagger is integrated.
 
 ### Documentation
 
+- [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
+- [Swagger Guide](docs/SWAGGER_GUIDE.md) - Using interactive documentation
 - [Authentication Guide](docs/AUTHENTICATION.md)
 - [Stellar Integration](docs/STELLAR_INTEGRATION.md)
 - [Wallet Setup](docs/WALLET_SETUP.md)
+- [User Management](docs/USER_MANAGEMENT.md)
+- [Collection Points](docs/COLLECTION_POINTS.md)
+- [Waste Collections](docs/WASTE_COLLECTIONS.md)
+- [Payments](docs/PAYMENTS.md)
+- [Mobile Money Integration](docs/MOBILE_MONEY.md)
+- [Material Passports](docs/RECYCLEGRAPH_INTEGRATION.md)
+- [WebSocket Real-Time Updates](docs/WEBSOCKET.md)
+- [Admin Dashboard](docs/ADMIN_DASHBOARD.md)
 - [Monitoring & Logging](docs/MONITORING.md)
 - [Database Setup](DATABASE_SETUP.md)
 

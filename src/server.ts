@@ -4,8 +4,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
+import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { config } from './config';
+import { swaggerSpec } from './config/swagger';
 import DatabaseService from './services/database.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
@@ -106,6 +108,18 @@ import wasteCollectionRoutes from './routes/waste-collection.routes';
 import paymentRoutes from './routes/payment.routes';
 import adminRoutes from './routes/admin.routes';
 import materialPassportRoutes from './routes/material-passport.routes';
+
+// API Documentation
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'WasteFi API Documentation',
+}));
+
+// API specification endpoint (JSON)
+app.get('/api/docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
