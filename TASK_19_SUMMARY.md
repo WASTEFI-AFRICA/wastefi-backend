@@ -13,11 +13,13 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 **Continuous Integration workflow with 6 jobs:**
 
 #### Job 1: Lint Code
+
 - ESLint code quality checks
 - Prettier formatting validation
 - **Duration**: ~1 minute
 
 #### Job 2: Run Tests
+
 - PostgreSQL and Redis service containers
 - Database migrations
 - Test suite execution with coverage
@@ -25,6 +27,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 - **Duration**: ~3-5 minutes
 
 #### Job 3: Build Application
+
 - Dependency installation
 - Prisma Client generation
 - TypeScript compilation
@@ -32,18 +35,21 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 - **Duration**: ~2 minutes
 
 #### Job 4: Security Scan
+
 - npm audit for vulnerabilities
 - Snyk security scanning
 - Severity threshold enforcement
 - **Duration**: ~1-2 minutes
 
 #### Job 5: Docker Build
+
 - Docker image build verification
 - Layer caching (GitHub Cache)
 - Build optimization
 - **Duration**: ~2-3 minutes
 
 #### Job 6: Notify Status
+
 - Pipeline status checking
 - Notification system
 - **Duration**: <1 minute
@@ -55,6 +61,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 **Continuous Deployment workflow with 5 jobs:**
 
 #### Job 1: Build and Push
+
 - Multi-platform Docker build
 - Tag generation (version, SHA, branch)
 - Push to GitHub Container Registry (GHCR)
@@ -62,6 +69,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 - **Duration**: ~3-5 minutes
 
 #### Job 2: Deploy to Staging
+
 - Triggered on `develop` branch
 - SSH deployment to staging server
 - Docker Compose update
@@ -71,6 +79,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 - **Duration**: ~3-5 minutes
 
 #### Job 3: Deploy to Production
+
 - Triggered on version tags (`v*`)
 - Automated database backup
 - SSH deployment to production
@@ -81,12 +90,14 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 - **Duration**: ~5-7 minutes
 
 #### Job 4: Rollback
+
 - Automatic rollback on deployment failure
 - Git revert to previous commit
 - Service restart
 - **Duration**: ~2 minutes
 
 #### Job 5: Notify
+
 - Deployment status notification
 - Slack/Discord integration ready
 - **Duration**: <1 minute
@@ -94,6 +105,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 ### 3. Scheduled Backup (`.github/workflows/cron-backup.yml`)
 
 **Automated daily database backup:**
+
 - Runs daily at 2 AM UTC
 - Executes backup script via SSH
 - Verification of backup file
@@ -103,6 +115,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 ### 4. Dependency Review (`.github/workflows/dependency-review.yml`)
 
 **PR dependency scanning:**
+
 - Triggered on pull requests
 - Checks for vulnerable dependencies
 - License compliance verification
@@ -112,6 +125,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 ### 5. Docker Security Scan (`.github/workflows/docker-scan.yml`)
 
 **Container vulnerability scanning:**
+
 - Trivy security scanner
 - Snyk container scan
 - SARIF report upload to GitHub Security
@@ -121,6 +135,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 ### 6. Comprehensive Documentation
 
 **docs/CICD.md** - Complete CI/CD guide:
+
 - Pipeline architecture overview
 - Job descriptions and durations
 - Workflow trigger configuration
@@ -136,6 +151,7 @@ Implemented complete CI/CD pipeline infrastructure using GitHub Actions with aut
 ### 7. README Updates
 
 Added CI/CD status badges:
+
 - CI workflow badge
 - CD workflow badge
 - Codecov coverage badge
@@ -144,56 +160,62 @@ Added CI/CD status badges:
 ## Key Features
 
 ### Continuous Integration
+
 ✅ Automated linting and code quality checks  
 ✅ Comprehensive test suite execution  
 ✅ Build verification  
 ✅ Security vulnerability scanning  
 ✅ Docker image validation  
-✅ Code coverage reporting  
+✅ Code coverage reporting
 
 ### Continuous Deployment
+
 ✅ Automated Docker image building and publishing  
 ✅ Multi-environment deployment (staging/production)  
 ✅ Health check verification  
 ✅ Smoke test execution  
 ✅ Automatic rollback on failure  
-✅ GitHub release creation  
+✅ GitHub release creation
 
 ### Security
+
 ✅ Dependency vulnerability scanning  
 ✅ Container security scanning  
 ✅ License compliance checking  
 ✅ Secret management  
-✅ SARIF report integration  
+✅ SARIF report integration
 
 ### Automation
+
 ✅ Daily database backups  
 ✅ Weekly security scans  
 ✅ Automatic deployments on tags  
 ✅ Manual deployment triggers  
-✅ Status notifications  
+✅ Status notifications
 
 ## Workflow Triggers
 
 ### Automatic Triggers
 
-| Event | Workflow | Branches |
-|-------|----------|----------|
-| Push | CI, CD | main, develop |
-| Pull Request | CI, Dependency Review | main, develop |
-| Tag (v*) | CD (Production) | all |
-| Schedule (Daily 2 AM) | Database Backup | - |
-| Schedule (Weekly Mon 3 AM) | Docker Security Scan | - |
+| Event                      | Workflow              | Branches      |
+| -------------------------- | --------------------- | ------------- |
+| Push                       | CI, CD                | main, develop |
+| Pull Request               | CI, Dependency Review | main, develop |
+| Tag (v*)                   | CD (Production)       | all           |
+| Schedule (Daily 2 AM)      | Database Backup       | -             |
+| Schedule (Weekly Mon 3 AM) | Docker Security Scan  | -             |
 
 ### Manual Triggers
 
 All workflows support manual triggering via:
+
 - GitHub UI: Actions → Workflow → Run workflow
 - GitHub CLI: `gh workflow run <workflow>.yml`
 
 ## Required Secrets
 
 ### Deployment Secrets
+
 - `STAGING_HOST` - Staging server address
 - `STAGING_USER` - SSH username for staging
 - `STAGING_SSH_KEY` - SSH private key for staging
@@ -202,18 +224,21 @@ All workflows support manual triggering via:
 - `PROD_SSH_KEY` - SSH private key for production
 
 ### Security Scanning Secrets
+
 - `SNYK_TOKEN` - Snyk API token (optional)
 - `CODECOV_TOKEN` - Codecov upload token (optional)
 
 ## Deployment Environments
 
 ### Staging
+
 - **URL**: `https://api-staging.wastefi.com`
 - **Trigger**: Push to `develop` branch
 - **Purpose**: Integration testing, demos
 - **Auto-deploy**: Yes
 
 ### Production
+
 - **URL**: `https://api.wastefi.com`
 - **Trigger**: Git tags (`v1.0.0`)
 - **Purpose**: Live user traffic
@@ -306,21 +331,25 @@ gh run view --workflow=cron-backup.yml
 ## Monitoring
 
 ### GitHub Actions Dashboard
+
 ```
 Repository → Actions → View all workflows
 ```
 
 ### Status Badges
+
 ```markdown
 ![CI](https://github.com/org/repo/workflows/CI/badge.svg)
 ![CD](https://github.com/org/repo/workflows/CD/badge.svg)
 ```
 
 ### Coverage Reports
+
 - Codecov dashboard for coverage trends
 - PR comments with coverage changes
 
 ### Security Reports
+
 - GitHub Security tab for vulnerabilities
 - Dependabot alerts
 - Trivy scan results
@@ -328,29 +357,35 @@ Repository → Actions → View all workflows
 ## Best Practices Implemented
 
 ### 1. Fail Fast
+
 - Lint errors stop pipeline early
 - Quick feedback to developers
 
 ### 2. Parallel Execution
+
 - Independent jobs run in parallel
 - Reduced total pipeline time
 
 ### 3. Caching
+
 - npm dependencies cached
 - Docker layer caching
 - Faster subsequent builds
 
 ### 4. Security First
+
 - Multiple security scanning tools
 - Automated vulnerability detection
 - License compliance checking
 
 ### 5. Rollback Safety
+
 - Automatic rollback on failure
 - Database backups before deployment
 - Git-based version control
 
 ### 6. Environment Isolation
+
 - Separate staging and production
 - Different configurations
 - Independent databases
@@ -379,11 +414,13 @@ Repository → Actions → View all workflows
 ## Rollback Strategy
 
 ### Automatic Rollback
+
 - Triggered on health check failure
 - Reverts to previous Git commit
 - Restarts services with old version
 
 ### Manual Rollback
+
 ```bash
 # SSH to server
 ssh user@production-server
@@ -400,6 +437,7 @@ docker-compose up -d --no-build
 ## Files Created
 
 ### Workflow Files
+
 - ✅ `.github/workflows/ci.yml` - CI pipeline
 - ✅ `.github/workflows/cd.yml` - CD pipeline
 - ✅ `.github/workflows/cron-backup.yml` - Scheduled backups
@@ -407,9 +445,11 @@ docker-compose up -d --no-build
 - ✅ `.github/workflows/docker-scan.yml` - Container security
 
 ### Documentation
+
 - ✅ `docs/CICD.md` - Complete CI/CD guide
 
 ### README Updates
+
 - ✅ Added CI/CD status badges
 - ✅ Added coverage badge
 - ✅ Added license badge
@@ -418,7 +458,7 @@ docker-compose up -d --no-build
 
 ✅ Build completed successfully  
 ✅ All workflows validated  
-✅ Documentation complete  
+✅ Documentation complete
 
 ## Commit Message
 

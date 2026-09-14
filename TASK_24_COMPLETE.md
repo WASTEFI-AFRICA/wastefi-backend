@@ -13,6 +13,7 @@
 ## Overview
 
 Implemented a comprehensive automated database backup and recovery system with:
+
 - Full and incremental backup support
 - Metadata tracking and backup history
 - Retention policies (configurable days and max backups)
@@ -63,15 +64,15 @@ Implemented a comprehensive automated database backup and recovery system with:
 
 All endpoints require authentication and admin role.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/backups` | Create new backup (full or incremental) |
-| GET | `/api/v1/backups` | List all backups |
-| GET | `/api/v1/backups/:filename` | Get specific backup info |
-| POST | `/api/v1/backups/:filename/restore` | Restore from backup |
-| DELETE | `/api/v1/backups/:filename` | Delete specific backup |
-| GET | `/api/v1/backups/stats` | Get backup statistics |
-| POST | `/api/v1/backups/cleanup` | Manual cleanup old backups |
+| Method | Endpoint                            | Description                             |
+| ------ | ----------------------------------- | --------------------------------------- |
+| POST   | `/api/v1/backups`                   | Create new backup (full or incremental) |
+| GET    | `/api/v1/backups`                   | List all backups                        |
+| GET    | `/api/v1/backups/:filename`         | Get specific backup info                |
+| POST   | `/api/v1/backups/:filename/restore` | Restore from backup                     |
+| DELETE | `/api/v1/backups/:filename`         | Delete specific backup                  |
+| GET    | `/api/v1/backups/stats`             | Get backup statistics                   |
+| POST   | `/api/v1/backups/cleanup`           | Manual cleanup old backups              |
 
 ---
 
@@ -91,40 +92,47 @@ MAX_BACKUPS=50
 ## Features
 
 ### 1. Backup Creation
+
 - **Full backups**: Complete database snapshot using PostgreSQL custom format
 - **Incremental backups**: Support for incremental backup type
 - **Automatic compression**: Uses pg_dump's custom format (-F c)
 - **Metadata tracking**: Records filename, timestamp, size, type, status, duration, errors
 
 ### 2. Metadata Management
+
 - JSON-based metadata storage
 - Tracks all backup operations
 - Success/failure status tracking
 - Performance metrics (duration)
 
 ### 3. Retention Policy
+
 - **Time-based**: Remove backups older than retention days (default: 30 days)
 - **Count-based**: Keep maximum number of backups (default: 50)
 - **Automatic cleanup**: Runs after each successful backup
 - **Manual cleanup**: API endpoint for on-demand cleanup
 
 ### 4. Backup Verification
+
 - Integrity checking before restore
 - File existence validation
 - Prevents restoring corrupted backups
 
 ### 5. Restore Operations
+
 - **Verify-only mode**: Check backup integrity without restoring
 - **Full restore**: Restore complete database from backup
 - **Clean restore**: Drops existing objects before restore (-c flag)
 
 ### 6. Statistics & Monitoring
+
 - Total number of backups
 - Total storage used
 - Oldest and newest backup timestamps
 - Success rate calculation
 
 ### 7. Cross-Platform Support
+
 - **Windows**: Uses `set PGPASSWORD` syntax
 - **Linux/Mac**: Uses `PGPASSWORD=` syntax
 - Automatic platform detection
@@ -134,6 +142,7 @@ MAX_BACKUPS=50
 ## Technical Implementation
 
 ### Backup Command (pg_dump)
+
 ```bash
 # Windows
 set PGPASSWORD=password&& pg_dump -h host -p port -U username -F c -b -v -f "backup.backup" database
@@ -143,6 +152,7 @@ PGPASSWORD="password" pg_dump -h host -p port -U username -F c -b -v -f "backup.
 ```
 
 ### Restore Command (pg_restore)
+
 ```bash
 # Windows
 set PGPASSWORD=password&& pg_restore -h host -p port -U username -d database -c -v "backup.backup"
@@ -152,6 +162,7 @@ PGPASSWORD="password" pg_restore -h host -p port -U username -d database -c -v "
 ```
 
 ### Filename Format
+
 ```
 wastefi_{type}_{YYYY-MM-DD}_{HH-mm-ss}.backup
 ```
@@ -210,6 +221,7 @@ Example: `wastefi_full_2026-09-14_15-30-45.backup`
 ## Integration
 
 The backup system is fully integrated into the application:
+
 1. BackupService initialized on server startup
 2. Backup directory created automatically
 3. Routes mounted at `/api/v1/backups`
@@ -221,6 +233,7 @@ The backup system is fully integrated into the application:
 ## Usage Examples
 
 ### Create a Backup
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/backups \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
@@ -229,12 +242,14 @@ curl -X POST http://localhost:3000/api/v1/backups \
 ```
 
 ### List Backups
+
 ```bash
 curl http://localhost:3000/api/v1/backups \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 ### Restore from Backup
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/backups/wastefi_full_2026-09-14_15-30-45.backup/restore \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
@@ -243,6 +258,7 @@ curl -X POST http://localhost:3000/api/v1/backups/wastefi_full_2026-09-14_15-30-
 ```
 
 ### Get Statistics
+
 ```bash
 curl http://localhost:3000/api/v1/backups/stats \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"

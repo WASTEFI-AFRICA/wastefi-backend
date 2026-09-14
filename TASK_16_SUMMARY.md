@@ -13,44 +13,52 @@ Implemented comprehensive Redis integration with caching utilities, session mana
 Complete Redis client wrapper with:
 
 **Connection Management:**
+
 - Auto-reconnect with exponential backoff
 - Connection health monitoring
 - Graceful degradation (app works without Redis)
 - Event handling (connect, ready, error, close, reconnecting)
 
 **Core Operations:**
+
 - `get/set/del` - Basic key-value operations
 - `exists` - Check key existence
 - `expire` - Set TTL on keys
 - `ttl` - Get remaining TTL
 
 **Session Management:**
+
 - `setSession` - Store session data with TTL
 - `getSession` - Retrieve session data
 - `deleteSession` - Remove session
 - `refreshSession` - Extend session TTL
 
 **Rate Limiting:**
+
 - `incrementRateLimit` - Atomic counter with auto-expiry
 - `getRateLimit` - Check current count
 - `resetRateLimit` - Reset counter
 
 **Hash Operations:**
+
 - `hset/hget` - Field operations
 - `hgetall` - Get all fields
 - `hdel` - Delete field
 
 **List Operations:**
+
 - `lpush/rpush` - Add to list
 - `lrange` - Get range of items
 - `llen` - Get list length
 
 **Pub/Sub:**
+
 - `publish` - Send messages to channel
 - `subscribe` - Listen to channel
 - `unsubscribe` - Stop listening
 
 **Utility Methods:**
+
 - `flushAll` - Clear all keys
 - `dbSize` - Get key count
 - `info` - Server information
@@ -61,26 +69,32 @@ Complete Redis client wrapper with:
 High-level caching patterns:
 
 **Cache-Aside Pattern:**
+
 ```typescript
 const data = await cacheAside(key, fetcher, { ttl: 300 });
 ```
 
 **Pre-built Cache Keys:**
+
 - `UserCache` - User-specific caching
 - `CollectionPointCache` - Collection point caching
 - `PricingCache` - Material pricing caching
 - `StatsCache` - Statistics caching
 
 **Session Management:**
+
 - `SessionCache.set/get/delete/refresh`
 
 **Rate Limiting:**
+
 - `RateLimitCache.increment/get/reset`
 
 **Distributed Locking:**
+
 - `LockCache.acquire/release/extend`
 
 **Advanced Features:**
+
 - `withCache` - Function decorator for caching
 - `CacheMemo` - Memoization class
 - `BatchCache` - Batch operations
@@ -88,6 +102,7 @@ const data = await cacheAside(key, fetcher, { ttl: 300 });
 ### 3. Configuration Updates
 
 **Config (`src/config/index.ts`):**
+
 ```typescript
 redis: {
   enabled: process.env.REDIS_ENABLED === 'true',
@@ -105,6 +120,7 @@ redis: {
 ```
 
 **Environment Variables (`.env.example`):**
+
 ```env
 REDIS_ENABLED=false
 REDIS_HOST=localhost
@@ -116,6 +132,7 @@ REDIS_DB=0
 ### 4. Server Integration
 
 **Server (`src/server.ts`):**
+
 - Initialize Redis connection on startup
 - Health check includes Redis status
 - Graceful shutdown disconnects Redis
@@ -124,6 +141,7 @@ REDIS_DB=0
 ### 5. Documentation
 
 **REDIS_CACHING.md** - Complete guide covering:
+
 - Installation instructions (Ubuntu, macOS, Windows, Docker)
 - Configuration setup
 - Redis service API reference
@@ -148,27 +166,32 @@ REDIS_DB=0
 ## Key Features
 
 ### Automatic Fallback
+
 - App runs without Redis if unavailable
 - All cache operations fail gracefully
 - No impact on core functionality
 
 ### Connection Resilience
+
 - Auto-reconnect on connection loss
 - Exponential backoff retry strategy
 - Event-driven status monitoring
 
 ### Type Safety
+
 - Full TypeScript support
 - Generic types for get operations
 - Strongly typed cache keys
 
 ### Performance
+
 - Connection pooling
 - Efficient JSON serialization
 - Batch operations support
 - Memory-efficient operations
 
 ### Monitoring
+
 - Health check endpoint
 - Connection status tracking
 - Operation logging
@@ -235,9 +258,11 @@ if (acquired) {
 ## Testing
 
 ### Build Status
+
 ✅ Build completed successfully with no errors
 
 ### Verification Steps
+
 1. ✅ Redis service created
 2. ✅ Cache utilities implemented
 3. ✅ Configuration updated
@@ -252,6 +277,7 @@ if (acquired) {
 ### 1. Install Redis Server
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt update
 sudo apt install redis-server
@@ -259,12 +285,14 @@ sudo systemctl start redis-server
 ```
 
 **macOS:**
+
 ```bash
 brew install redis
 brew services start redis
 ```
 
 **Docker:**
+
 ```bash
 docker run -d --name wastefi-redis -p 6379:6379 redis:7-alpine
 ```
@@ -272,6 +300,7 @@ docker run -d --name wastefi-redis -p 6379:6379 redis:7-alpine
 ### 2. Enable Redis in Application
 
 Update `.env`:
+
 ```env
 REDIS_ENABLED=true
 REDIS_HOST=localhost
@@ -293,24 +322,28 @@ npm run dev
 ## Benefits
 
 ### Performance
+
 - 🚀 Faster response times
 - 📉 Reduced database load
 - ⚡ Sub-millisecond data access
 - 💾 Efficient memory usage
 
 ### Scalability
+
 - 🔄 Horizontal scaling support
 - 📊 Distributed caching
 - 🔐 Shared session storage
 - 🌐 Multi-instance ready
 
 ### Reliability
+
 - 🛡️ Graceful degradation
 - 🔄 Auto-reconnection
 - 📝 Operation logging
 - ⚠️ Error handling
 
 ### Developer Experience
+
 - 🎯 Simple API
 - 📚 Comprehensive docs
 - 🔍 Type safety
@@ -319,6 +352,7 @@ npm run dev
 ## Cache Invalidation Strategies
 
 ### On Update
+
 ```typescript
 async function updateUser(userId: string, data: any) {
   const user = await prisma.user.update({ where: { id: userId }, data });
@@ -328,12 +362,14 @@ async function updateUser(userId: string, data: any) {
 ```
 
 ### Pattern-Based
+
 ```typescript
 // Invalidate all user-related cache
 await invalidateCache('user:*', true);
 ```
 
 ### Time-Based
+
 ```typescript
 // Auto-expire after TTL
 await RedisService.set(key, value, 300); // 5 minutes
@@ -350,7 +386,7 @@ Updated health endpoint includes Redis status:
   "service": "wastefi-backend",
   "version": "1.0.0",
   "database": "connected",
-  "redis": "connected",  // or "disconnected" or "disabled"
+  "redis": "connected", // or "disconnected" or "disabled"
   "stellar": "testnet"
 }
 ```
@@ -358,18 +394,21 @@ Updated health endpoint includes Redis status:
 ## Production Considerations
 
 ### Security
+
 - [ ] Set Redis password
 - [ ] Configure firewall rules
 - [ ] Use TLS for connections
 - [ ] Limit network access
 
 ### Performance
+
 - [ ] Set maxmemory limit
 - [ ] Configure eviction policy
 - [ ] Enable persistence (RDB/AOF)
 - [ ] Monitor memory usage
 
 ### High Availability
+
 - [ ] Redis Sentinel for failover
 - [ ] Redis Cluster for sharding
 - [ ] Regular backups
@@ -378,6 +417,7 @@ Updated health endpoint includes Redis status:
 ## Future Enhancements
 
 ### Potential Additions
+
 - [ ] Redis Cluster support
 - [ ] Cache warming on startup
 - [ ] Advanced eviction policies
@@ -390,11 +430,13 @@ Updated health endpoint includes Redis status:
 ## Files Created/Modified
 
 ### New Files
+
 - ✅ `src/services/redis.service.ts` - Redis client service
 - ✅ `src/utils/cache.util.ts` - Caching utilities
 - ✅ `docs/REDIS_CACHING.md` - Complete documentation
 
 ### Modified Files
+
 - ✅ `src/config/index.ts` - Added Redis configuration
 - ✅ `src/server.ts` - Integrated Redis service
 - ✅ `.env.example` - Added Redis environment variables

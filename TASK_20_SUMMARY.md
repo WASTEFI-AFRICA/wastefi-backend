@@ -15,25 +15,30 @@ Implemented comprehensive performance monitoring and analytics infrastructure us
 #### Metric Categories
 
 **HTTP Metrics:**
+
 - `http_request_duration_seconds` - Request duration histogram (p50, p95, p99)
 - `http_requests_total` - Total requests counter by method/route/status
 - `http_request_errors_total` - Error counter by type
 
 **Database Metrics:**
+
 - `db_query_duration_seconds` - Query duration histogram by operation/model
 - `db_connection_pool_size` - Connection pool gauge (active/idle)
 
 **Business Metrics:**
+
 - `collections_total` - Waste collections by status/material
 - `payments_total` - Payments by status/currency/method
 - `users_total` - User count by role/KYC status
 - `wallet_transactions_total` - Wallet transactions by type/status
 
 **Cache Metrics:**
+
 - `cache_hits_total` - Cache hits by type
 - `cache_misses_total` - Cache misses by type
 
 **System Metrics (default):**
+
 - `process_cpu_seconds_total` - CPU usage
 - `process_resident_memory_bytes` - Memory usage
 - `nodejs_eventloop_lag_seconds` - Event loop lag
@@ -44,31 +49,32 @@ Implemented comprehensive performance monitoring and analytics infrastructure us
 
 ```typescript
 // HTTP tracking
-recordHttpRequest(method, route, statusCode, duration)
-recordHttpError(method, route, errorType)
+recordHttpRequest(method, route, statusCode, duration);
+recordHttpError(method, route, errorType);
 
 // Database tracking
-recordDbQuery(operation, model, duration)
-updateDbConnectionPool(active, idle)
+recordDbQuery(operation, model, duration);
+updateDbConnectionPool(active, idle);
 
 // Business tracking
-recordCollection(status, materialType)
-recordPayment(status, currency, method)
-updateUserCount(role, kycStatus, count)
-recordWalletTransaction(type, status)
+recordCollection(status, materialType);
+recordPayment(status, currency, method);
+updateUserCount(role, kycStatus, count);
+recordWalletTransaction(type, status);
 
 // Cache tracking
-recordCacheHit(cacheType)
-recordCacheMiss(cacheType)
+recordCacheHit(cacheType);
+recordCacheMiss(cacheType);
 
 // Metrics retrieval
-getMetrics() // Prometheus format
-getMetricsJSON() // JSON format
+getMetrics(); // Prometheus format
+getMetricsJSON(); // JSON format
 ```
 
 ### 2. Metrics Middleware (`src/middleware/metrics.middleware.ts`)
 
 **Automatic HTTP metrics collection:**
+
 - Request duration measurement using response-time
 - Automatic recording of all HTTP requests
 - Error tracking for 4xx and 5xx responses
@@ -77,12 +83,14 @@ getMetricsJSON() // JSON format
 ### 3. Metrics Routes (`src/routes/metrics.routes.ts`)
 
 **Metrics exposure endpoints:**
+
 - `GET /metrics` - Prometheus format (for scraping)
 - `GET /metrics/json` - JSON format (for API consumption)
 
 ### 4. Prometheus Configuration
 
 **`monitoring/prometheus.yml` - Complete Prometheus setup:**
+
 - Scrape configuration for WasteFi API
 - PostgreSQL exporter integration
 - Redis exporter integration
@@ -124,6 +132,7 @@ getMetricsJSON() // JSON format
 ### 7. Server Integration
 
 **Updated `src/server.ts`:**
+
 - Initialized MetricsService on startup
 - Added metricsMiddleware for automatic tracking
 - Mounted /metrics routes
@@ -132,6 +141,7 @@ getMetricsJSON() // JSON format
 ### 8. Comprehensive Documentation
 
 **`docs/PERFORMANCE_MONITORING.md` - Complete guide:**
+
 - Monitoring stack overview
 - Metrics collection details
 - Prometheus setup instructions
@@ -146,32 +156,36 @@ getMetricsJSON() // JSON format
 ## Key Features
 
 ### Metrics Collection
+
 ✅ Automatic HTTP request tracking  
 ✅ Database query performance monitoring  
 ✅ Business metrics (collections, payments, users)  
 ✅ Cache performance tracking  
 ✅ System resource monitoring  
-✅ Real-time metric updates  
+✅ Real-time metric updates
 
 ### Visualization
+
 ✅ Pre-built Grafana dashboard  
 ✅ 10 key performance panels  
 ✅ Real-time graphs and stats  
 ✅ Custom query support  
-✅ Prometheus integration  
+✅ Prometheus integration
 
 ### Alerting
+
 ✅ 10 pre-configured alert rules  
 ✅ Multiple severity levels  
 ✅ Slack/Email notification ready  
 ✅ Custom alert thresholds  
-✅ Alert grouping and routing  
+✅ Alert grouping and routing
 
 ### Performance
+
 ✅ Low overhead metrics collection  
 ✅ Efficient histogram buckets  
 ✅ Optimized scrape intervals  
-✅ Resource usage monitoring  
+✅ Resource usage monitoring
 
 ## Usage Examples
 
@@ -196,11 +210,13 @@ MetricsService.updateUserCount('USER', 'APPROVED', 150);
 ### Querying Metrics
 
 **Prometheus format:**
+
 ```bash
 curl http://localhost:3000/metrics
 ```
 
 **JSON format:**
+
 ```bash
 curl http://localhost:3000/metrics/json
 ```
@@ -208,21 +224,25 @@ curl http://localhost:3000/metrics/json
 ### Prometheus Queries
 
 **Request rate:**
+
 ```promql
 rate(http_requests_total[5m])
 ```
 
 **95th percentile response time:**
+
 ```promql
 histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
 ```
 
 **Error rate:**
+
 ```promql
 rate(http_request_errors_total[5m]) / rate(http_requests_total[5m])
 ```
 
 **Cache hit rate:**
+
 ```promql
 rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
 ```
@@ -258,18 +278,18 @@ docker-compose -f docker-compose.monitoring.yml up -d
 
 ### Response Time SLOs
 
-| Percentile | Target | Alert Threshold |
-|------------|--------|-----------------|
-| p50 | < 100ms | 200ms |
-| p95 | < 500ms | 1s |
-| p99 | < 1s | 2s |
+| Percentile | Target  | Alert Threshold |
+| ---------- | ------- | --------------- |
+| p50        | < 100ms | 200ms           |
+| p95        | < 500ms | 1s              |
+| p99        | < 1s    | 2s              |
 
 ### Error Rate SLOs
 
 | Error Type | Target | Alert Threshold |
-|------------|--------|-----------------|
-| 4xx errors | < 2% | 5% |
-| 5xx errors | < 0.1% | 0.5% |
+| ---------- | ------ | --------------- |
+| 4xx errors | < 2%   | 5%              |
+| 5xx errors | < 0.1% | 0.5%            |
 
 ### Availability SLO
 
@@ -309,18 +329,21 @@ service_key: 'YOUR_PAGERDUTY_KEY'
 ## Metrics Endpoints
 
 ### Prometheus Format
+
 ```
 GET /metrics
 Content-Type: text/plain; version=0.0.4
 ```
 
 ### JSON Format
+
 ```
 GET /metrics/json
 Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -381,19 +404,23 @@ if (cached) {
 ## Files Created
 
 ### Application Files
+
 - ✅ `src/services/metrics.service.ts` - Metrics collection service
 - ✅ `src/middleware/metrics.middleware.ts` - Automatic HTTP tracking
 - ✅ `src/routes/metrics.routes.ts` - Metrics endpoints
 
 ### Configuration Files
+
 - ✅ `monitoring/prometheus.yml` - Prometheus configuration
 - ✅ `monitoring/alerts/api-alerts.yml` - Alert rules
 - ✅ `monitoring/grafana/wastefi-dashboard.json` - Grafana dashboard
 
 ### Documentation
+
 - ✅ `docs/PERFORMANCE_MONITORING.md` - Complete monitoring guide
 
 ### Modified Files
+
 - ✅ `src/server.ts` - Integrated metrics service
 - ✅ `package.json` - Added monitoring dependencies
 
@@ -401,11 +428,12 @@ if (cached) {
 
 ✅ Build completed successfully  
 ✅ TypeScript compilation passed  
-✅ All dependencies installed  
+✅ All dependencies installed
 
 ## Benefits
 
 ### Operations
+
 - 📊 Real-time visibility into application performance
 - 🚨 Proactive alerting before issues impact users
 - 📈 Trend analysis for capacity planning
@@ -413,6 +441,7 @@ if (cached) {
 - 📉 Performance regression detection
 
 ### Development
+
 - 🎯 Performance targets clearly defined
 - 🐛 Easy identification of slow endpoints
 - 💾 Database query optimization insights
@@ -420,6 +449,7 @@ if (cached) {
 - 📊 Business metrics tracking
 
 ### Business
+
 - 💼 Real-time business metrics (collections, payments)
 - 👥 User growth tracking
 - 💰 Revenue monitoring

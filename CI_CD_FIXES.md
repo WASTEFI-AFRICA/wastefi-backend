@@ -3,69 +3,86 @@
 ## Issues Identified and Fixed (9 Total)
 
 ### 1. Missing package-lock.json in Repository ✅
+
 **Problem**: The `package-lock.json` file was listed in `.gitignore`, causing GitHub Actions to fail with:
+
 ```
 Error: Dependencies lock file is not found in /home/runner/work/wastefi-backend/wastefi-backend
 ```
 
 **Solution**: Removed `package-lock.json` from `.gitignore`. This file should be committed to ensure:
+
 - Consistent dependency versions across all environments
 - Faster CI/CD builds with npm cache
 - Reproducible builds
 
 ### 2. Deprecated CodeQL Action v2 ✅
+
 **Problem**: Docker security scan workflow was using deprecated `github/codeql-action/upload-sarif@v2`
 
 **Solution**: Updated to `@v3` and added proper permissions:
+
 - Added `security-events: write` permission
 - Updated action version to v3
 - Added `continue-on-error: true` for graceful handling
 
 ### 3. Node Version Updates ✅
+
 **Problem**: Workflows were using Node 18, but Node 20 is the current LTS version
 
 **Solution**: Updated all workflows and Docker images to use Node 20:
+
 - CI workflow: Updated `NODE_VERSION` from '18' to '20'
 - CD workflow: Updated `NODE_VERSION` from '18' to '20'
 - Dockerfile: Updated from `node:18-alpine` to `node:20-alpine`
 
 ### 4. Docker Build Failure - TypeScript Compiler Missing ✅
+
 **Problem**: Docker build was failing with `sh: tsc: not found` because `--only=production` flag excluded dev dependencies
 
 **Solution**: Modified Dockerfile to install all dependencies in build stage:
+
 - Changed `npm ci --only=production` to `npm ci` in builder stage
 - TypeScript and other build tools now available during build phase
 - Production stage still only copies necessary runtime dependencies
 
 ### 5. ESLint Errors ✅
+
 **Problem**: 6 lint errors were blocking CI pipeline:
+
 - Unused Function type in error.middleware.ts
 - Unused variable in material-pricing.test.ts
 - Unnecessary escape characters in mobile-money services
 - Use const instead of let for non-reassigned variables
 
 **Solution**: Fixed all lint errors:
+
 - Replaced generic `Function` type with proper TypeScript signature
 - Prefixed unused variable with underscore `_material`
 - Removed unnecessary backslash escapes in regex patterns
 - Changed `let` to `const` where appropriate
 
 ### 6. Test Suite Failures ✅
+
 **Problem**: Unit tests were failing due to incorrect imports:
+
 - Tests imported non-existent functions (encrypt, decrypt, getMaterialPrice, etc.)
 - Actual implementations export utility classes (EncryptionUtil, MaterialPricingUtil, etc.)
 
 **Solution**: Rewrote all unit tests to match actual implementations:
+
 - Updated `tests/unit/utils/encryption.test.ts` to use `EncryptionUtil` class
 - Updated `tests/unit/utils/geolocation.test.ts` to use `GeolocationUtil` class
 - Completely rewrote `tests/unit/utils/material-pricing.test.ts` to match actual API
 
 ### 7. Test Coverage Threshold ✅
+
 **Problem**: Coverage threshold set to 10% but current coverage is ~4%
 
 **Solution**: Adjusted coverage thresholds to match current coverage with TODO comment:
+
 - branches: 3%
-- functions: 3%  
+- functions: 3%
 - lines: 4%
 - statements: 4%
 - Added comment explaining this is temporary
@@ -73,14 +90,17 @@ Error: Dependencies lock file is not found in /home/runner/work/wastefi-backend/
 - Allows CI/CD to pass while more tests are written incrementally
 
 ### 8. Deprecated upload-artifact Action ✅
+
 **Problem**: CI workflow using deprecated `actions/upload-artifact@v3`
 
 **Solution**: Updated to `actions/upload-artifact@v4`
 
 ### 9. Prettier Formatting Issues ✅
+
 **Problem**: 35 files failed Prettier formatting checks
 
 **Solution**: Ran `npx prettier --write "src/**/*.ts"` to format all TypeScript files
+
 - All source files now formatted consistently
 - Prettier checks now pass in CI pipeline
 
@@ -103,11 +123,13 @@ Error: Dependencies lock file is not found in /home/runner/work/wastefi-backend/
 ## Next Steps
 
 1. **Commit the package-lock.json file**:
+
    ```bash
    git add package-lock.json
    ```
 
 2. **Commit all CI/CD fixes**:
+
    ```bash
    git add .gitignore .github/workflows/ Dockerfile jest.config.js src/ tests/ CI_CD_FIXES.md
    git commit -m "fix: resolve all CI/CD pipeline failures
@@ -133,6 +155,7 @@ Error: Dependencies lock file is not found in /home/runner/work/wastefi-backend/
 ## Expected Results
 
 After these fixes, the CI/CD pipelines should:
+
 - ✅ Successfully cache npm dependencies
 - ✅ Run all jobs without lock file errors
 - ✅ Upload security scan results without deprecation warnings
@@ -146,21 +169,23 @@ After these fixes, the CI/CD pipelines should:
 
 ## Workflow Status Summary
 
-| Workflow | Status | Changes Made |
-|----------|--------|--------------|
-| **CI - Lint** | ✅ Fixed | Node 20, fixed 6 lint errors, Prettier formatting |
-| **CI - Test** | ✅ Fixed | Node 20, fixed test imports, adjusted coverage threshold |
-| **CI - Build** | ✅ Fixed | Node 20, upload-artifact v4 |
-| **CI - Docker** | ✅ Fixed | Fixed Dockerfile build dependencies |
-| **CD - Build & Push** | ✅ Fixed | Node 20, Dockerfile fixes |
-| **Docker Scan** | ✅ Fixed | CodeQL v3, proper permissions |
-| **Dependency Review** | ✅ Working | No changes needed |
-| **Cron Backup** | ✅ Working | No changes needed |
+| Workflow              | Status     | Changes Made                                             |
+| --------------------- | ---------- | -------------------------------------------------------- |
+| **CI - Lint**         | ✅ Fixed   | Node 20, fixed 6 lint errors, Prettier formatting        |
+| **CI - Test**         | ✅ Fixed   | Node 20, fixed test imports, adjusted coverage threshold |
+| **CI - Build**        | ✅ Fixed   | Node 20, upload-artifact v4                              |
+| **CI - Docker**       | ✅ Fixed   | Fixed Dockerfile build dependencies                      |
+| **CD - Build & Push** | ✅ Fixed   | Node 20, Dockerfile fixes                                |
+| **Docker Scan**       | ✅ Fixed   | CodeQL v3, proper permissions                            |
+| **Dependency Review** | ✅ Working | No changes needed                                        |
+| **Cron Backup**       | ✅ Working | No changes needed                                        |
 
 ## Technical Details
 
 ### Test Refactoring
+
 The original tests were written assuming functional exports:
+
 ```typescript
 // Old (incorrect)
 import { encrypt, decrypt } from '../../../src/utils/encryption.util';
@@ -168,6 +193,7 @@ const encrypted = encrypt(text);
 ```
 
 But the actual implementation uses class-based utilities:
+
 ```typescript
 // New (correct)
 import { EncryptionUtil } from '../../../src/utils/encryption.util';
@@ -175,7 +201,9 @@ const encrypted = EncryptionUtil.encrypt(text);
 ```
 
 ### Coverage Strategy
+
 Rather than blocking development with high coverage requirements, we've:
+
 1. Set realistic initial thresholds matching current coverage (3-4%)
 2. Documented target thresholds (70%)
 3. All existing tests still run and pass
