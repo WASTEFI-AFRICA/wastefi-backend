@@ -9,6 +9,7 @@ import DatabaseService from './services/database.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
 import { NotificationService } from './services/notification.service';
+import { RecycleGraphService } from './services/recyclegraph.service';
 import { logger } from './utils/logger.util';
 import {
   errorHandler,
@@ -38,6 +39,9 @@ MobileMoneyService.initialize();
 
 // Initialize Notification services (SMS & Email)
 NotificationService.initialize();
+
+// Initialize RecycleGraph service
+RecycleGraphService.initialize();
 
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);
@@ -95,6 +99,7 @@ import collectionPointRoutes from './routes/collection-point.routes';
 import wasteCollectionRoutes from './routes/waste-collection.routes';
 import paymentRoutes from './routes/payment.routes';
 import adminRoutes from './routes/admin.routes';
+import materialPassportRoutes from './routes/material-passport.routes';
 
 // API routes
 app.get(`/api/${config.app.apiVersion}`, (_req, res) => {
@@ -113,6 +118,7 @@ app.use(`/api/${config.app.apiVersion}/collection-points`, collectionPointRoutes
 app.use(`/api/${config.app.apiVersion}/collections`, wasteCollectionRoutes);
 app.use(`/api/${config.app.apiVersion}/payments`, paymentRoutes);
 app.use(`/api/${config.app.apiVersion}/admin`, adminRoutes);
+app.use(`/api/${config.app.apiVersion}/passports`, materialPassportRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
