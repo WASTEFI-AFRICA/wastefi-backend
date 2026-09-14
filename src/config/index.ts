@@ -18,7 +18,17 @@ export const config = {
     masterSecret: process.env.STELLAR_MASTER_SECRET || '',
   },
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    enabled: process.env.REDIS_ENABLED === 'true',
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || '',
+    db: parseInt(process.env.REDIS_DB || '0', 10),
+    ttl: {
+      default: 3600, // 1 hour
+      session: 86400, // 24 hours
+      cache: 300, // 5 minutes
+      rateLimit: 60, // 1 minute
+    },
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

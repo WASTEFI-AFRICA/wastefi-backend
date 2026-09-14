@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { config } from './config';
 import { swaggerSpec } from './config/swagger';
 import DatabaseService from './services/database.service';
+import RedisService from './services/redis.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
 import { NotificationService } from './services/notification.service';
@@ -35,6 +36,9 @@ const httpServer = createServer(app);
 
 // Initialize database connection
 DatabaseService.connect();
+
+// Initialize Redis connection
+RedisService.connect();
 
 // Initialize Stellar service
 StellarService.initialize();
@@ -82,6 +86,7 @@ if (config.app.env === 'development') {
 // Health check endpoint
 app.get('/health', async (_req, res) => {
   const dbHealthy = await DatabaseService.healthCheck();
+  const redisHealthy = await RedisService.healthCheck();
 
   const health = {
     status: dbHealthy ? 'ok' : 'degraded',
@@ -90,6 +95,7 @@ app.get('/health', async (_req, res) => {
     version: config.app.version,
     environment: config.app.env,
     database: dbHealthy ? 'connected' : 'disconnected',
+    redis: config.redis.enabled ? (redisHealthy ? 'connected' : 'disconnected') : 'disabled',
     stellar: config.stellar.network,
   };
 
@@ -166,6 +172,7 @@ process.on('SIGINT', async () => {
   logger.warn('Received SIGINT, shutting down gracefully...');
   console.log('\n⚠️  Shutting down gracefully...');
   await DatabaseService.disconnect();
+  await RedisService.disconnect();
   process.exit(0);
 });
 
@@ -173,6 +180,7 @@ process.on('SIGTERM', async () => {
   logger.warn('Received SIGTERM, shutting down gracefully...');
   console.log('\n⚠️  Shutting down gracefully...');
   await DatabaseService.disconnect();
+  await RedisService.disconnect();
   process.exit(0);
 });
 
