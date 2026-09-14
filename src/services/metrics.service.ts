@@ -3,7 +3,7 @@ import { logger } from '../utils/logger.util';
 
 /**
  * Metrics Service using Prometheus
- * 
+ *
  * Provides application metrics collection and exposure for monitoring
  */
 class MetricsService {
@@ -34,7 +34,7 @@ class MetricsService {
 
   constructor() {
     this.registry = new Registry();
-    
+
     // Initialize metrics (will be set up in initialize())
     this.httpRequestDuration = {} as Histogram<string>;
     this.httpRequestTotal = {} as Counter<string>;

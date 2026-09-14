@@ -216,12 +216,7 @@ export class MobileMoneyService {
         case PaymentMethod.MTN_MONEY:
           return await this.processMTNWithdrawal(phoneNumber, amount, currency, reference);
         case PaymentMethod.AIRTEL_MONEY:
-          return await this.processAirtelWithdrawal(
-            phoneNumber,
-            amount,
-            currency,
-            reference
-          );
+          return await this.processAirtelWithdrawal(phoneNumber, amount, currency, reference);
         default:
           return {
             success: false,

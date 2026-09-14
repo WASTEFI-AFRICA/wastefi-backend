@@ -32,9 +32,9 @@ export class UserController {
         data: user,
       });
     } catch (error) {
-      logger.error('Failed to get current user', { 
-        error: error as Error, 
-        userId: req.user?.userId 
+      logger.error('Failed to get current user', {
+        error: error as Error,
+        userId: req.user?.userId,
       });
       res.status(500).json({
         success: false,
@@ -66,9 +66,9 @@ export class UserController {
         message: 'Profile updated successfully',
       });
     } catch (error) {
-      logger.error('Failed to update profile', { 
-        error: error as Error, 
-        userId: req.user?.userId 
+      logger.error('Failed to update profile', {
+        error: error as Error,
+        userId: req.user?.userId,
       });
       res.status(500).json({
         success: false,
@@ -101,9 +101,9 @@ export class UserController {
         message: 'KYC documents submitted successfully. Awaiting verification.',
       });
     } catch (error) {
-      logger.error('Failed to submit KYC', { 
-        error: error as Error, 
-        userId: req.user?.userId 
+      logger.error('Failed to submit KYC', {
+        error: error as Error,
+        userId: req.user?.userId,
       });
       res.status(500).json({
         success: false,
@@ -133,9 +133,9 @@ export class UserController {
         data: status,
       });
     } catch (error) {
-      logger.error('Failed to get KYC status', { 
-        error: error as Error, 
-        userId: req.user?.userId 
+      logger.error('Failed to get KYC status', {
+        error: error as Error,
+        userId: req.user?.userId,
       });
       res.status(500).json({
         success: false,
@@ -174,9 +174,9 @@ export class UserController {
         message: approved ? 'KYC approved successfully' : 'KYC rejected',
       });
     } catch (error) {
-      logger.error('Failed to verify KYC', { 
-        error: error as Error, 
-        userId: req.params.userId 
+      logger.error('Failed to verify KYC', {
+        error: error as Error,
+        userId: req.params.userId,
       });
       res.status(500).json({
         success: false,
@@ -237,9 +237,9 @@ export class UserController {
         data: user,
       });
     } catch (error) {
-      logger.error('Failed to get user by ID', { 
-        error: error as Error, 
-        userId: req.params.userId 
+      logger.error('Failed to get user by ID', {
+        error: error as Error,
+        userId: req.params.userId,
       });
       res.status(500).json({
         success: false,
@@ -270,9 +270,9 @@ export class UserController {
         message: 'User status updated successfully',
       });
     } catch (error) {
-      logger.error('Failed to update user status', { 
-        error: error as Error, 
-        userId: req.params.userId 
+      logger.error('Failed to update user status', {
+        error: error as Error,
+        userId: req.params.userId,
       });
       res.status(500).json({
         success: false,
@@ -298,9 +298,9 @@ export class UserController {
         message: 'User deleted successfully',
       });
     } catch (error) {
-      logger.error('Failed to delete user', { 
-        error: error as Error, 
-        userId: req.params.userId 
+      logger.error('Failed to delete user', {
+        error: error as Error,
+        userId: req.params.userId,
       });
       res.status(500).json({
         success: false,

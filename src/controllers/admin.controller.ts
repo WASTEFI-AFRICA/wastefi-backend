@@ -13,11 +13,7 @@ export class AdminController {
       const stats = await AdminService.getDashboardStats();
 
       // Log admin activity
-      AdminService.logActivity(
-        req.user!.userId,
-        'VIEW_DASHBOARD',
-        'Viewed dashboard statistics'
-      );
+      AdminService.logActivity(req.user!.userId, 'VIEW_DASHBOARD', 'Viewed dashboard statistics');
 
       res.status(200).json({
         success: true,
@@ -279,12 +275,10 @@ export class AdminController {
       }
 
       // Log export activity
-      AdminService.logActivity(
-        req.user!.userId,
-        'EXPORT_DATA',
-        `Exported ${type} data`,
-        { type, format }
-      );
+      AdminService.logActivity(req.user!.userId, 'EXPORT_DATA', `Exported ${type} data`, {
+        type,
+        format,
+      });
 
       if (format === 'csv') {
         // For CSV, we'll return JSON for now

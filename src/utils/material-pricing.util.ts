@@ -173,7 +173,10 @@ export class MaterialPricingUtil {
   /**
    * Calculate estimated earnings for planned collection
    */
-  static estimateEarnings(materialType: string, weight: number): {
+  static estimateEarnings(
+    materialType: string,
+    weight: number
+  ): {
     baseAmount: number;
     bonus: number;
     total: number;

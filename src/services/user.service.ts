@@ -139,12 +139,7 @@ export class UserService {
   /**
    * Verify KYC (Admin/Verifier only)
    */
-  static async verifyKYC(
-    userId: string,
-    approved: boolean,
-    verifierId: string,
-    notes?: string
-  ) {
+  static async verifyKYC(userId: string, approved: boolean, verifierId: string, notes?: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -328,24 +323,18 @@ export class UserService {
    * Get user statistics (for admin dashboard)
    */
   static async getUserStatistics() {
-    const [
-      totalUsers,
-      activeUsers,
-      pendingKYC,
-      approvedKYC,
-      rejectedKYC,
-      usersByRole,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
-      prisma.user.count({ where: { kycStatus: KYCStatus.PENDING } }),
-      prisma.user.count({ where: { kycStatus: KYCStatus.APPROVED } }),
-      prisma.user.count({ where: { kycStatus: KYCStatus.REJECTED } }),
-      prisma.user.groupBy({
-        by: ['role'],
-        _count: true,
-      }),
-    ]);
+    const [totalUsers, activeUsers, pendingKYC, approvedKYC, rejectedKYC, usersByRole] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
+        prisma.user.count({ where: { kycStatus: KYCStatus.PENDING } }),
+        prisma.user.count({ where: { kycStatus: KYCStatus.APPROVED } }),
+        prisma.user.count({ where: { kycStatus: KYCStatus.REJECTED } }),
+        prisma.user.groupBy({
+          by: ['role'],
+          _count: true,
+        }),
+      ]);
 
     return {
       totalUsers,
@@ -355,10 +344,13 @@ export class UserService {
         approved: approvedKYC,
         rejected: rejectedKYC,
       },
-      byRole: usersByRole.reduce((acc, item) => {
-        acc[item.role] = item._count;
-        return acc;
-      }, {} as Record<string, number>),
+      byRole: usersByRole.reduce(
+        (acc, item) => {
+          acc[item.role] = item._count;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     };
   }
 }

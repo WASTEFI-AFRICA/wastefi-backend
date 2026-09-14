@@ -107,11 +107,7 @@ export class NotificationService {
     const result: NotificationResult = {};
 
     if (options.sms && SMSService.isAvailable()) {
-      const smsResult = await SMSService.sendPaymentNotification(
-        phoneNumber,
-        amount,
-        currency
-      );
+      const smsResult = await SMSService.sendPaymentNotification(phoneNumber, amount, currency);
       result.sms = {
         success: smsResult.success,
         error: smsResult.error,
@@ -152,11 +148,7 @@ export class NotificationService {
     const result: NotificationResult = {};
 
     if (options.sms && SMSService.isAvailable()) {
-      const smsResult = await SMSService.sendCollectionVerified(
-        phoneNumber,
-        amount,
-        currency
-      );
+      const smsResult = await SMSService.sendCollectionVerified(phoneNumber, amount, currency);
       result.sms = {
         success: smsResult.success,
         error: smsResult.error,
@@ -259,11 +251,7 @@ export class NotificationService {
     const result: NotificationResult = {};
 
     if (options.sms && SMSService.isAvailable()) {
-      const smsResult = await SMSService.sendWithdrawalConfirmation(
-        phoneNumber,
-        amount,
-        currency
-      );
+      const smsResult = await SMSService.sendWithdrawalConfirmation(phoneNumber, amount, currency);
       result.sms = {
         success: smsResult.success,
         error: smsResult.error,

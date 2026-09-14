@@ -82,24 +82,18 @@ export class AdminService {
       const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       // Overview stats
-      const [
-        totalUsers,
-        activeUsers,
-        totalCollections,
-        totalTransactions,
-        pendingKYC,
-        revenue,
-      ] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { status: 'ACTIVE' } }),
-        prisma.wasteCollection.count(),
-        prisma.transaction.count(),
-        prisma.user.count({ where: { kycStatus: KYCStatus.PENDING } }),
-        prisma.transaction.aggregate({
-          where: { status: TransactionStatus.COMPLETED },
-          _sum: { amount: true },
-        }),
-      ]);
+      const [totalUsers, activeUsers, totalCollections, totalTransactions, pendingKYC, revenue] =
+        await Promise.all([
+          prisma.user.count(),
+          prisma.user.count({ where: { status: 'ACTIVE' } }),
+          prisma.wasteCollection.count(),
+          prisma.transaction.count(),
+          prisma.user.count({ where: { kycStatus: KYCStatus.PENDING } }),
+          prisma.transaction.aggregate({
+            where: { status: TransactionStatus.COMPLETED },
+            _sum: { amount: true },
+          }),
+        ]);
 
       // User stats
       const [usersByRole, usersByKYC, newUsersMonth, newUsersWeek] = await Promise.all([
@@ -145,29 +139,34 @@ export class AdminService {
       ]);
 
       // Transaction stats
-      const [transactionsByType, transactionsByMethod, transactionsByStatus, transactionsMonth, transactionsWeek] =
-        await Promise.all([
-          prisma.transaction.groupBy({
-            by: ['type'],
-            _count: true,
-            _sum: { amount: true },
-          }),
-          prisma.transaction.groupBy({
-            by: ['paymentMethod'],
-            _count: true,
-            _sum: { amount: true },
-          }),
-          prisma.transaction.groupBy({
-            by: ['status'],
-            _count: true,
-          }),
-          prisma.transaction.count({
-            where: { createdAt: { gte: startOfMonth } },
-          }),
-          prisma.transaction.count({
-            where: { createdAt: { gte: startOfWeek } },
-          }),
-        ]);
+      const [
+        transactionsByType,
+        transactionsByMethod,
+        transactionsByStatus,
+        transactionsMonth,
+        transactionsWeek,
+      ] = await Promise.all([
+        prisma.transaction.groupBy({
+          by: ['type'],
+          _count: true,
+          _sum: { amount: true },
+        }),
+        prisma.transaction.groupBy({
+          by: ['paymentMethod'],
+          _count: true,
+          _sum: { amount: true },
+        }),
+        prisma.transaction.groupBy({
+          by: ['status'],
+          _count: true,
+        }),
+        prisma.transaction.count({
+          where: { createdAt: { gte: startOfMonth } },
+        }),
+        prisma.transaction.count({
+          where: { createdAt: { gte: startOfWeek } },
+        }),
+      ]);
 
       // Collection point stats
       const [totalPoints, verifiedPoints, pointsByCountry] = await Promise.all([
@@ -205,7 +204,9 @@ export class AdminService {
       );
 
       // Sort by count and take top 5
-      const sortedPoints = pointsWithCounts.sort((a, b) => b.collectionsCount - a.collectionsCount).slice(0, 5);
+      const sortedPoints = pointsWithCounts
+        .sort((a, b) => b.collectionsCount - a.collectionsCount)
+        .slice(0, 5);
 
       return {
         overview: {
@@ -217,26 +218,35 @@ export class AdminService {
           pendingKYC,
         },
         userStats: {
-          byRole: usersByRole.reduce((acc, item) => {
-            acc[item.role] = item._count;
-            return acc;
-          }, {} as Record<string, number>),
-          byKYCStatus: usersByKYC.reduce((acc, item) => {
-            acc[item.kycStatus] = item._count;
-            return acc;
-          }, {} as Record<string, number>),
+          byRole: usersByRole.reduce(
+            (acc, item) => {
+              acc[item.role] = item._count;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
+          byKYCStatus: usersByKYC.reduce(
+            (acc, item) => {
+              acc[item.kycStatus] = item._count;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
           newUsersThisMonth: newUsersMonth,
           newUsersThisWeek: newUsersWeek,
         },
         collectionStats: {
           totalWeight: collectionsTotal._sum.weight || 0,
-          byMaterial: collectionsByMaterial.reduce((acc, item) => {
-            acc[item.materialType] = {
-              count: item._count,
-              weight: item._sum.weight || 0,
-            };
-            return acc;
-          }, {} as Record<string, { count: number; weight: number }>),
+          byMaterial: collectionsByMaterial.reduce(
+            (acc, item) => {
+              acc[item.materialType] = {
+                count: item._count,
+                weight: item._sum.weight || 0,
+              };
+              return acc;
+            },
+            {} as Record<string, { count: number; weight: number }>
+          ),
           byStatus: {
             PENDING: pendingCollections,
             VERIFIED: verifiedCollections,
@@ -246,34 +256,46 @@ export class AdminService {
         },
         transactionStats: {
           totalVolume: revenue._sum.amount || 0,
-          byType: transactionsByType.reduce((acc, item) => {
-            acc[item.type] = {
-              count: item._count,
-              volume: item._sum.amount || 0,
-            };
-            return acc;
-          }, {} as Record<string, { count: number; volume: number }>),
-          byMethod: transactionsByMethod.reduce((acc, item) => {
-            acc[item.paymentMethod] = {
-              count: item._count,
-              volume: item._sum.amount || 0,
-            };
-            return acc;
-          }, {} as Record<string, { count: number; volume: number }>),
-          byStatus: transactionsByStatus.reduce((acc, item) => {
-            acc[item.status] = item._count;
-            return acc;
-          }, {} as Record<string, number>),
+          byType: transactionsByType.reduce(
+            (acc, item) => {
+              acc[item.type] = {
+                count: item._count,
+                volume: item._sum.amount || 0,
+              };
+              return acc;
+            },
+            {} as Record<string, { count: number; volume: number }>
+          ),
+          byMethod: transactionsByMethod.reduce(
+            (acc, item) => {
+              acc[item.paymentMethod] = {
+                count: item._count,
+                volume: item._sum.amount || 0,
+              };
+              return acc;
+            },
+            {} as Record<string, { count: number; volume: number }>
+          ),
+          byStatus: transactionsByStatus.reduce(
+            (acc, item) => {
+              acc[item.status] = item._count;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
           thisMonth: transactionsMonth,
           thisWeek: transactionsWeek,
         },
         collectionPointStats: {
           total: totalPoints,
           verified: verifiedPoints,
-          byCounty: pointsByCountry.reduce((acc, item) => {
-            acc[item.country] = item._count;
-            return acc;
-          }, {} as Record<string, number>),
+          byCounty: pointsByCountry.reduce(
+            (acc, item) => {
+              acc[item.country] = item._count;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
           topCollectionPoints: sortedPoints,
         },
       };

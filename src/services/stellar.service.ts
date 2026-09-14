@@ -184,10 +184,7 @@ export class StellarService {
 
     if (user?.stellarPublicKey && user?.stellarSecretKey) {
       // Decrypt existing secret key
-      const decryptedSecret = EncryptionUtil.decrypt(
-        user.stellarSecretKey,
-        config.jwt.secret
-      );
+      const decryptedSecret = EncryptionUtil.decrypt(user.stellarSecretKey, config.jwt.secret);
       return {
         publicKey: user.stellarPublicKey,
         secretKey: decryptedSecret,
@@ -233,10 +230,7 @@ export class StellarService {
     }
 
     // Decrypt secret key
-    const decryptedSecret = EncryptionUtil.decrypt(
-      user.stellarSecretKey,
-      config.jwt.secret
-    );
+    const decryptedSecret = EncryptionUtil.decrypt(user.stellarSecretKey, config.jwt.secret);
 
     return {
       publicKey: user.stellarPublicKey,
@@ -267,12 +261,7 @@ export class StellarService {
 
       // Send payment from master account to collector
       const memo = `Waste Collection: ${collectionId.substring(0, 20)}`;
-      const result = await this.sendPayment(
-        masterSecret,
-        collectorWallet.publicKey,
-        amount,
-        memo
-      );
+      const result = await this.sendPayment(masterSecret, collectorWallet.publicKey, amount, memo);
 
       return result;
     } catch (error) {
@@ -303,10 +292,7 @@ export class StellarService {
 
       for (const tx of transactions.records) {
         // Get operations for this transaction
-        const operations = await this.server
-          .operations()
-          .forTransaction(tx.hash)
-          .call();
+        const operations = await this.server.operations().forTransaction(tx.hash).call();
 
         for (const op of operations.records) {
           if (op.type === 'payment') {

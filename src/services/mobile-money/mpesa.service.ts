@@ -44,15 +44,18 @@ export class MPesaService {
    */
   private async getAccessToken(): Promise<string> {
     try {
-      const auth = Buffer.from(
-        `${this.config.consumerKey}:${this.config.consumerSecret}`
-      ).toString('base64');
+      const auth = Buffer.from(`${this.config.consumerKey}:${this.config.consumerSecret}`).toString(
+        'base64'
+      );
 
-      const response = await axios.get(`${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      });
+      const response = await axios.get(
+        `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+          },
+        }
+      );
 
       return response.data.access_token;
     } catch (error) {
@@ -200,16 +203,12 @@ export class MPesaService {
         CheckoutRequestID: checkoutRequestID,
       };
 
-      const response = await axios.post(
-        `${this.baseUrl}/mpesa/stkpushquery/v1/query`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axios.post(`${this.baseUrl}/mpesa/stkpushquery/v1/query`, payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       return response.data;
     } catch (error: any) {

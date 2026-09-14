@@ -161,9 +161,7 @@ export class CollectionPointService {
         contactPhone: data.contactPhone,
         contactEmail: data.contactEmail,
         operatingHours: data.operatingHours ? JSON.stringify(data.operatingHours) : null,
-        acceptedMaterials: data.acceptedMaterials
-          ? JSON.stringify(data.acceptedMaterials)
-          : null,
+        acceptedMaterials: data.acceptedMaterials ? JSON.stringify(data.acceptedMaterials) : null,
         isActive: true,
       },
     });

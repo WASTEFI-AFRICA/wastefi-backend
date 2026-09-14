@@ -84,12 +84,8 @@ router.get(
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     query('type').optional().isString(),
-    query('status')
-      .optional()
-      .isIn(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED']),
-    query('paymentMethod')
-      .optional()
-      .isIn(['STELLAR', 'MPESA', 'MTN_MONEY', 'AIRTEL_MONEY']),
+    query('status').optional().isIn(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED']),
+    query('paymentMethod').optional().isIn(['STELLAR', 'MPESA', 'MTN_MONEY', 'AIRTEL_MONEY']),
     query('userId').optional().isUUID(),
     query('startDate').optional().isISO8601(),
     query('endDate').optional().isISO8601(),

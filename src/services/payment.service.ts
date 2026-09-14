@@ -359,11 +359,7 @@ export class PaymentService {
   /**
    * Get user transaction history
    */
-  static async getUserTransactions(
-    userId: string,
-    page: number = 1,
-    limit: number = 20
-  ) {
+  static async getUserTransactions(userId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
 
     const [transactions, total] = await Promise.all([
@@ -639,20 +635,26 @@ export class PaymentService {
     return {
       totalVolume: totalVolume._sum.amount || 0,
       totalCount: totalVolume._count,
-      byType: byType.reduce((acc, item) => {
-        acc[item.type] = {
-          count: item._count,
-          volume: item._sum.amount || 0,
-        };
-        return acc;
-      }, {} as Record<string, any>),
-      byMethod: byMethod.reduce((acc, item) => {
-        acc[item.paymentMethod] = {
-          count: item._count,
-          volume: item._sum.amount || 0,
-        };
-        return acc;
-      }, {} as Record<string, any>),
+      byType: byType.reduce(
+        (acc, item) => {
+          acc[item.type] = {
+            count: item._count,
+            volume: item._sum.amount || 0,
+          };
+          return acc;
+        },
+        {} as Record<string, any>
+      ),
+      byMethod: byMethod.reduce(
+        (acc, item) => {
+          acc[item.paymentMethod] = {
+            count: item._count,
+            volume: item._sum.amount || 0,
+          };
+          return acc;
+        },
+        {} as Record<string, any>
+      ),
       recentTransactions,
     };
   }

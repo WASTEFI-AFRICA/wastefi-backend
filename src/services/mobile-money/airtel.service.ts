@@ -100,18 +100,14 @@ export class AirtelService {
         transactionId: request.transactionId,
       });
 
-      const response = await axios.post(
-        `${this.baseUrl}/merchant/v1/payments/`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'X-Country': 'KE',
-            'X-Currency': request.currency,
-          },
-        }
-      );
+      const response = await axios.post(`${this.baseUrl}/merchant/v1/payments/`, payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Country': 'KE',
+          'X-Currency': request.currency,
+        },
+      });
 
       if (response.data.status?.success) {
         logger.info('Airtel: Payment initiated successfully', {
@@ -149,16 +145,13 @@ export class AirtelService {
     try {
       const accessToken = await this.getAccessToken();
 
-      const response = await axios.get(
-        `${this.baseUrl}/standard/v1/payments/${transactionId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'X-Country': 'KE',
-            'X-Currency': 'KES',
-          },
-        }
-      );
+      const response = await axios.get(`${this.baseUrl}/standard/v1/payments/${transactionId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Country': 'KE',
+          'X-Currency': 'KES',
+        },
+      });
 
       return {
         success: true,
@@ -206,18 +199,14 @@ export class AirtelService {
         transactionId,
       });
 
-      const response = await axios.post(
-        `${this.baseUrl}/standard/v1/disbursements/`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'X-Country': 'KE',
-            'X-Currency': currency,
-          },
-        }
-      );
+      const response = await axios.post(`${this.baseUrl}/standard/v1/disbursements/`, payload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Country': 'KE',
+          'X-Currency': currency,
+        },
+      });
 
       if (response.data.status?.success) {
         return {

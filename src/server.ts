@@ -17,10 +17,7 @@ import { RecycleGraphService } from './services/recyclegraph.service';
 import { WebSocketService } from './services/websocket.service';
 import MetricsService from './services/metrics.service';
 import { logger } from './utils/logger.util';
-import {
-  errorHandler,
-  notFoundHandler,
-} from './middleware/error.middleware';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import {
   addRequestId,
   requestLogger,
@@ -125,10 +122,14 @@ import materialPassportRoutes from './routes/material-passport.routes';
 import metricsRoutes from './routes/metrics.routes';
 
 // API Documentation
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'WasteFi API Documentation',
-}));
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'WasteFi API Documentation',
+  })
+);
 
 // API specification endpoint (JSON)
 app.get('/api/docs.json', (_req, res) => {

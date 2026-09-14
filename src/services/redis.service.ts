@@ -4,7 +4,7 @@ import { logger } from '../utils/logger.util';
 
 /**
  * Redis Service for caching and session management
- * 
+ *
  * Features:
  * - Connection management with auto-reconnect
  * - Key-value caching with TTL
@@ -314,7 +314,7 @@ class RedisService {
       if (!this.isAvailable()) return 0;
 
       const count = await this.client!.incr(key);
-      
+
       // Set expiration only on first increment
       if (count === 1) {
         await this.client!.expire(key, ttl);
@@ -470,7 +470,7 @@ class RedisService {
       if (!this.isAvailable()) return [];
 
       const values = await this.client!.lrange(key, start, stop);
-      return values.map(v => {
+      return values.map((v) => {
         try {
           return JSON.parse(v);
         } catch {
@@ -617,5 +617,3 @@ class RedisService {
 
 // Export singleton instance
 export default new RedisService();
-
-

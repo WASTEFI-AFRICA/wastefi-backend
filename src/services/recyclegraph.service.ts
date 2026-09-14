@@ -321,8 +321,7 @@ export class RecycleGraphService {
 
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : 'Failed to get recycling instructions',
+        error: error instanceof Error ? error.message : 'Failed to get recycling instructions',
       };
     }
   }

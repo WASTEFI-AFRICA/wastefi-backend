@@ -17,10 +17,7 @@ export class WasteCollectionController {
         return;
       }
 
-      const collection = await WasteCollectionService.recordCollection(
-        req.user.userId,
-        req.body
-      );
+      const collection = await WasteCollectionService.recordCollection(req.user.userId, req.body);
 
       logger.info('Waste collection recorded', {
         collectionId: collection.id,

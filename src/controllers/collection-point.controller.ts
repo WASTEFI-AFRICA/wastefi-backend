@@ -48,12 +48,7 @@ export class CollectionPointController {
       const radius = req.query.radius ? parseFloat(req.query.radius as string) : 10;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
-      const nearby = await CollectionPointService.findNearby(
-        latitude,
-        longitude,
-        radius,
-        limit
-      );
+      const nearby = await CollectionPointService.findNearby(latitude, longitude, radius, limit);
 
       res.status(200).json({
         success: true,

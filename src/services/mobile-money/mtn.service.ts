@@ -44,9 +44,7 @@ export class MTNService {
    */
   private async getAccessToken(): Promise<string> {
     try {
-      const auth = Buffer.from(`${this.config.userId}:${this.config.apiSecret}`).toString(
-        'base64'
-      );
+      const auth = Buffer.from(`${this.config.userId}:${this.config.apiSecret}`).toString('base64');
 
       const response = await axios.post(
         `${this.baseUrl}/collection/token/`,

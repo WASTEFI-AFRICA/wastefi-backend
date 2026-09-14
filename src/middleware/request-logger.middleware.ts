@@ -10,11 +10,7 @@ export interface RequestWithId extends Request {
 /**
  * Add unique request ID to each request
  */
-export const addRequestId = (
-  req: RequestWithId,
-  _res: Response,
-  next: NextFunction
-): void => {
+export const addRequestId = (req: RequestWithId, _res: Response, next: NextFunction): void => {
   req.requestId = uuidv4();
   req.startTime = Date.now();
   next();
@@ -23,11 +19,7 @@ export const addRequestId = (
 /**
  * Log all HTTP requests
  */
-export const requestLogger = (
-  req: RequestWithId,
-  res: Response,
-  next: NextFunction
-): void => {
+export const requestLogger = (req: RequestWithId, res: Response, next: NextFunction): void => {
   const startTime = req.startTime || Date.now();
 
   // Log request
@@ -62,11 +54,7 @@ export const requestLogger = (
 /**
  * Performance monitoring middleware
  */
-export const performanceMonitor = (
-  req: RequestWithId,
-  res: Response,
-  next: NextFunction
-): void => {
+export const performanceMonitor = (req: RequestWithId, res: Response, next: NextFunction): void => {
   const startTime = req.startTime || Date.now();
 
   res.on('finish', () => {

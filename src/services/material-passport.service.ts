@@ -165,16 +165,12 @@ export class MaterialPassportService {
         ...passport,
         dimensions: passport.dimensions ? JSON.parse(passport.dimensions) : null,
         composition: passport.composition ? JSON.parse(passport.composition) : null,
-        chainOfCustody: passport.chainOfCustody
-          ? JSON.parse(passport.chainOfCustody)
-          : [],
+        chainOfCustody: passport.chainOfCustody ? JSON.parse(passport.chainOfCustody) : [],
       };
 
       // Get RecycleGraph data if available
       if (passport.recycleGraphId && RecycleGraphService.isAvailable()) {
-        const rgResult = await RecycleGraphService.getMaterialPassport(
-          passport.recycleGraphId
-        );
+        const rgResult = await RecycleGraphService.getMaterialPassport(passport.recycleGraphId);
 
         if (rgResult.success && rgResult.data) {
           return {
@@ -218,9 +214,7 @@ export class MaterialPassportService {
       }
 
       // Update chain of custody
-      const chainOfCustody = passport.chainOfCustody
-        ? JSON.parse(passport.chainOfCustody)
-        : [];
+      const chainOfCustody = passport.chainOfCustody ? JSON.parse(passport.chainOfCustody) : [];
 
       chainOfCustody.push({
         timestamp: new Date(),
@@ -288,9 +282,7 @@ export class MaterialPassportService {
       // Verify in RecycleGraph if available
       let verified = false;
       if (passport.recycleGraphId && RecycleGraphService.isAvailable()) {
-        const rgResult = await RecycleGraphService.verifyPassport(
-          passport.recycleGraphId
-        );
+        const rgResult = await RecycleGraphService.verifyPassport(passport.recycleGraphId);
         verified = rgResult.success;
       } else {
         verified = true; // Default to verified if RecycleGraph not available

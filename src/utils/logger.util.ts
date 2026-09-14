@@ -55,8 +55,8 @@ export class Logger {
   private colorize(level: LogLevel, message: string): string {
     const colors = {
       [LogLevel.ERROR]: '\x1b[31m', // Red
-      [LogLevel.WARN]: '\x1b[33m',  // Yellow
-      [LogLevel.INFO]: '\x1b[36m',  // Cyan
+      [LogLevel.WARN]: '\x1b[33m', // Yellow
+      [LogLevel.INFO]: '\x1b[36m', // Cyan
       [LogLevel.DEBUG]: '\x1b[90m', // Gray
     };
     const reset = '\x1b[0m';
@@ -92,7 +92,11 @@ export class Logger {
     }
   }
 
-  private async persistLog(level: LogLevel, message: string, metadata?: LogMetadata): Promise<void> {
+  private async persistLog(
+    level: LogLevel,
+    message: string,
+    metadata?: LogMetadata
+  ): Promise<void> {
     try {
       // This will be implemented when we add database logging
       // For now, just a placeholder
@@ -128,9 +132,16 @@ export class Logger {
   }
 
   // HTTP request logging
-  public http(method: string, url: string, statusCode: number, duration: number, metadata?: LogMetadata): void {
+  public http(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    metadata?: LogMetadata
+  ): void {
     const message = `${method} ${url} ${statusCode} - ${duration}ms`;
-    const level = statusCode >= 500 ? LogLevel.ERROR : statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
+    const level =
+      statusCode >= 500 ? LogLevel.ERROR : statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
     this.log(level, message, { ...metadata, duration });
   }
 

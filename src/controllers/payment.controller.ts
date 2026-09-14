@@ -246,10 +246,7 @@ export class PaymentController {
     try {
       logger.info('M-Pesa callback received', { body: req.body });
 
-      await PaymentService.processMobileMoneyCallback(
-        PaymentMethod.MPESA,
-        req.body
-      );
+      await PaymentService.processMobileMoneyCallback(PaymentMethod.MPESA, req.body);
 
       // M-Pesa expects a response
       res.status(200).json({
@@ -292,10 +289,7 @@ export class PaymentController {
     try {
       logger.info('Airtel callback received', { body: req.body });
 
-      await PaymentService.processMobileMoneyCallback(
-        PaymentMethod.AIRTEL_MONEY,
-        req.body
-      );
+      await PaymentService.processMobileMoneyCallback(PaymentMethod.AIRTEL_MONEY, req.body);
 
       res.status(200).json({
         status: 'SUCCESS',

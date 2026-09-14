@@ -84,11 +84,7 @@ router.get(
   '/statistics',
   authenticateJWT,
   requireRole('ADMIN'),
-  [
-    query('startDate').optional().isISO8601(),
-    query('endDate').optional().isISO8601(),
-    validate,
-  ],
+  [query('startDate').optional().isISO8601(), query('endDate').optional().isISO8601(), validate],
   PaymentController.getStatistics
 );
 

@@ -105,7 +105,10 @@ export class SMSService {
   /**
    * Send welcome message
    */
-  static async sendWelcomeMessage(phoneNumber: string, firstName: string): Promise<SendSMSResponse> {
+  static async sendWelcomeMessage(
+    phoneNumber: string,
+    firstName: string
+  ): Promise<SendSMSResponse> {
     const message = `Welcome to WasteFi, ${firstName}! Start collecting waste and earning rewards today. Visit our app to get started.`;
     return this.sendSMS({ to: phoneNumber, message });
   }

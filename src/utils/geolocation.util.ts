@@ -7,12 +7,7 @@ export class GeolocationUtil {
    * Calculate distance between two coordinates using Haversine formula
    * Returns distance in kilometers
    */
-  static calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
+  static calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);
@@ -102,9 +97,7 @@ export class GeolocationUtil {
     const y = Math.sin(dLon) * Math.cos(this.toRadians(lat2));
     const x =
       Math.cos(this.toRadians(lat1)) * Math.sin(this.toRadians(lat2)) -
-      Math.sin(this.toRadians(lat1)) *
-        Math.cos(this.toRadians(lat2)) *
-        Math.cos(dLon);
+      Math.sin(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) * Math.cos(dLon);
 
     const bearing = this.toDegrees(Math.atan2(y, x));
     return (bearing + 360) % 360;
@@ -150,8 +143,7 @@ export class GeolocationUtil {
     const lat3 = Math.atan2(
       Math.sin(this.toRadians(lat1)) + Math.sin(this.toRadians(lat2)),
       Math.sqrt(
-        (Math.cos(this.toRadians(lat1)) + Bx) * (Math.cos(this.toRadians(lat1)) + Bx) +
-          By * By
+        (Math.cos(this.toRadians(lat1)) + Bx) * (Math.cos(this.toRadians(lat1)) + Bx) + By * By
       )
     );
 

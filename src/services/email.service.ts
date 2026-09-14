@@ -267,7 +267,9 @@ export class EmailService {
       <h2>KYC Verification Update</h2>
       <p>Hello ${firstName},</p>
       <p>We were unable to approve your KYC verification${
-        reason ? ` due to the following reason:</p><p style="color: #d9534f;"><strong>${reason}</strong></p>` : '.'
+        reason
+          ? ` due to the following reason:</p><p style="color: #d9534f;"><strong>${reason}</strong></p>`
+          : '.'
       }</p>
       <p>Please update your documents and submit them again for verification.</p>
       <p>If you have any questions, please contact our support team.</p>

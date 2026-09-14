@@ -47,10 +47,7 @@ export class WasteCollectionService {
     }
 
     // Calculate payment amount based on material and weight
-    const paymentAmount = MaterialPricingUtil.calculatePayment(
-      data.materialType,
-      data.weight
-    );
+    const paymentAmount = MaterialPricingUtil.calculatePayment(data.materialType, data.weight);
 
     // Create collection record
     const collection = await prisma.wasteCollection.create({
@@ -120,11 +117,7 @@ export class WasteCollectionService {
   /**
    * List collections with filters and pagination
    */
-  static async listCollections(
-    filters: CollectionFilters,
-    page: number = 1,
-    limit: number = 20
-  ) {
+  static async listCollections(filters: CollectionFilters, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -278,9 +271,7 @@ export class WasteCollectionService {
       throw new Error('Collection not found');
     }
 
-    const existingUrls = collection.imageUrls
-      ? JSON.parse(collection.imageUrls)
-      : [];
+    const existingUrls = collection.imageUrls ? JSON.parse(collection.imageUrls) : [];
     const updatedUrls = [...existingUrls, ...imageUrls];
 
     return prisma.wasteCollection.update({
@@ -306,13 +297,7 @@ export class WasteCollectionService {
       if (filters.endDate) where.createdAt.lte = filters.endDate;
     }
 
-    const [
-      totalCollections,
-      totalWeight,
-      totalPayments,
-      byMaterial,
-      byStatus,
-    ] = await Promise.all([
+    const [totalCollections, totalWeight, totalPayments, byMaterial, byStatus] = await Promise.all([
       prisma.wasteCollection.count({ where }),
       prisma.wasteCollection.aggregate({
         where,
@@ -348,10 +333,13 @@ export class WasteCollectionService {
         totalWeight: item._sum.weight || 0,
         totalPayment: item._sum.paymentAmount || 0,
       })),
-      byStatus: byStatus.reduce((acc, item) => {
-        acc[item.paymentStatus] = item._count;
-        return acc;
-      }, {} as Record<string, number>),
+      byStatus: byStatus.reduce(
+        (acc, item) => {
+          acc[item.paymentStatus] = item._count;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     };
   }
 

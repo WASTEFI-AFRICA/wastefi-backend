@@ -97,10 +97,7 @@ export class AuthService {
   /**
    * Create API key for user
    */
-  static async createApiKey(
-    userId: string,
-    data: ApiKeyCreateData
-  ): Promise<ApiKeyResponse> {
+  static async createApiKey(userId: string, data: ApiKeyCreateData): Promise<ApiKeyResponse> {
     // Generate API key
     const apiKey = EncryptionUtil.generateApiKey();
     const hashedKey = EncryptionUtil.hashApiKey(apiKey);
