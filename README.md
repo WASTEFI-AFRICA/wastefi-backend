@@ -2,6 +2,11 @@
 
 **API, Integrations, and Business Logic**
 
+![CI](https://github.com/wastefi/backend/workflows/CI/badge.svg)
+![CD](https://github.com/wastefi/backend/workflows/CD/badge.svg)
+[![codecov](https://codecov.io/gh/wastefi/backend/branch/main/graph/badge.svg)](https://codecov.io/gh/wastefi/backend)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Overview
 
 WasteFi Backend provides the core API and business logic for the WasteFi platform - a financial inclusion solution through waste collection powered by open material standards.

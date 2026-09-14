@@ -1,0 +1,62 @@
+name: Scheduled Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Backup Production Database
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Create database backup
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/wastefi-backend
+            ./scripts/backup-db.sh
+      
+      - name: Verify backup
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/wastefi-backend/backups/db
+            LATEST_BACKUP=$(ls -t wastefi_*.sql.gz | head -1)
+            if [ -f "$LATEST_BACKUP" ]; then
+              SIZE=$(du -h "$LATEST_BACKUP" | cut -f1)
+              echo "Backup created successfully: $LATEST_BACKUP (Size: $SIZE)"
+              exit 0
+            else
+              echo "Backup verification failed"
+              exit 1
+            fi
+      
+      - name: Upload backup to S3 (optional)
+        if: false  # Enable if using S3
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/wastefi-backend/backups/db
+            LATEST_BACKUP=$(ls -t wastefi_*.sql.gz | head -1)
+            aws s3 cp "$LATEST_BACKUP" s3://wastefi-backups/db/
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Database backup failed!"
+          echo "Please check the backup process immediately"
