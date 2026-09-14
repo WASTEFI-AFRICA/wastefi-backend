@@ -23,6 +23,7 @@ GET /api/v1/collection-points?city=Nairobi&limit=20
 ```
 
 Query Parameters:
+
 - `city` - Filter by city name (partial match)
 - `country` - Filter by country (default: Kenya)
 - `latitude` - User's latitude (for distance filtering)
@@ -31,6 +32,7 @@ Query Parameters:
 - `limit` - Maximum results (default: 50, max: 100)
 
 Response:
+
 ```json
 {
   "success": true,
@@ -74,12 +76,14 @@ GET /api/v1/collection-points/nearby?latitude=-1.2921&longitude=36.8219&radius=5
 ```
 
 Query Parameters (Required):
+
 - `latitude` - Your latitude (-90 to 90)
 - `longitude` - Your longitude (-180 to 180)
 - `radius` - Search radius in km (default: 10, max: 100)
 - `limit` - Max results (default: 10, max: 50)
 
 Response:
+
 ```json
 {
   "success": true,
@@ -116,6 +120,7 @@ GET /api/v1/collection-points/cp-123
 ```
 
 Response includes collection statistics:
+
 ```json
 {
   "success": true,
@@ -203,8 +208,10 @@ The system uses the **Haversine formula** for calculating great-circle distances
 ```typescript
 // Calculate distance between two points
 const distance = GeolocationUtil.calculateDistance(
-  lat1, lon1,  // User location
-  lat2, lon2   // Collection point
+  lat1,
+  lon1, // User location
+  lat2,
+  lon2 // Collection point
 );
 // Returns distance in kilometers (e.g., 2.45)
 ```
@@ -223,11 +230,7 @@ const isValid = GeolocationUtil.isValidCoordinate(latitude, longitude);
 Get bounding box for efficient database queries:
 
 ```typescript
-const bbox = GeolocationUtil.getBoundingBox(
-  latitude,
-  longitude,
-  radiusKm
-);
+const bbox = GeolocationUtil.getBoundingBox(latitude, longitude, radiusKm);
 // Returns: { minLat, maxLat, minLon, maxLon }
 ```
 
@@ -255,14 +258,14 @@ navigator.geolocation.getCurrentPosition(async (position) => {
   // 2. Find nearby collection points
   const response = await fetch(
     `/api/v1/collection-points/nearby?` +
-    `latitude=${latitude}&longitude=${longitude}&` +
-    `radius=5&limit=5`
+      `latitude=${latitude}&longitude=${longitude}&` +
+      `radius=5&limit=5`
   );
 
   const { data } = await response.json();
 
   // 3. Display on map or list
-  data.forEach(point => {
+  data.forEach((point) => {
     console.log(`${point.name} - ${point.distance}km away`);
   });
 });
@@ -277,23 +280,23 @@ import { Map, Marker } from 'mapbox-gl';
 const map = new Map({
   container: 'map',
   center: [longitude, latitude],
-  zoom: 12
+  zoom: 12,
 });
 
 // Add user location marker
-new Marker({ color: 'blue' })
-  .setLngLat([longitude, latitude])
-  .addTo(map);
+new Marker({ color: 'blue' }).setLngLat([longitude, latitude]).addTo(map);
 
 // Add collection point markers
-collectionPoints.forEach(point => {
+collectionPoints.forEach((point) => {
   new Marker({ color: 'green' })
     .setLngLat([point.longitude, point.latitude])
-    .setPopup(new Popup().setHTML(
-      `<h3>${point.name}</h3>
+    .setPopup(
+      new Popup().setHTML(
+        `<h3>${point.name}</h3>
        <p>${point.distance}km away</p>
        <p>${point.address}</p>`
-    ))
+      )
+    )
     .addTo(map);
 });
 ```
@@ -303,9 +306,11 @@ collectionPoints.forEach(point => {
 ```javascript
 // Generate Google Maps directions URL
 const getDirectionsUrl = (point) => {
-  return `https://www.google.com/maps/dir/?api=1&` +
+  return (
+    `https://www.google.com/maps/dir/?api=1&` +
     `destination=${point.latitude},${point.longitude}&` +
-    `travelmode=driving`;
+    `travelmode=driving`
+  );
 };
 
 // Open in browser or maps app
@@ -365,9 +370,7 @@ const isOpenNow = (operatingHours) => {
 ```javascript
 // Find collection points accepting specific materials
 const findByMaterial = (materialType) => {
-  return collectionPoints.filter(point =>
-    point.acceptedMaterials.includes(materialType)
-  );
+  return collectionPoints.filter((point) => point.acceptedMaterials.includes(materialType));
 };
 
 const petPoints = findByMaterial('PET');
@@ -410,7 +413,7 @@ let cacheTime = 0;
 
 const getNearbyWithCache = async (lat, lon, radius) => {
   const now = Date.now();
-  if (cachedPoints && (now - cacheTime) < CACHE_DURATION) {
+  if (cachedPoints && now - cacheTime < CACHE_DURATION) {
     return cachedPoints;
   }
 
@@ -424,6 +427,7 @@ const getNearbyWithCache = async (lat, lon, radius) => {
 ### Database Indexing
 
 The schema includes indexes on:
+
 - `latitude, longitude` - For geospatial queries
 - `isActive` - For filtering active points
 - `city` - For city-based filtering
@@ -433,6 +437,7 @@ The schema includes indexes on:
 ### No Results Found
 
 **Check:**
+
 - Location permissions enabled
 - Radius large enough (try 20km)
 - Collection points exist in area
@@ -441,6 +446,7 @@ The schema includes indexes on:
 ### Incorrect Distances
 
 **Check:**
+
 - Coordinates are in correct format (decimal degrees)
 - Latitude/longitude not swapped
 - Using correct units (kilometers vs miles)
@@ -448,6 +454,7 @@ The schema includes indexes on:
 ### Slow Queries
 
 **Optimize:**
+
 - Reduce search radius
 - Limit number of results
 - Use city filter first
@@ -500,6 +507,7 @@ curl -X POST http://localhost:3000/api/v1/collection-points \
 ## Support
 
 For collection point issues:
+
 - Check API documentation
 - Verify coordinates format
 - Test with known locations

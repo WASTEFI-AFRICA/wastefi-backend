@@ -48,25 +48,30 @@ The `MetricsService` provides comprehensive application metrics using Prometheus
 ### Available Metrics
 
 #### HTTP Metrics
+
 - `http_request_duration_seconds` - Request duration histogram
 - `http_requests_total` - Total HTTP requests counter
 - `http_request_errors_total` - HTTP errors counter
 
 #### Database Metrics
+
 - `db_query_duration_seconds` - Query duration histogram
 - `db_connection_pool_size` - Connection pool gauge
 
 #### Business Metrics
+
 - `collections_total` - Waste collections counter
 - `payments_total` - Payments processed counter
 - `users_total` - Registered users gauge
 - `wallet_transactions_total` - Wallet transactions counter
 
 #### Cache Metrics
+
 - `cache_hits_total` - Cache hits counter
 - `cache_misses_total` - Cache misses counter
 
 #### System Metrics (default)
+
 - `process_cpu_seconds_total` - CPU usage
 - `process_resident_memory_bytes` - Memory usage
 - `nodejs_eventloop_lag_seconds` - Event loop lag
@@ -76,11 +81,13 @@ The `MetricsService` provides comprehensive application metrics using Prometheus
 ### Accessing Metrics
 
 **Prometheus Format:**
+
 ```
 GET /metrics
 ```
 
 **JSON Format:**
+
 ```
 GET /metrics/json
 ```
@@ -175,49 +182,65 @@ docker-compose -f docker-compose.monitoring.yml up -d
 ### Key Panels
 
 #### 1. Request Rate
+
 Shows requests per second by endpoint
+
 ```promql
 rate(http_requests_total[5m])
 ```
 
 #### 2. Response Time (p95)
+
 95th percentile response time
+
 ```promql
 histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
 ```
 
 #### 3. Error Rate
+
 Errors per second
+
 ```promql
 rate(http_request_errors_total[5m])
 ```
 
 #### 4. Active Users
+
 Current number of users
+
 ```promql
 sum(users_total)
 ```
 
 #### 5. Collections Today
+
 Collections in last 24 hours
+
 ```promql
 sum(increase(collections_total[24h]))
 ```
 
 #### 6. Payments Processed
+
 Successful payments today
+
 ```promql
 sum(increase(payments_total{status="COMPLETED"}[24h]))
 ```
 
 #### 7. Cache Hit Rate
+
 Percentage of cache hits
+
 ```promql
 rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
 ```
 
 #### 8. Database Performance
+
 Query duration by operation
+
 ```promql
 histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))
 ```
@@ -252,8 +275,8 @@ Defined in `monitoring/alerts/api-alerts.yml`
   labels:
     severity: warning
   annotations:
-    summary: "High API error rate detected"
-    description: "Error rate is {{ $value }}"
+    summary: 'High API error rate detected'
+    description: 'Error rate is {{ $value }}'
 ```
 
 #### Service Down Alert
@@ -265,7 +288,7 @@ Defined in `monitoring/alerts/api-alerts.yml`
   labels:
     severity: critical
   annotations:
-    summary: "WasteFi API is down"
+    summary: 'WasteFi API is down'
 ```
 
 ### Alertmanager Configuration
@@ -306,18 +329,18 @@ docker-compose restart alertmanager
 
 #### Response Time Targets
 
-| Percentile | Target | Alert Threshold |
-|------------|--------|-----------------|
-| p50 | < 100ms | 200ms |
-| p95 | < 500ms | 1s |
-| p99 | < 1s | 2s |
+| Percentile | Target  | Alert Threshold |
+| ---------- | ------- | --------------- |
+| p50        | < 100ms | 200ms           |
+| p95        | < 500ms | 1s              |
+| p99        | < 1s    | 2s              |
 
 #### Error Rate Targets
 
 | Error Type | Target | Alert Threshold |
-|------------|--------|-----------------|
-| 4xx errors | < 2% | 5% |
-| 5xx errors | < 0.1% | 0.5% |
+| ---------- | ------ | --------------- |
+| 4xx errors | < 2%   | 5%              |
+| 5xx errors | < 0.1% | 0.5%            |
 
 #### Availability
 
@@ -327,18 +350,21 @@ docker-compose restart alertmanager
 ### Business Metrics
 
 #### Collections
+
 - Total collections per day
 - Collections by material type
 - Verification rate
 - Average weight per collection
 
 #### Payments
+
 - Payment success rate
 - Payment processing time
 - Total value processed
 - Payment method distribution
 
 #### Users
+
 - Active users
 - New registrations per day
 - KYC completion rate
@@ -347,16 +373,19 @@ docker-compose restart alertmanager
 ### System Metrics
 
 #### Resource Usage
+
 - CPU usage < 70%
 - Memory usage < 80%
 - Disk usage < 85%
 
 #### Database
+
 - Query latency p95 < 100ms
 - Connection pool utilization < 80%
 - Transaction rate
 
 #### Cache
+
 - Hit rate > 70%
 - Memory usage
 - Eviction rate
@@ -401,19 +430,20 @@ k6 run loadtest.js
 ```
 
 **loadtest.js:**
+
 ```javascript
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '2m', target: 100 },  // Ramp up
-    { duration: '5m', target: 100 },  // Stay at 100
-    { duration: '2m', target: 0 },    // Ramp down
+    { duration: '2m', target: 100 }, // Ramp up
+    { duration: '5m', target: 100 }, // Stay at 100
+    { duration: '2m', target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500'],  // 95% < 500ms
-    http_req_failed: ['rate<0.01'],     // <1% errors
+    http_req_duration: ['p(95)<500'], // 95% < 500ms
+    http_req_failed: ['rate<0.01'], // <1% errors
   },
 };
 
@@ -429,16 +459,20 @@ export default function () {
 ### High Response Time
 
 **Symptoms:**
+
 - p95 latency > 1s
 - Slow user experience
 
 **Investigation:**
+
 1. Check database queries
+
    ```promql
    histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))
    ```
 
 2. Review slow endpoints
+
    ```promql
    topk(5, http_request_duration_seconds{quantile="0.95"})
    ```
@@ -449,6 +483,7 @@ export default function () {
    ```
 
 **Solutions:**
+
 - Add database indexes
 - Implement caching
 - Optimize queries
@@ -457,16 +492,20 @@ export default function () {
 ### High Error Rate
 
 **Symptoms:**
+
 - Error rate > 5%
 - Failed requests
 
 **Investigation:**
+
 1. Check error distribution
+
    ```promql
    rate(http_request_errors_total[5m])
    ```
 
 2. Review error logs
+
    ```bash
    docker-compose logs api | grep ERROR
    ```
@@ -477,6 +516,7 @@ export default function () {
    - External APIs
 
 **Solutions:**
+
 - Fix application bugs
 - Improve error handling
 - Add retry logic
@@ -485,16 +525,20 @@ export default function () {
 ### Memory Leak
 
 **Symptoms:**
+
 - Memory usage increasing over time
 - Out of memory errors
 
 **Investigation:**
+
 1. Monitor memory trend
+
    ```promql
    process_resident_memory_bytes / 1024 / 1024
    ```
 
 2. Take heap snapshot
+
    ```bash
    docker exec api kill -USR2 1
    ```
@@ -502,6 +546,7 @@ export default function () {
 3. Analyze with Chrome DevTools
 
 **Solutions:**
+
 - Fix memory leaks in code
 - Implement connection pooling
 - Clear unused caches
@@ -510,22 +555,25 @@ export default function () {
 ### Database Performance
 
 **Symptoms:**
+
 - Slow queries
 - Connection pool exhausted
 
 **Investigation:**
+
 ```sql
 -- Check slow queries
-SELECT * FROM pg_stat_statements 
-ORDER BY mean_time DESC 
+SELECT * FROM pg_stat_statements
+ORDER BY mean_time DESC
 LIMIT 10;
 
 -- Check connection pool
-SELECT count(*) as connections 
+SELECT count(*) as connections
 FROM pg_stat_activity;
 ```
 
 **Solutions:**
+
 - Add indexes
 - Optimize queries
 - Increase pool size
@@ -534,26 +582,31 @@ FROM pg_stat_activity;
 ## Best Practices
 
 ### 1. Define SLOs
+
 - Availability: 99.9%
 - Latency p95: < 500ms
 - Error rate: < 1%
 
 ### 2. Monitor User Experience
+
 - Track real user metrics
 - Monitor critical user journeys
 - Alert on degraded experience
 
 ### 3. Capacity Planning
+
 - Monitor resource trends
 - Plan for growth
 - Scale proactively
 
 ### 4. Incident Response
+
 - Define alert severity
 - Create runbooks
 - Practice incident drills
 
 ### 5. Regular Reviews
+
 - Weekly performance review
 - Monthly capacity planning
 - Quarterly optimization
@@ -568,6 +621,7 @@ FROM pg_stat_activity;
 ## Support
 
 For monitoring issues:
+
 - Check Prometheus targets
 - Review Grafana queries
 - Verify metrics endpoint

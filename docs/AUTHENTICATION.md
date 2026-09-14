@@ -5,6 +5,7 @@ WasteFi Backend supports two authentication methods:
 ## 1. JWT Authentication (Recommended for Mobile Apps)
 
 ### Register User
+
 ```bash
 POST /api/v1/auth/register
 Content-Type: application/json
@@ -18,6 +19,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -37,6 +39,7 @@ Response:
 ```
 
 ### Login
+
 ```bash
 POST /api/v1/auth/login
 Content-Type: application/json
@@ -47,12 +50,14 @@ Content-Type: application/json
 ```
 
 ### Get Profile (Protected Route)
+
 ```bash
 GET /api/v1/auth/profile
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 ### Refresh Token
+
 ```bash
 POST /api/v1/auth/refresh
 Content-Type: application/json
@@ -65,6 +70,7 @@ Content-Type: application/json
 ## 2. API Key Authentication (Recommended for Server-to-Server)
 
 ### Create API Key
+
 ```bash
 POST /api/v1/auth/api-keys
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
@@ -77,6 +83,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -93,18 +100,21 @@ Response:
 **Important:** Save the API key immediately. It cannot be retrieved again.
 
 ### Use API Key
+
 ```bash
 GET /api/v1/auth/profile
 X-API-Key: wf_live_xxxxxxxxxxxxxxxxxxxx
 ```
 
 ### List API Keys
+
 ```bash
 GET /api/v1/auth/api-keys
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 ### Revoke API Key
+
 ```bash
 DELETE /api/v1/auth/api-keys/{keyId}
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
@@ -113,6 +123,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ## Authorization & Roles
 
 ### User Roles
+
 - `COLLECTOR` - Waste collectors (default)
 - `ADMIN` - Platform administrators
 - `COLLECTION_POINT` - Collection point managers
@@ -125,38 +136,38 @@ Use the `requireRole` middleware in routes:
 ```typescript
 import { requireRole } from '../middleware/auth.middleware';
 
-router.post(
-  '/admin/users',
-  authenticate,
-  requireRole('ADMIN'),
-  UserController.createUser
-);
+router.post('/admin/users', authenticate, requireRole('ADMIN'), UserController.createUser);
 ```
 
 ## Security Features
 
 ✅ **JWT with HS256 signing**
+
 - Access tokens expire in 7 days
 - Refresh tokens expire in 30 days
 - Tokens include issuer validation
 
 ✅ **API Key Security**
+
 - Keys are hashed (SHA-256) before storage
 - Last used timestamp tracking
 - Optional expiration dates
 - Can be revoked anytime
 
 ✅ **Password Hashing**
+
 - bcrypt with 10 salt rounds
 - Secure password comparison
 
 ✅ **Data Encryption**
+
 - AES-256-CBC for sensitive data
 - Used for storing Stellar private keys
 
 ## Error Responses
 
 ### 401 Unauthorized
+
 ```json
 {
   "success": false,
@@ -166,6 +177,7 @@ router.post(
 ```
 
 ### 403 Forbidden
+
 ```json
 {
   "success": false,
@@ -175,6 +187,7 @@ router.post(
 ```
 
 ### 400 Validation Error
+
 ```json
 {
   "success": false,

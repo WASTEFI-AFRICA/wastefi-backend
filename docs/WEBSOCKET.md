@@ -37,11 +37,13 @@ WasteFi uses WebSocket (Socket.IO) for real-time bidirectional communication bet
 ### Server Configuration
 
 **WebSocket URL:**
+
 ```
 ws://localhost:3000/socket.io/
 ```
 
 **Production:**
+
 ```
 wss://api.wastefi.com/socket.io/
 ```
@@ -56,8 +58,8 @@ import { io } from 'socket.io-client';
 const socket = io('http://localhost:3000', {
   path: '/socket.io/',
   auth: {
-    token: 'your-jwt-token-here'
-  }
+    token: 'your-jwt-token-here',
+  },
 });
 
 // Connection successful
@@ -87,7 +89,7 @@ function useWebSocket(token: string) {
 
     const newSocket = io('http://localhost:3000', {
       path: '/socket.io/',
-      auth: { token }
+      auth: { token },
     });
 
     newSocket.on('connected', () => {
@@ -122,6 +124,7 @@ function useWebSocket(token: string) {
 Sent when client successfully connects.
 
 **Payload:**
+
 ```json
 {
   "message": "Connected to WasteFi WebSocket",
@@ -137,6 +140,7 @@ Sent when client successfully connects.
 General notification event for all types of updates.
 
 **Payload:**
+
 ```json
 {
   "type": "collection:verified",
@@ -153,17 +157,17 @@ General notification event for all types of updates.
 
 **Notification Types:**
 
-| Type | Description |
-|------|-------------|
-| `collection:created` | New collection submitted |
-| `collection:new` | New collection (for admins) |
-| `collection:verified` | Collection verified |
-| `collection:rejected` | Collection rejected |
-| `payment:completed` | Payment processed |
-| `payment:failed` | Payment failed |
-| `withdrawal:update` | Withdrawal status changed |
-| `kyc:update` | KYC status changed |
-| `system:alert` | System-wide alert |
+| Type                  | Description                 |
+| --------------------- | --------------------------- |
+| `collection:created`  | New collection submitted    |
+| `collection:new`      | New collection (for admins) |
+| `collection:verified` | Collection verified         |
+| `collection:rejected` | Collection rejected         |
+| `payment:completed`   | Payment processed           |
+| `payment:failed`      | Payment failed              |
+| `withdrawal:update`   | Withdrawal status changed   |
+| `kyc:update`          | KYC status changed          |
+| `system:alert`        | System-wide alert           |
 
 ---
 
@@ -172,6 +176,7 @@ General notification event for all types of updates.
 Sent to collector when they submit a collection.
 
 **Payload:**
+
 ```json
 {
   "type": "collection:created",
@@ -193,6 +198,7 @@ Sent to collector when they submit a collection.
 Sent to admins when a new collection is submitted.
 
 **Payload:**
+
 ```json
 {
   "type": "collection:new",
@@ -216,6 +222,7 @@ Sent to admins when a new collection is submitted.
 Sent to collector when their collection is verified.
 
 **Payload:**
+
 ```json
 {
   "type": "collection:verified",
@@ -238,6 +245,7 @@ Sent to collector when their collection is verified.
 Sent when payment is successfully processed.
 
 **Payload:**
+
 ```json
 {
   "type": "payment:completed",
@@ -260,6 +268,7 @@ Sent when payment is successfully processed.
 Sent when KYC status changes.
 
 **Payload:**
+
 ```json
 {
   "type": "kyc:update",
@@ -280,6 +289,7 @@ Sent when KYC status changes.
 Sent when withdrawal status changes.
 
 **Payload:**
+
 ```json
 {
   "type": "withdrawal:update",
@@ -304,11 +314,13 @@ Sent when withdrawal status changes.
 Health check to verify connection.
 
 **Send:**
+
 ```javascript
 socket.emit('ping');
 ```
 
 **Response:**
+
 ```json
 {
   "timestamp": "2026-09-13T10:00:00Z"
@@ -322,11 +334,13 @@ socket.emit('ping');
 Subscribe to a specific channel.
 
 **Send:**
+
 ```javascript
 socket.emit('subscribe', 'collection:updates');
 ```
 
 **Response:**
+
 ```json
 {
   "channel": "collection:updates",
@@ -335,6 +349,7 @@ socket.emit('subscribe', 'collection:updates');
 ```
 
 **Available Channels:**
+
 - `collection:updates` - All collection-related events
 - `payment:updates` - All payment-related events
 - `kyc:updates` - KYC status changes
@@ -347,11 +362,13 @@ socket.emit('subscribe', 'collection:updates');
 Unsubscribe from a channel.
 
 **Send:**
+
 ```javascript
 socket.emit('unsubscribe', 'collection:updates');
 ```
 
 **Response:**
+
 ```json
 {
   "channel": "collection:updates",
@@ -380,10 +397,10 @@ function NotificationHandler() {
     // Listen for all notifications
     socket.on('notification', (notification: NotificationPayload) => {
       setNotifications(prev => [notification, ...prev]);
-      
+
       // Show toast/alert
       showToast(notification);
-      
+
       // Play sound for important notifications
       if (notification.type.includes('payment') || notification.type.includes('verified')) {
         playNotificationSound();
@@ -455,7 +472,7 @@ function AdminDashboard() {
     socket.on('notification', (notification) => {
       if (notification.type === 'collection:new') {
         setCollections(prev => [notification.data, ...prev]);
-        
+
         // Show desktop notification
         if (Notification.permission === 'granted') {
           new Notification('New Collection', {
@@ -529,12 +546,13 @@ WebSocket connections require JWT authentication:
 ```javascript
 const socket = io('http://localhost:3000', {
   auth: {
-    token: 'your-jwt-token'
-  }
+    token: 'your-jwt-token',
+  },
 });
 ```
 
 **Authentication fails if:**
+
 - No token provided
 - Token is invalid or expired
 - Token signature doesn't match
@@ -542,6 +560,7 @@ const socket = io('http://localhost:3000', {
 ### Authorization
 
 Users can only:
+
 - Receive notifications for their own actions
 - Admins receive notifications for all users (role-based)
 - Cannot impersonate other users
@@ -550,19 +569,21 @@ Users can only:
 ### Best Practices
 
 1. **Use Secure Connections**
+
    ```javascript
    // Production - Use WSS (WebSocket Secure)
    const socket = io('https://api.wastefi.com', {
-     secure: true
+     secure: true,
    });
    ```
 
 2. **Handle Token Refresh**
+
    ```javascript
    socket.on('connect_error', (error) => {
      if (error.message === 'Authentication failed') {
        // Refresh token and reconnect
-       refreshToken().then(newToken => {
+       refreshToken().then((newToken) => {
          socket.auth.token = newToken;
          socket.connect();
        });
@@ -571,6 +592,7 @@ Users can only:
    ```
 
 3. **Validate Notifications**
+
    ```javascript
    socket.on('notification', (notification) => {
      // Validate notification structure
@@ -578,7 +600,7 @@ Users can only:
        console.warn('Invalid notification received');
        return;
      }
-     
+
      // Process notification
      handleNotification(notification);
    });
@@ -588,7 +610,7 @@ Users can only:
    ```javascript
    useEffect(() => {
      socket.on('notification', handleNotification);
-     
+
      return () => {
        socket.off('notification', handleNotification);
      };
@@ -607,7 +629,7 @@ const socket = io('http://localhost:3000', {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  timeout: 20000
+  timeout: 20000,
 });
 
 socket.on('reconnect', (attemptNumber) => {
@@ -669,7 +691,7 @@ const mockSocket = {
   on: jest.fn(),
   emit: jest.fn(),
   off: jest.fn(),
-  connected: true
+  connected: true,
 };
 
 // Test notification handling
@@ -679,7 +701,7 @@ mockSocket.on('notification', (callback) => {
     title: 'Payment Received',
     message: 'You received 500 KES',
     data: { amount: 500 },
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 });
 ```
@@ -693,6 +715,7 @@ mockSocket.on('notification', (callback) => {
 **Issue:** `connect_error: Authentication required`
 
 **Solution:**
+
 - Ensure JWT token is valid
 - Check token is passed in auth object
 - Verify token hasn't expired
@@ -702,6 +725,7 @@ mockSocket.on('notification', (callback) => {
 **Issue:** Connected but no notifications received
 
 **Solution:**
+
 1. Check if listening to correct event
 2. Verify user permissions
 3. Check server logs
@@ -712,6 +736,7 @@ mockSocket.on('notification', (callback) => {
 **Issue:** Same user has multiple active connections
 
 **Solution:**
+
 - Close previous connection before creating new one
 - Use single socket instance across app
 - Clean up on component unmount

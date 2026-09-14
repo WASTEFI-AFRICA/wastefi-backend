@@ -38,6 +38,7 @@ Authorization: Bearer <accessToken>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -79,6 +80,7 @@ npm run stellar:generate-wallet
 ```
 
 This will output:
+
 - Public key (safe to share)
 - Secret key (keep private!)
 
@@ -87,6 +89,7 @@ This will output:
 When ready for production:
 
 1. **Generate a new mainnet wallet**
+
    ```bash
    npm run stellar:generate-wallet
    ```
@@ -96,6 +99,7 @@ When ready for production:
    - Minimum balance: 1 XLM (recommend 100+ XLM for operations)
 
 3. **Update .env**
+
    ```env
    STELLAR_NETWORK=mainnet
    STELLAR_HORIZON_URL=https://horizon.stellar.org
@@ -149,14 +153,17 @@ Track these metrics:
 ## Troubleshooting
 
 ### "Account not funded"
+
 - For testnet: Use friendbot
 - For mainnet: Send XLM to the public key
 
 ### "Insufficient balance"
+
 - Check master wallet balance
 - Remember 0.5 XLM per account as base reserve
 
 ### "Transaction failed"
+
 - Check Stellar network status
 - Verify account sequence numbers
 - Check transaction limits

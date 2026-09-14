@@ -82,6 +82,7 @@ RECYCLEGRAPH_API_KEY=your-api-key-here
 ```
 
 **Sandbox vs Production:**
+
 - **Sandbox**: `https://sandbox-api.recyclegraph.io`
 - **Production**: `https://api.recyclegraph.io`
 
@@ -94,6 +95,7 @@ RecycleGraph service initialized { apiUrl: 'https://api.recyclegraph.io' }
 ```
 
 If credentials are missing:
+
 ```
 RecycleGraph service not configured - API credentials missing
 ```
@@ -111,6 +113,7 @@ A Material Passport is a digital record that follows a material through its life
 Material passports are created when waste is collected and verified.
 
 **Workflow:**
+
 1. Collector brings waste to collection point
 2. Collection point verifies and weighs material
 3. System creates waste collection record
@@ -119,6 +122,7 @@ Material passports are created when waste is collected and verified.
 6. Digital signature generated for authenticity
 
 **What Gets Stored:**
+
 - **Local Database**: Full passport data for offline access
 - **RecycleGraph**: Blockchain-verified record with signature
 - **Linked**: Both records connected via `recycleGraphId`
@@ -142,6 +146,7 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required (Admin, Collection Point)
 
 **Request Body:**
+
 ```json
 {
   "wasteCollectionId": "collection-uuid",
@@ -165,6 +170,7 @@ At each stage, custody updates are recorded in both systems.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -200,6 +206,7 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -233,6 +240,7 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required (Admin, Collection Point)
 
 **Request Body:**
+
 ```json
 {
   "location": "Nairobi Recycling Plant",
@@ -242,6 +250,7 @@ At each stage, custody updates are recorded in both systems.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -276,6 +285,7 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required (Admin)
 
 **Request Body:**
+
 ```json
 {
   "verificationMethod": "BLOCKCHAIN"
@@ -283,6 +293,7 @@ At each stage, custody updates are recorded in both systems.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -305,6 +316,7 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -326,10 +338,12 @@ At each stage, custody updates are recorded in both systems.
 **Authentication:** Required
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -372,18 +386,18 @@ const collectionId = 'verified-collection-uuid';
 const response = await fetch('/api/v1/passports', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     wasteCollectionId: collectionId,
     productName: 'PET Water Bottle',
     color: 'Clear',
     composition: {
-      'PET': 95,
-      'HDPE': 5
-    }
-  })
+      PET: 95,
+      HDPE: 5,
+    },
+  }),
 });
 
 const passport = await response.json();
@@ -398,14 +412,14 @@ console.log('Carbon credits earned:', passport.data.carbonCreditsEarned);
 await fetch(`/api/v1/passports/${passportId}/custody`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     location: 'Nairobi Recycling Plant',
     custodian: 'Recycling Plant Manager',
-    action: 'RECEIVED_FOR_PROCESSING'
-  })
+    action: 'RECEIVED_FOR_PROCESSING',
+  }),
 });
 ```
 
@@ -415,8 +429,8 @@ await fetch(`/api/v1/passports/${passportId}/custody`, {
 // Get all user's passports with carbon credits
 const response = await fetch('/api/v1/passports/me', {
   headers: {
-    'Authorization': `Bearer ${token}`
-  }
+    Authorization: `Bearer ${token}`,
+  },
 });
 
 const data = await response.json();
@@ -442,12 +456,14 @@ Carbon credits are calculated based on:
 3. **Quality Grade** - Higher quality = more credits
 
 **Calculation Formula:**
+
 ```
 Carbon Savings = Weight × Material Factor × Quality Multiplier
 Carbon Credits = Carbon Savings × 0.1
 ```
 
 **Material Factors (kg CO2 saved per kg recycled):**
+
 - Plastic: 2.0
 - Paper: 1.5
 - Metal: 3.5
@@ -455,6 +471,7 @@ Carbon Credits = Carbon Savings × 0.1
 - Organic: 0.5
 
 **Quality Multipliers:**
+
 - Grade A: 1.2
 - Grade B: 1.0
 - Grade C: 0.8
@@ -474,6 +491,7 @@ Carbon Credits = 24 × 0.1 = 2.4 credits
 ### Redeeming Carbon Credits
 
 Carbon credits can be:
+
 - **Traded** on carbon markets
 - **Sold** to businesses needing to offset emissions
 - **Donated** to environmental projects
@@ -486,6 +504,7 @@ Carbon credits can be:
 ### 1. Create Passports for All Collections
 
 Always create material passports for verified collections to:
+
 - Build trust with collectors
 - Track environmental impact
 - Enable carbon credit trading
@@ -494,6 +513,7 @@ Always create material passports for verified collections to:
 ### 2. Update Custody Regularly
 
 Update custody whenever material changes hands:
+
 - Collection → Transport
 - Transport → Storage
 - Storage → Processing
@@ -502,6 +522,7 @@ Update custody whenever material changes hands:
 ### 3. Verify Passports
 
 Verify passports through RecycleGraph for:
+
 - Higher quality grades
 - Better pricing
 - Fraud prevention
@@ -510,6 +531,7 @@ Verify passports through RecycleGraph for:
 ### 4. Calculate Carbon Credits Early
 
 Calculate carbon credits as soon as possible to:
+
 - Motivate collectors
 - Track environmental impact
 - Enable immediate rewards
@@ -518,6 +540,7 @@ Calculate carbon credits as soon as possible to:
 ### 5. Handle Offline Scenarios
 
 RecycleGraph integration is optional. The system works even when RecycleGraph is unavailable:
+
 - Passports still created locally
 - Manual carbon calculations used
 - Sync when connection restored
@@ -531,6 +554,7 @@ RecycleGraph integration is optional. The system works even when RecycleGraph is
 **Issue:** "RecycleGraph service not configured"
 
 **Solution:**
+
 1. Check environment variables are set
 2. Verify API key is valid
 3. Test connection to RecycleGraph API
@@ -541,6 +565,7 @@ RecycleGraph integration is optional. The system works even when RecycleGraph is
 **Issue:** Passport verification returns error
 
 **Solution:**
+
 1. Ensure passport has valid digital signature
 2. Check RecycleGraph service status
 3. Verify material data is complete
@@ -551,6 +576,7 @@ RecycleGraph integration is optional. The system works even when RecycleGraph is
 **Issue:** Carbon credits showing as 0
 
 **Solution:**
+
 1. Trigger manual calculation: `POST /api/v1/passports/:id/carbon-credits`
 2. Check material type is recognized
 3. Verify weight is greater than 0
@@ -609,11 +635,13 @@ Before going live:
 ## Support Resources
 
 ### RecycleGraph
+
 - [Developer Portal](https://developer.recyclegraph.io/)
 - [API Documentation](https://docs.recyclegraph.io/)
 - Support: support@recyclegraph.io
 
 ### WasteFi
+
 - Check system logs for integration issues
 - Review service initialization on server start
 - Test with sandbox environment first

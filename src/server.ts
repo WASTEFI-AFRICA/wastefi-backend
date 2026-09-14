@@ -16,6 +16,7 @@ import { NotificationService } from './services/notification.service';
 import { RecycleGraphService } from './services/recyclegraph.service';
 import { WebSocketService } from './services/websocket.service';
 import MetricsService from './services/metrics.service';
+import BackupService from './services/backup.service';
 import { logger } from './utils/logger.util';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import {
@@ -56,6 +57,11 @@ WebSocketService.initialize(httpServer);
 
 // Initialize Metrics service
 MetricsService.initialize();
+
+// Initialize Backup service
+BackupService.initialize().catch((error) => {
+  logger.error('Failed to initialize backup service', { error });
+});
 
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);
@@ -120,6 +126,7 @@ import paymentRoutes from './routes/payment.routes';
 import adminRoutes from './routes/admin.routes';
 import materialPassportRoutes from './routes/material-passport.routes';
 import metricsRoutes from './routes/metrics.routes';
+import backupRoutes from './routes/backup.routes';
 
 // API Documentation
 app.use(
@@ -155,6 +162,7 @@ app.use(`/api/${config.app.apiVersion}/collections`, wasteCollectionRoutes);
 app.use(`/api/${config.app.apiVersion}/payments`, paymentRoutes);
 app.use(`/api/${config.app.apiVersion}/admin`, adminRoutes);
 app.use(`/api/${config.app.apiVersion}/passports`, materialPassportRoutes);
+app.use(`/api/${config.app.apiVersion}/backups`, backupRoutes);
 
 // Metrics endpoint (no auth required for Prometheus scraping)
 app.use('/metrics', metricsRoutes);

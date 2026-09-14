@@ -159,14 +159,12 @@ import app from '../../src/server';
 describe('Authentication API', () => {
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: '+254712345678',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: '+254712345678',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -175,13 +173,11 @@ describe('Authentication API', () => {
     });
 
     it('should return 400 for invalid phone number', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          phoneNumber: 'invalid',
-          firstName: 'John',
-          lastName: 'Doe',
-        });
+      const response = await request(app).post('/api/v1/auth/register').send({
+        phoneNumber: 'invalid',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
 
       expect(response.status).toBe(400);
     });
@@ -300,6 +296,7 @@ npm run test:coverage
 ```
 
 This generates:
+
 - Console summary
 - HTML report in `coverage/` directory
 - LCOV report for CI tools
@@ -359,10 +356,10 @@ describe('Feature', () => {
     it('should do something specific', () => {
       // Arrange
       const input = 'test';
-      
+
       // Act
       const result = doSomething(input);
-      
+
       // Assert
       expect(result).toBe('expected');
     });
@@ -535,7 +532,7 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:14
@@ -546,24 +543,24 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
         run: npm run test:ci
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wastefi_test
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -596,6 +593,7 @@ test:
 ### Issue: Tests Timeout
 
 **Solution:**
+
 ```typescript
 // Increase timeout for specific test
 it('slow test', async () => {
@@ -603,12 +601,13 @@ it('slow test', async () => {
 }, 15000); // 15 seconds
 
 // Or globally in jest.config.js
-testTimeout: 10000
+testTimeout: 10000;
 ```
 
 ### Issue: Database Connection Errors
 
 **Solution:**
+
 - Ensure test database exists
 - Check DATABASE_URL in `.env.test`
 - Run migrations: `npx prisma migrate deploy`
@@ -616,6 +615,7 @@ testTimeout: 10000
 ### Issue: Module Not Found
 
 **Solution:**
+
 ```bash
 # Clear Jest cache
 npx jest --clearCache
@@ -628,6 +628,7 @@ npm install
 ### Issue: Tests Pass Locally But Fail in CI
 
 **Solution:**
+
 - Check environment variables
 - Ensure all dependencies are in `package.json`
 - Use `npm ci` instead of `npm install`
@@ -636,6 +637,7 @@ npm install
 ### Issue: Flaky Tests
 
 **Solution:**
+
 - Remove time-dependent logic
 - Clear mocks between tests
 - Ensure tests are independent
@@ -687,6 +689,7 @@ export const createTestUser = (overrides = {}) => ({
 ## Support
 
 For testing issues:
+
 - Check Jest documentation
 - Review test logs
 - Run with `--verbose` flag

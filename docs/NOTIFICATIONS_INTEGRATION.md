@@ -60,22 +60,20 @@ NotificationService.sendWelcome(
 // After updating user KYC status to APPROVED
 await prisma.user.update({
   where: { id: userId },
-  data: { kycStatus: 'APPROVED' }
+  data: { kycStatus: 'APPROVED' },
 });
 
 // Get user details
 const user = await prisma.user.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // Send approval notification
-NotificationService.sendKYCApproved(
-  user.phoneNumber,
-  user.email || '',
-  user.firstName
-).catch(error => {
-  logger.error('KYC approval notification failed', { error, userId });
-});
+NotificationService.sendKYCApproved(user.phoneNumber, user.email || '', user.firstName).catch(
+  (error) => {
+    logger.error('KYC approval notification failed', { error, userId });
+  }
+);
 ```
 
 ### KYC Rejected
@@ -86,15 +84,15 @@ NotificationService.sendKYCApproved(
 // After updating user KYC status to REJECTED
 await prisma.user.update({
   where: { id: userId },
-  data: { 
+  data: {
     kycStatus: 'REJECTED',
-    kycRejectionReason: rejectionReason
-  }
+    kycRejectionReason: rejectionReason,
+  },
 });
 
 // Get user details
 const user = await prisma.user.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // Send rejection notification
@@ -103,7 +101,7 @@ NotificationService.sendKYCRejected(
   user.email || '',
   user.firstName,
   rejectionReason
-).catch(error => {
+).catch((error) => {
   logger.error('KYC rejection notification failed', { error, userId });
 });
 ```
@@ -123,11 +121,11 @@ const collection = await prisma.wasteCollection.update({
   data: {
     status: 'VERIFIED',
     verifiedAt: new Date(),
-    verifiedBy: adminId
+    verifiedBy: adminId,
   },
   include: {
-    collector: true
-  }
+    collector: true,
+  },
 });
 
 // Send collection verified notification
@@ -140,10 +138,10 @@ NotificationService.sendCollectionVerified(
   collection.paymentCurrency,
   collection.materialType,
   collection.weight
-).catch(error => {
-  logger.error('Collection verified notification failed', { 
-    error, 
-    collectionId 
+).catch((error) => {
+  logger.error('Collection verified notification failed', {
+    error,
+    collectionId,
   });
 });
 ```
@@ -165,13 +163,13 @@ const transaction = await prisma.transaction.create({
     currency,
     type: 'WASTE_COLLECTION',
     status: 'COMPLETED',
-    completedAt: new Date()
-  }
+    completedAt: new Date(),
+  },
 });
 
 // Get user details
 const user = await prisma.user.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // Send payment notification
@@ -182,10 +180,10 @@ NotificationService.sendPaymentNotification(
   amount,
   currency,
   transaction.id
-).catch(error => {
-  logger.error('Payment notification failed', { 
-    error, 
-    transactionId: transaction.id 
+).catch((error) => {
+  logger.error('Payment notification failed', {
+    error,
+    transactionId: transaction.id,
   });
 });
 ```
@@ -208,13 +206,13 @@ const transaction = await prisma.transaction.create({
     type: 'WITHDRAWAL',
     status: 'PENDING',
     paymentMethod,
-    phoneNumber: withdrawalPhoneNumber
-  }
+    phoneNumber: withdrawalPhoneNumber,
+  },
 });
 
 // Get user details
 const user = await prisma.user.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // Send withdrawal confirmation
@@ -226,10 +224,10 @@ NotificationService.sendWithdrawalConfirmation(
   'KES',
   withdrawalPhoneNumber,
   transaction.id
-).catch(error => {
-  logger.error('Withdrawal notification failed', { 
-    error, 
-    transactionId: transaction.id 
+).catch((error) => {
+  logger.error('Withdrawal notification failed', {
+    error,
+    transactionId: transaction.id,
   });
 });
 ```
@@ -252,24 +250,21 @@ await prisma.user.update({
   where: { email },
   data: {
     resetToken,
-    resetTokenExpiry: new Date(Date.now() + 3600000) // 1 hour
-  }
+    resetTokenExpiry: new Date(Date.now() + 3600000), // 1 hour
+  },
 });
 
 // Get user details
 const user = await prisma.user.findUnique({
-  where: { email }
+  where: { email },
 });
 
 // Send password reset email
-NotificationService.sendPasswordReset(
-  user.email,
-  user.firstName,
-  resetToken,
-  resetUrl
-).catch(error => {
-  logger.error('Password reset notification failed', { error, userId: user.id });
-});
+NotificationService.sendPasswordReset(user.email, user.firstName, resetToken, resetUrl).catch(
+  (error) => {
+    logger.error('Password reset notification failed', { error, userId: user.id });
+  }
+);
 ```
 
 ---
@@ -296,7 +291,7 @@ Always log notification failures with context:
 
 ```typescript
 NotificationService.sendPaymentNotification(...).catch(error => {
-  logger.error('Payment notification failed', { 
+  logger.error('Payment notification failed', {
     error,
     userId,
     transactionId,
@@ -314,7 +309,7 @@ NotificationService.sendWelcome(
   user.phoneNumber,
   user.email || '', // Fallback to empty string
   user.firstName
-).catch(error => {
+).catch((error) => {
   logger.error('Welcome notification failed', { error, userId: user.id });
 });
 ```
@@ -325,13 +320,10 @@ Choose appropriate channels based on notification type:
 
 ```typescript
 // Time-sensitive: SMS only
-NotificationService.sendVerificationCode(
-  phoneNumber,
-  email,
-  firstName,
-  code,
-  { sms: true, email: false }
-);
+NotificationService.sendVerificationCode(phoneNumber, email, firstName, code, {
+  sms: true,
+  email: false,
+});
 
 // Detailed info: Email only
 NotificationService.sendCollectionVerified(
@@ -347,12 +339,7 @@ NotificationService.sendCollectionVerified(
 );
 
 // Important update: Both
-NotificationService.sendKYCApproved(
-  phoneNumber,
-  email,
-  firstName,
-  { sms: true, email: true }
-);
+NotificationService.sendKYCApproved(phoneNumber, email, firstName, { sms: true, email: true });
 ```
 
 ---
@@ -372,12 +359,9 @@ export class WasteCollectionController {
   static async verifyCollection(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      
+
       // Verify collection
-      const collection = await WasteCollectionService.verifyCollection(
-        id,
-        req.user!.userId
-      );
+      const collection = await WasteCollectionService.verifyCollection(id, req.user!.userId);
 
       // Send notification (non-blocking)
       NotificationService.sendCollectionVerified(
@@ -389,24 +373,24 @@ export class WasteCollectionController {
         collection.paymentCurrency,
         collection.materialType,
         collection.weight
-      ).catch(error => {
-        logger.error('Collection verified notification failed', { 
+      ).catch((error) => {
+        logger.error('Collection verified notification failed', {
           error,
           collectionId: id,
-          userId: collection.collectorId
+          userId: collection.collectorId,
         });
       });
 
       res.status(200).json({
         success: true,
         data: collection,
-        message: 'Collection verified successfully'
+        message: 'Collection verified successfully',
       });
     } catch (error) {
       logger.error('Collection verification failed', { error: error as Error });
       res.status(500).json({
         success: false,
-        error: 'Failed to verify collection'
+        error: 'Failed to verify collection',
       });
     }
   }
@@ -449,9 +433,9 @@ jest.mock('../services/notification.service', () => ({
   NotificationService: {
     sendWelcome: jest.fn().mockResolvedValue({
       sms: { success: true },
-      email: { success: true }
-    })
-  }
+      email: { success: true },
+    }),
+  },
 }));
 ```
 

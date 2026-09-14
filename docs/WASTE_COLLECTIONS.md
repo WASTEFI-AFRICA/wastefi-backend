@@ -19,6 +19,7 @@ The waste collection API handles the core functionality of recording waste deliv
 ### Current Rates (KES per kg)
 
 **Plastics:**
+
 - PET (bottles): KES 25/kg
 - HDPE (containers): KES 30/kg
 - PVC: KES 15/kg
@@ -27,22 +28,26 @@ The waste collection API handles the core functionality of recording waste deliv
 - PS (foam): KES 10/kg
 
 **Metals:**
+
 - Aluminum (cans): KES 80/kg
 - Steel: KES 15/kg
 - Copper: KES 600/kg
 - Brass: KES 400/kg
 
 **Glass:**
+
 - Clear glass: KES 5/kg
 - Colored glass: KES 3/kg
 
 **Paper:**
+
 - Cardboard: KES 8/kg
 - White paper: KES 12/kg
 - Mixed paper: KES 6/kg
 - Newspaper: KES 4/kg
 
 **Other:**
+
 - E-waste: KES 50/kg
 - Textiles: KES 10/kg
 - Rubber: KES 20/kg
@@ -76,6 +81,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -87,7 +93,7 @@ Response:
     "materialCategory": "Plastic",
     "weight": 25.5,
     "quantity": 150,
-    "paymentAmount": 637.50,
+    "paymentAmount": 637.5,
     "paymentCurrency": "KES",
     "paymentStatus": "PENDING",
     "imageUrls": ["https://..."],
@@ -125,6 +131,7 @@ Authorization: Bearer <token>
 ```
 
 Response includes summary:
+
 ```json
 {
   "success": true,
@@ -151,6 +158,7 @@ Authorization: Bearer <admin-token>
 ```
 
 Query Parameters:
+
 - `collectorId` - Filter by collector
 - `collectionPointId` - Filter by location
 - `materialType` - Filter by material (PET, HDPE, etc.)
@@ -176,6 +184,7 @@ Content-Type: application/json
 ```
 
 **Workflow:**
+
 1. Admin reviews photos and details
 2. Approves or rejects collection
 3. Can adjust weight if measured incorrectly
@@ -205,25 +214,26 @@ Authorization: Bearer <admin-token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
   "data": {
     "totalCollections": 156,
     "totalWeight": 3580.5,
-    "totalPayments": 82450.00,
+    "totalPayments": 82450.0,
     "byMaterial": [
       {
         "materialType": "PET",
         "count": 45,
         "totalWeight": 1250.5,
-        "totalPayment": 31262.50
+        "totalPayment": 31262.5
       },
       {
         "materialType": "ALUMINUM",
         "count": 30,
         "totalWeight": 450.0,
-        "totalPayment": 36000.00
+        "totalPayment": 36000.0
       }
     ],
     "byStatus": {
@@ -249,7 +259,7 @@ Authorization: Bearer <admin-token>
 ### Recommended Approach
 
 1. **Upload to Cloud Storage First**
-   
+
    ```javascript
    // Example: Upload to Cloudinary
    const uploadImage = async (file) => {
@@ -257,10 +267,10 @@ Authorization: Bearer <admin-token>
      formData.append('file', file);
      formData.append('upload_preset', 'wastefi-collections');
 
-     const response = await fetch(
-       'https://api.cloudinary.com/v1_1/your-cloud/image/upload',
-       { method: 'POST', body: formData }
-     );
+     const response = await fetch('https://api.cloudinary.com/v1_1/your-cloud/image/upload', {
+       method: 'POST',
+       body: formData,
+     });
 
      const data = await response.json();
      return data.secure_url;
@@ -270,23 +280,21 @@ Authorization: Bearer <admin-token>
 2. **Submit Collection with Image URLs**
 
    ```javascript
-   const imageUrls = await Promise.all(
-     files.map(file => uploadImage(file))
-   );
+   const imageUrls = await Promise.all(files.map((file) => uploadImage(file)));
 
    const collection = await fetch('/api/v1/collections', {
      method: 'POST',
      headers: {
-       'Authorization': `Bearer ${token}`,
-       'Content-Type': 'application/json'
+       Authorization: `Bearer ${token}`,
+       'Content-Type': 'application/json',
      },
      body: JSON.stringify({
        collectionPointId: 'cp-123',
        materialType: 'PET',
        materialCategory: 'Plastic',
        weight: 25.5,
-       imageUrls
-     })
+       imageUrls,
+     }),
    });
    ```
 
@@ -301,13 +309,12 @@ Authorization: Bearer <admin-token>
 ### Image Best Practices
 
 **Required Photos:**
+
 1. Overall view of materials
 2. Close-up of material type (to verify)
 3. Weight scale reading (if available)
 
-**Optional Photos:**
-4. Sorting/processing
-5. Collection point reference
+**Optional Photos:** 4. Sorting/processing 5. Collection point reference
 
 ## Payment Calculation
 
@@ -322,6 +329,7 @@ Total = Base Amount + Volume Bonus
 ### Example Calculations
 
 **Example 1: Small Collection**
+
 ```
 Material: PET bottles
 Weight: 10 kg
@@ -331,6 +339,7 @@ Total: 10 × 25 = KES 250.00
 ```
 
 **Example 2: Medium Collection**
+
 ```
 Material: Aluminum cans
 Weight: 60 kg
@@ -342,6 +351,7 @@ Total: KES 5,040.00
 ```
 
 **Example 3: Large Collection**
+
 ```
 Material: HDPE containers
 Weight: 150 kg
@@ -361,17 +371,15 @@ Total: KES 4,950.00
 const photos = await takePhotos(3);
 
 // 2. Upload photos to cloud
-const uploadPromises = photos.map(photo => 
-  uploadToCloudStorage(photo)
-);
+const uploadPromises = photos.map((photo) => uploadToCloudStorage(photo));
 const imageUrls = await Promise.all(uploadPromises);
 
 // 3. Record collection
 const collection = await fetch('/api/v1/collections', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     collectionPointId: selectedPoint.id,
@@ -380,8 +388,8 @@ const collection = await fetch('/api/v1/collections', {
     weight: 25.5,
     quantity: 150,
     imageUrls,
-    notes: 'Clean bottles, no caps'
-  })
+    notes: 'Clean bottles, no caps',
+  }),
 });
 
 // 4. Show confirmation
@@ -405,7 +413,7 @@ const estimateEarnings = (materialType, weight) => {
   let bonus = 0;
 
   if (weight >= 100) {
-    bonus = baseAmount * 0.10;
+    bonus = baseAmount * 0.1;
   } else if (weight >= 50) {
     bonus = baseAmount * 0.05;
   }
@@ -414,7 +422,7 @@ const estimateEarnings = (materialType, weight) => {
     base: baseAmount.toFixed(2),
     bonus: bonus.toFixed(2),
     total: (baseAmount + bonus).toFixed(2),
-    pricePerKg: material.pricePerKg
+    pricePerKg: material.pricePerKg,
   };
 };
 
@@ -453,6 +461,7 @@ CANCELLED                   FAILED
 ✅ Collection point is correct
 
 **Actions:**
+
 - Approve: Payment will be processed
 - Reject: Provide clear reason in notes
 - Adjust: Fix weight if measurement error
@@ -472,10 +481,9 @@ CANCELLED                   FAILED
 
 ```javascript
 // Get personal statistics
-const stats = await fetch(
-  '/api/v1/collections/me?page=1&limit=100',
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+const stats = await fetch('/api/v1/collections/me?page=1&limit=100', {
+  headers: { Authorization: `Bearer ${token}` },
+});
 
 const { data, summary } = await stats.json();
 
@@ -484,9 +492,7 @@ console.log(`
   Total Collections: ${summary.totalCollections}
   Total Weight: ${summary.totalWeight} kg
   Total Earnings: KES ${summary.totalEarnings}
-  Average per collection: KES ${
-    (summary.totalEarnings / summary.totalCollections).toFixed(2)
-  }
+  Average per collection: KES ${(summary.totalEarnings / summary.totalCollections).toFixed(2)}
 `);
 ```
 
@@ -495,8 +501,7 @@ console.log(`
 ```javascript
 // Get system-wide statistics
 const stats = await fetch(
-  '/api/v1/collections/statistics?' +
-  'startDate=2024-01-01&endDate=2024-01-31',
+  '/api/v1/collections/statistics?' + 'startDate=2024-01-01&endDate=2024-01-31',
   { headers: { Authorization: `Bearer ${adminToken}` } }
 );
 
@@ -510,9 +515,9 @@ console.log(`
   Payments: KES ${data.totalPayments}
   
   Top Materials:
-  ${data.byMaterial.map(m => 
-    `  - ${m.materialType}: ${m.count} collections, ${m.totalWeight} kg`
-  ).join('\n')}
+  ${data.byMaterial
+    .map((m) => `  - ${m.materialType}: ${m.count} collections, ${m.totalWeight} kg`)
+    .join('\n')}
 `);
 ```
 
@@ -581,6 +586,7 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 ### Collection Rejected
 
 **Common Reasons:**
+
 - Wrong material type selected
 - Weight measurement inaccurate
 - Materials contaminated
@@ -588,6 +594,7 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 - Collection point error
 
 **Solution:**
+
 - Review verifier notes
 - Resubmit with corrections
 - Contact support if unclear
@@ -595,11 +602,13 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 ### Payment Pending
 
 **Typical Timeline:**
+
 - Verification: 1-24 hours
 - Payment processing: 1-2 hours
 - Total: Usually within 24 hours
 
 **If Delayed:**
+
 - Check collection status
 - Ensure KYC is approved
 - Verify wallet is set up
@@ -608,6 +617,7 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 ### Images Not Uploading
 
 **Check:**
+
 - File size < 5MB
 - Stable internet connection
 - Valid image format (JPEG/PNG)
@@ -629,6 +639,7 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 ## Support
 
 For waste collection issues:
+
 - Check API documentation
 - Review pricing table
 - Test with small collections first

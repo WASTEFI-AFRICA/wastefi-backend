@@ -32,6 +32,7 @@ The WasteFi notification system provides unified SMS and email notifications thr
 ### SMS (via Twilio)
 
 **Features:**
+
 - Global SMS delivery
 - Delivery status tracking
 - Phone number validation
@@ -42,6 +43,7 @@ The WasteFi notification system provides unified SMS and email notifications thr
 ### Email (via SMTP)
 
 **Features:**
+
 - HTML and plain text emails
 - Multiple recipients (to, cc, bcc)
 - Email validation
@@ -72,11 +74,11 @@ TWILIO_PHONE_NUMBER=+1234567890
 
 #### Trial vs Production
 
-- **Trial Account**: 
+- **Trial Account**:
   - Free credit for testing
   - Can only send to verified numbers
   - Messages include "Sent from a Twilio trial account"
-  
+
 - **Production Account**:
   - Upgrade with payment method
   - Send to any number
@@ -87,16 +89,19 @@ TWILIO_PHONE_NUMBER=+1234567890
 #### Option A: Gmail
 
 **Requirements:**
+
 - Gmail account
 - App Password (not your regular password)
 
 **Steps to get App Password:**
+
 1. Enable 2-Step Verification on your Google account
 2. Go to [App Passwords](https://myaccount.google.com/apppasswords)
 3. Generate an app password for "Mail"
 4. Use the generated 16-character password
 
 **Configuration:**
+
 ```env
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -109,6 +114,7 @@ EMAIL_FROM=WasteFi <noreply@wastefi.com>
 #### Option B: SendGrid
 
 **Configuration:**
+
 ```env
 EMAIL_HOST=smtp.sendgrid.net
 EMAIL_PORT=587
@@ -121,6 +127,7 @@ EMAIL_FROM=WasteFi <noreply@wastefi.com>
 #### Option C: AWS SES
 
 **Configuration:**
+
 ```env
 EMAIL_HOST=email-smtp.us-east-1.amazonaws.com
 EMAIL_PORT=587
@@ -148,48 +155,56 @@ EMAIL_FROM=WasteFi <noreply@yourdomain.com>
 The system provides pre-built notification templates for common scenarios:
 
 ### 1. Welcome Notification
+
 Sent when a new user registers.
 
 **Channels:** SMS + Email  
 **Content:** Welcome message with getting started guide
 
 ### 2. Verification Code
+
 Sent for email/phone verification.
 
 **Channels:** SMS + Email  
 **Content:** Verification code (expires in 10 minutes)
 
 ### 3. Payment Notification
+
 Sent when user receives payment.
 
 **Channels:** SMS + Email  
 **Content:** Payment amount, currency, transaction ID
 
 ### 4. Collection Verified
+
 Sent when waste collection is verified.
 
 **Channels:** SMS + Email  
 **Content:** Collection details, earnings, material type, weight
 
 ### 5. KYC Approved
+
 Sent when KYC verification is approved.
 
 **Channels:** SMS + Email  
 **Content:** Approval confirmation, available features
 
 ### 6. KYC Rejected
+
 Sent when KYC verification is rejected.
 
 **Channels:** SMS + Email  
 **Content:** Rejection reason, instructions to resubmit
 
 ### 7. Withdrawal Confirmation
+
 Sent when withdrawal is initiated.
 
 **Channels:** SMS + Email  
 **Content:** Withdrawal amount, destination phone number, transaction ID
 
 ### 8. Password Reset
+
 Sent when user requests password reset.
 
 **Channels:** Email only  
@@ -205,27 +220,19 @@ Sent when user requests password reset.
 import { NotificationService } from './services/notification.service';
 
 // Send welcome notification (both SMS and email)
-await NotificationService.sendWelcome(
-  '+254712345678',
-  'user@example.com',
-  'John'
-);
+await NotificationService.sendWelcome('+254712345678', 'user@example.com', 'John');
 
 // Send only SMS
-await NotificationService.sendWelcome(
-  '+254712345678',
-  'user@example.com',
-  'John',
-  { sms: true, email: false }
-);
+await NotificationService.sendWelcome('+254712345678', 'user@example.com', 'John', {
+  sms: true,
+  email: false,
+});
 
 // Send only email
-await NotificationService.sendWelcome(
-  '+254712345678',
-  'user@example.com',
-  'John',
-  { sms: false, email: true }
-);
+await NotificationService.sendWelcome('+254712345678', 'user@example.com', 'John', {
+  sms: false,
+  email: true,
+});
 ```
 
 ### Payment Notification
@@ -261,11 +268,7 @@ await NotificationService.sendCollectionVerified(
 
 ```typescript
 // KYC Approved
-await NotificationService.sendKYCApproved(
-  '+254712345678',
-  'user@example.com',
-  'John'
-);
+await NotificationService.sendKYCApproved('+254712345678', 'user@example.com', 'John');
 
 // KYC Rejected
 await NotificationService.sendKYCRejected(
@@ -290,11 +293,7 @@ await NotificationService.sendPasswordReset(
 ### Handling Results
 
 ```typescript
-const result = await NotificationService.sendWelcome(
-  '+254712345678',
-  'user@example.com',
-  'John'
-);
+const result = await NotificationService.sendWelcome('+254712345678', 'user@example.com', 'John');
 
 // Check SMS status
 if (result.sms) {
@@ -396,6 +395,7 @@ await NotificationService.sendPaymentNotification(..., options);
 ### 5. Rate Limiting
 
 Be mindful of notification volumes:
+
 - SMS costs money per message
 - Email providers have rate limits
 - Consider batching notifications
@@ -410,6 +410,7 @@ Be mindful of notification volumes:
 ### 7. Testing
 
 Test notifications thoroughly before production:
+
 - Use sandbox/test credentials
 - Test with verified numbers/emails in trial mode
 - Verify message content and formatting
@@ -422,7 +423,9 @@ Test notifications thoroughly before production:
 ### Testing SMS (Twilio)
 
 #### Trial Mode
+
 With a Twilio trial account:
+
 1. Verify your phone number in Twilio Console
 2. Use verified numbers for testing
 3. SMS will include trial message prefix
@@ -431,14 +434,16 @@ With a Twilio trial account:
 // Test SMS
 const result = await SMSService.sendSMS({
   to: '+254712345678', // Your verified number
-  message: 'Test message from WasteFi'
+  message: 'Test message from WasteFi',
 });
 
 console.log('SMS sent:', result.success);
 ```
 
 #### Production Mode
+
 After upgrading:
+
 1. Can send to any number
 2. No trial prefix
 3. Costs apply per message
@@ -446,6 +451,7 @@ After upgrading:
 ### Testing Email
 
 #### Gmail
+
 1. Use your Gmail account with app password
 2. Send test emails to yourself
 3. Check spam folder if not received
@@ -456,13 +462,14 @@ const result = await EmailService.sendEmail({
   to: 'your-email@gmail.com',
   subject: 'Test Email',
   text: 'This is a test email from WasteFi',
-  html: '<p>This is a test email from WasteFi</p>'
+  html: '<p>This is a test email from WasteFi</p>',
 });
 
 console.log('Email sent:', result.success);
 ```
 
 #### SendGrid/AWS SES
+
 1. Verify sender email address
 2. In sandbox mode, can only send to verified recipients
 3. Request production access for unrestricted sending
@@ -483,11 +490,7 @@ async function testNotifications() {
   const testName = 'Test User';
 
   console.log('Testing welcome notification...');
-  const result = await NotificationService.sendWelcome(
-    testPhone,
-    testEmail,
-    testName
-  );
+  const result = await NotificationService.sendWelcome(testPhone, testEmail, testName);
   console.log('Result:', result);
 
   // Test other notifications...
@@ -497,6 +500,7 @@ testNotifications();
 ```
 
 Run with:
+
 ```bash
 ts-node test-notifications.ts
 ```
@@ -508,44 +512,55 @@ ts-node test-notifications.ts
 ### SMS Issues
 
 #### "SMS service not configured"
+
 **Cause:** Missing Twilio credentials  
 **Solution:** Ensure all Twilio environment variables are set
 
 #### "Invalid phone number format"
+
 **Cause:** Phone number not in E.164 format  
 **Solution:** Use format `+[country_code][number]` (e.g., `+254712345678`)
 
 #### "Authentication Error"
+
 **Cause:** Invalid Account SID or Auth Token  
 **Solution:** Verify credentials in Twilio Console
 
 #### "To number not verified"
+
 **Cause:** Using trial account with unverified number  
 **Solution:** Verify the number in Twilio Console or upgrade account
 
 ### Email Issues
 
 #### "Email service not configured"
+
 **Cause:** Missing SMTP credentials  
 **Solution:** Ensure all email environment variables are set
 
 #### "Authentication failed"
+
 **Cause:** Invalid username/password  
-**Solution:** 
+**Solution:**
+
 - Gmail: Use app password, not regular password
 - SendGrid: Use "apikey" as username
 - Verify credentials are correct
 
 #### "Connection timeout"
+
 **Cause:** Network/firewall issues  
-**Solution:** 
+**Solution:**
+
 - Check EMAIL_HOST is correct
 - Ensure port 587 is not blocked
 - Try port 465 with EMAIL_SECURE=true
 
 #### "Email not received"
+
 **Cause:** Spam filter, wrong address, or rate limiting  
 **Solution:**
+
 - Check spam/junk folder
 - Verify email address is correct
 - Check provider's sending limits
@@ -554,13 +569,16 @@ ts-node test-notifications.ts
 ### General Issues
 
 #### Notifications not being sent
+
 1. Check if services are initialized
 2. Verify environment variables
 3. Check logs for error messages
 4. Test services individually (SMS then email)
 
 #### Partial failures
+
 Both channels can fail independently:
+
 ```typescript
 const result = await NotificationService.sendWelcome(...);
 
@@ -598,6 +616,7 @@ Before going live:
 - **Tanzania**: ~$0.06 per SMS
 
 **Optimization tips:**
+
 - Only send SMS for critical notifications
 - Prefer email for detailed information
 - Implement user preferences
@@ -614,11 +633,13 @@ Before going live:
 ## Support Resources
 
 ### Twilio
+
 - [Documentation](https://www.twilio.com/docs)
 - [Console](https://console.twilio.com/)
 - Support: support@twilio.com
 
 ### Email Providers
+
 - **Gmail**: [Support](https://support.google.com/mail)
 - **SendGrid**: [Documentation](https://docs.sendgrid.com/)
 - **AWS SES**: [Documentation](https://docs.aws.amazon.com/ses/)

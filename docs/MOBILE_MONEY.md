@@ -25,6 +25,7 @@ WasteFi integrates with three major mobile money providers across Africa:
 3. **Airtel Money** (Airtel - Multiple countries)
 
 The integration supports:
+
 - **Collection payments**: Users receiving payments for waste collection
 - **Withdrawals**: Users cashing out their earnings to mobile money
 
@@ -35,6 +36,7 @@ The integration supports:
 ### M-Pesa (Kenya)
 
 **Features:**
+
 - STK Push (user prompt on phone)
 - B2C payments (business to customer)
 - Real-time callback notifications
@@ -45,6 +47,7 @@ The integration supports:
 ### MTN Mobile Money
 
 **Features:**
+
 - Request to Pay
 - Transfer/Disbursement
 - Callback notifications
@@ -55,6 +58,7 @@ The integration supports:
 ### Airtel Money
 
 **Features:**
+
 - Payment initiation
 - Disbursements
 - Callback notifications
@@ -153,6 +157,7 @@ The mobile money services are automatically initialized when the server starts. 
 **Authentication:** Required (Admin/Collection Point)
 
 **Request Body:**
+
 ```json
 {
   "userId": "user-uuid",
@@ -165,6 +170,7 @@ The mobile money services are automatically initialized when the server starts. 
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -188,6 +194,7 @@ The mobile money services are automatically initialized when the server starts. 
 **Authentication:** Required (User)
 
 **Request Body:**
+
 ```json
 {
   "amount": 1000,
@@ -197,11 +204,13 @@ The mobile money services are automatically initialized when the server starts. 
 ```
 
 **Validation Rules:**
+
 - Minimum withdrawal: KES 100
 - Phone number must be in E.164 format
 - Payment method must be one of: `MPESA`, `MTN_MONEY`, `AIRTEL_MONEY`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -226,10 +235,12 @@ The mobile money services are automatically initialized when the server starts. 
 **Authentication:** Required (User)
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20, max: 100)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -267,6 +278,7 @@ The mobile money services are automatically initialized when the server starts. 
 **Authentication:** Required (Admin)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -311,6 +323,7 @@ The mobile money services are automatically initialized when the server starts. 
 ### Why Callbacks?
 
 Mobile money transactions are asynchronous. The provider needs time to:
+
 - Prompt the user
 - Wait for user confirmation
 - Process the transaction
@@ -331,6 +344,7 @@ Each provider has a dedicated callback endpoint:
 **Important:** Callback endpoints are public (no authentication) because they're called by external providers.
 
 **Security Measures:**
+
 1. **Verify source IP**: Check requests come from provider IPs (to be implemented)
 2. **Validate payload**: Ensure payload structure matches expected format
 3. **Transaction matching**: Only update transactions that exist and are PENDING
@@ -411,6 +425,7 @@ Each provider has a dedicated callback endpoint:
 4. No real money is transacted
 
 **Test STK Push:**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/payments/withdraw \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -475,6 +490,7 @@ curl http://localhost:3000/api/v1/payments/transactions/TRANSACTION_ID \
 #### 1. Provider Not Configured
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -487,6 +503,7 @@ curl http://localhost:3000/api/v1/payments/transactions/TRANSACTION_ID \
 #### 2. Insufficient Balance
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -499,6 +516,7 @@ curl http://localhost:3000/api/v1/payments/transactions/TRANSACTION_ID \
 #### 3. Invalid Phone Number
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -511,6 +529,7 @@ curl http://localhost:3000/api/v1/payments/transactions/TRANSACTION_ID \
 #### 4. Transaction Timeout
 
 If a transaction remains PENDING for too long (>5 minutes):
+
 - Check provider status
 - Review callback logs
 - Retry transaction if needed
@@ -587,16 +606,19 @@ Before going live with mobile money integration:
 ## Support Resources
 
 ### M-Pesa
+
 - [Developer Portal](https://developer.safaricom.co.ke/)
 - [Documentation](https://developer.safaricom.co.ke/docs)
 - Support: apisupport@safaricom.co.ke
 
 ### MTN Mobile Money
+
 - [Developer Portal](https://momodeveloper.mtn.com/)
 - [Documentation](https://momodeveloper.mtn.com/api-documentation/)
 - Support: Via developer portal
 
 ### Airtel Money
+
 - Contact your Airtel Business representative
 - [Business Portal](https://www.airtel.africa/business)
 
@@ -607,6 +629,7 @@ Before going live with mobile money integration:
 ### Provider Service Not Initializing
 
 **Check:**
+
 1. Environment variables are set correctly
 2. No typos in variable names
 3. Server logs for initialization errors
@@ -614,6 +637,7 @@ Before going live with mobile money integration:
 ### Callbacks Not Received
 
 **Check:**
+
 1. Callback URL is publicly accessible
 2. URL is HTTPS (required by most providers)
 3. Firewall allows inbound connections
@@ -622,6 +646,7 @@ Before going live with mobile money integration:
 ### Transaction Stuck in PENDING
 
 **Actions:**
+
 1. Check provider dashboard for transaction status
 2. Review callback logs
 3. Query provider API for transaction status
@@ -632,6 +657,7 @@ Before going live with mobile money integration:
 ## Need Help?
 
 If you encounter issues:
+
 1. Check the logs: `src/utils/logger.util.ts`
 2. Review provider documentation
 3. Contact provider support

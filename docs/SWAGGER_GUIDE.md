@@ -29,11 +29,13 @@ WasteFi Backend uses **Swagger/OpenAPI 3.0** for API documentation. This provide
 ### Development
 
 Start the server:
+
 ```bash
 npm run dev
 ```
 
 Access Swagger UI:
+
 ```
 http://localhost:3000/api/docs
 ```
@@ -122,6 +124,7 @@ Now all requests will include your authentication token automatically.
 3. **Click "Try it out"**
 
 4. **Fill in request body**:
+
    ```json
    {
      "collectionPointId": "uuid-of-collection-point",
@@ -129,9 +132,7 @@ Now all requests will include your authentication token automatically.
      "materialCategory": "PLASTIC",
      "weight": 5.5,
      "quantity": 20,
-     "imageUrls": [
-       "https://example.com/image1.jpg"
-     ],
+     "imageUrls": ["https://example.com/image1.jpg"],
      "notes": "Clean PET bottles"
    }
    ```
@@ -165,6 +166,7 @@ curl http://localhost:3000/api/docs.json -o openapi.json
 ```
 
 Or visit in browser:
+
 ```
 http://localhost:3000/api/docs.json
 ```
@@ -172,17 +174,20 @@ http://localhost:3000/api/docs.json
 ### Import to Tools
 
 **Postman:**
+
 1. Open Postman
 2. Import → Link
 3. Paste: `http://localhost:3000/api/docs.json`
 4. Import
 
 **Insomnia:**
+
 1. Open Insomnia
 2. Import/Export → Import Data
 3. From URL: `http://localhost:3000/api/docs.json`
 
 **VS Code REST Client:**
+
 1. Install REST Client extension
 2. Import OpenAPI file
 3. Generate requests
@@ -315,6 +320,7 @@ Reference shared schemas:
 ### 1. Complete Documentation
 
 Document all endpoints with:
+
 - ✅ Summary and description
 - ✅ All parameters
 - ✅ Request body schema
@@ -324,24 +330,27 @@ Document all endpoints with:
 ### 2. Use Tags
 
 Organize endpoints with meaningful tags:
+
 ```typescript
-tags: [Authentication]
-tags: [Users]
-tags: [Payments]
+tags: [Authentication];
+tags: [Users];
+tags: [Payments];
 ```
 
 ### 3. Provide Examples
 
 Include realistic examples:
+
 ```typescript
-example: "+254712345678"
-example: "john.doe@example.com"
-example: 5.5
+example: '+254712345678';
+example: 'john.doe@example.com';
+example: 5.5;
 ```
 
 ### 4. Reference Common Responses
 
 Reuse error responses:
+
 ```typescript
 401:
   $ref: '#/components/responses/UnauthorizedError'
@@ -352,6 +361,7 @@ Reuse error responses:
 ### 5. Document Security
 
 Clearly indicate protected endpoints:
+
 ```typescript
 security:
   - bearerAuth: []
@@ -360,8 +370,9 @@ security:
 ### 6. Version API
 
 Include version in path:
+
 ```typescript
-/api/v1/endpoint
+/api/1v / endpoint;
 ```
 
 ### 7. Use HTTP Status Codes Correctly
@@ -378,21 +389,19 @@ Include version in path:
 ### 8. Schema Validation
 
 Define strict schemas:
+
 ```typescript
-type: object
-required:
-  - field1
-  - field2
-properties:
-  field1:
-    type: string
-    minLength: 1
-    maxLength: 255
+type: object;
+required: -field1 - field2;
+properties: field1: type: string;
+minLength: 1;
+maxLength: 255;
 ```
 
 ### 9. Pagination Documentation
 
 Document pagination parameters:
+
 ```typescript
 parameters:
   - in: query
@@ -413,6 +422,7 @@ parameters:
 ### 10. Keep Documentation Updated
 
 When modifying endpoints:
+
 1. Update Swagger annotations
 2. Update examples
 3. Update response schemas
@@ -456,6 +466,7 @@ swagger-cli validate http://localhost:3000/api/docs.json
 **Cause**: Route file not included in swagger config
 
 **Fix**: Add to `src/config/swagger.ts`:
+
 ```typescript
 apis: [
   './src/routes/*.ts',
@@ -468,6 +479,7 @@ apis: [
 **Cause**: Schema not defined in components
 
 **Fix**: Add schema to `src/config/swagger.ts`:
+
 ```typescript
 components: {
   schemas: {
@@ -484,6 +496,7 @@ components: {
 **Cause**: Missing security scheme
 
 **Fix**: Verify security scheme in config:
+
 ```typescript
 securitySchemes: {
   bearerAuth: {
@@ -536,6 +549,7 @@ schemathesis run http://localhost:3000/api/docs.json
 ## Support
 
 For questions or issues with API documentation:
+
 - Check existing documentation files
 - Review Swagger configuration
 - Test in Swagger UI

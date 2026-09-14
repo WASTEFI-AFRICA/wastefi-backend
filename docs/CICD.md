@@ -46,11 +46,13 @@ Runs on every push and pull request to `main` and `develop` branches.
 ### Jobs
 
 #### 1. Lint
+
 - Run ESLint
 - Check Prettier formatting
 - **Duration**: ~1 minute
 
 #### 2. Test
+
 - Setup PostgreSQL and Redis services
 - Run database migrations
 - Execute test suite with coverage
@@ -58,6 +60,7 @@ Runs on every push and pull request to `main` and `develop` branches.
 - **Duration**: ~3-5 minutes
 
 #### 3. Build
+
 - Install production dependencies
 - Generate Prisma Client
 - Compile TypeScript
@@ -65,23 +68,27 @@ Runs on every push and pull request to `main` and `develop` branches.
 - **Duration**: ~2 minutes
 
 #### 4. Security
+
 - Run `npm audit`
 - Snyk security scan
 - Check for vulnerabilities
 - **Duration**: ~1-2 minutes
 
 #### 5. Docker
+
 - Build Docker image
 - Verify image builds successfully
 - Cache layers for faster builds
 - **Duration**: ~2-3 minutes
 
 #### 6. Notify
+
 - Check overall pipeline status
 - Send notifications (optional)
 - **Duration**: <1 minute
 
 ### Total CI Duration
+
 **~10-15 minutes** for full pipeline
 
 ### Example Run
@@ -102,6 +109,7 @@ Total: 12 minutes 47 seconds
 ### Workflow: `.github/workflows/cd.yml`
 
 Runs on:
+
 - Push to `main` branch
 - Git tags (e.g., `v1.0.0`)
 - Manual workflow dispatch
@@ -109,12 +117,14 @@ Runs on:
 ### Jobs
 
 #### 1. Build and Push
+
 - Build Docker image
 - Tag with version/commit SHA
 - Push to GitHub Container Registry
 - **Duration**: ~3-5 minutes
 
 #### 2. Deploy to Staging
+
 - Triggered on `develop` branch push
 - SSH to staging server
 - Pull latest code
@@ -125,6 +135,7 @@ Runs on:
 - **Duration**: ~3-5 minutes
 
 #### 3. Deploy to Production
+
 - Triggered on version tags (e.g., `v1.0.0`)
 - Create database backup
 - SSH to production server
@@ -135,11 +146,13 @@ Runs on:
 - **Duration**: ~5-7 minutes
 
 #### 4. Rollback
+
 - Runs only on deployment failure
 - Automatically reverts to previous version
 - **Duration**: ~2 minutes
 
 #### 5. Notify
+
 - Send deployment status notification
 - Slack/Discord integration (optional)
 - **Duration**: <1 minute
@@ -154,13 +167,13 @@ main branch push → CI passes → Build Docker Image → Deploy to Staging → 
 
 ### Automatic Triggers
 
-| Event | Workflows Triggered | Branches |
-|-------|---------------------|----------|
-| Push | CI, CD | main, develop |
-| Pull Request | CI, Dependency Review | main, develop |
-| Tag Push (v*) | CD (Production) | - |
-| Schedule (Daily 2 AM) | Database Backup | - |
-| Schedule (Weekly) | Docker Security Scan | - |
+| Event                 | Workflows Triggered   | Branches      |
+| --------------------- | --------------------- | ------------- |
+| Push                  | CI, CD                | main, develop |
+| Pull Request          | CI, Dependency Review | main, develop |
+| Tag Push (v*)         | CD (Production)       | -             |
+| Schedule (Daily 2 AM) | Database Backup       | -             |
+| Schedule (Weekly)     | Docker Security Scan  | -             |
 
 ### Manual Triggers
 
@@ -193,10 +206,12 @@ Settings → Actions → General → Allow all actions
 Navigate to: `Settings → Environments`
 
 **Create Environments:**
+
 - `staging` - Auto-deploy on develop push
 - `production` - Manual approval required
 
 **Environment Protection Rules (Production):**
+
 - ✅ Required reviewers (1-2 people)
 - ✅ Wait timer: 0 minutes
 - ✅ Deployment branches: main, tags
@@ -216,21 +231,21 @@ Navigate to: `Settings → Secrets and variables → Actions`
 
 #### Deployment Secrets
 
-| Secret Name | Description | Example |
-|-------------|-------------|---------|
-| `STAGING_HOST` | Staging server IP/domain | `staging.wastefi.com` |
-| `STAGING_USER` | SSH username | `deploy` |
-| `STAGING_SSH_KEY` | SSH private key | `-----BEGIN RSA...` |
-| `PROD_HOST` | Production server IP/domain | `api.wastefi.com` |
-| `PROD_USER` | SSH username | `deploy` |
-| `PROD_SSH_KEY` | SSH private key | `-----BEGIN RSA...` |
+| Secret Name       | Description                 | Example               |
+| ----------------- | --------------------------- | --------------------- |
+| `STAGING_HOST`    | Staging server IP/domain    | `staging.wastefi.com` |
+| `STAGING_USER`    | SSH username                | `deploy`              |
+| `STAGING_SSH_KEY` | SSH private key             | `-----BEGIN RSA...`   |
+| `PROD_HOST`       | Production server IP/domain | `api.wastefi.com`     |
+| `PROD_USER`       | SSH username                | `deploy`              |
+| `PROD_SSH_KEY`    | SSH private key             | `-----BEGIN RSA...`   |
 
 #### Security Scanning Secrets
 
-| Secret Name | Description | How to Get |
-|-------------|-------------|------------|
-| `SNYK_TOKEN` | Snyk API token | [Snyk Dashboard](https://snyk.io) |
-| `CODECOV_TOKEN` | Codecov upload token | [Codecov.io](https://codecov.io) |
+| Secret Name     | Description          | How to Get                        |
+| --------------- | -------------------- | --------------------------------- |
+| `SNYK_TOKEN`    | Snyk API token       | [Snyk Dashboard](https://snyk.io) |
+| `CODECOV_TOKEN` | Codecov upload token | [Codecov.io](https://codecov.io)  |
 
 ### Generating SSH Key for Deployment
 
@@ -256,6 +271,7 @@ cat deploy_key | xclip   # Linux
 **URL**: `https://api-staging.wastefi.com`
 
 **Purpose**:
+
 - Test new features
 - Integration testing
 - Client demos
@@ -263,6 +279,7 @@ cat deploy_key | xclip   # Linux
 **Auto-deploy**: On push to `develop` branch
 
 **Configuration**:
+
 ```bash
 # Server path
 /opt/wastefi-backend
@@ -279,6 +296,7 @@ wastefi_staging
 **URL**: `https://api.wastefi.com`
 
 **Purpose**:
+
 - Live user traffic
 - Stable releases only
 
@@ -287,6 +305,7 @@ wastefi_staging
 **Approval**: Requires manual approval
 
 **Configuration**:
+
 ```bash
 # Server path
 /opt/wastefi-backend
@@ -303,6 +322,7 @@ wastefi
 ### GitHub Actions Dashboard
 
 View pipeline status:
+
 ```
 https://github.com/your-org/wastefi-backend/actions
 ```
@@ -310,6 +330,7 @@ https://github.com/your-org/wastefi-backend/actions
 ### Build Status Badge
 
 Add to README.md:
+
 ```markdown
 ![CI](https://github.com/your-org/wastefi-backend/workflows/CI/badge.svg)
 ![CD](https://github.com/your-org/wastefi-backend/workflows/CD/badge.svg)
@@ -410,6 +431,7 @@ gh workflow run cd.yml -f environment=production
 ### Automatic Rollback
 
 If deployment fails:
+
 1. Health check fails
 2. Rollback job triggers automatically
 3. Reverts to previous Git commit
@@ -542,6 +564,7 @@ gh run rerun <run-id>
 ### 1. Semantic Versioning
 
 Use semantic versioning for tags:
+
 - `v1.0.0` - Major release
 - `v1.1.0` - Minor release (new features)
 - `v1.0.1` - Patch release (bug fixes)
@@ -556,6 +579,7 @@ Use semantic versioning for tags:
 ### 3. Commit Messages
 
 Follow conventional commits:
+
 ```
 feat: Add user authentication
 fix: Resolve memory leak in Redis connection
@@ -580,6 +604,7 @@ chore: Upgrade dependencies
 ### Secret Rotation
 
 Rotate secrets regularly:
+
 - SSH keys: Every 90 days
 - API tokens: Every 90 days
 - Database passwords: Every 180 days
@@ -621,6 +646,7 @@ Rotate secrets regularly:
 ## Support
 
 For CI/CD issues:
+
 - Check workflow logs
 - Review this documentation
 - Contact: devops@wastefi.com

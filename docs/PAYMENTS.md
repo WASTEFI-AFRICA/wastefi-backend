@@ -17,8 +17,8 @@ WasteFi's payment system processes waste collection payments via Stellar blockch
 ## Payment Flow
 
 ```
-Collection Verified → Calculate Payment → Convert KES to XLM → 
-Send Stellar Transaction → Record Transaction → Update Collection Status → 
+Collection Verified → Calculate Payment → Convert KES to XLM →
+Send Stellar Transaction → Record Transaction → Update Collection Status →
 Notify Collector
 ```
 
@@ -37,13 +37,14 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
   "data": {
     "id": "txn-456",
     "userId": "user-789",
-    "amount": 637.50,
+    "amount": 637.5,
     "currency": "KES",
     "type": "WASTE_COLLECTION",
     "status": "COMPLETED",
@@ -71,13 +72,14 @@ Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
   "data": [
     {
       "id": "txn-456",
-      "amount": 637.50,
+      "amount": 637.5,
       "currency": "KES",
       "type": "WASTE_COLLECTION",
       "status": "COMPLETED",
@@ -96,7 +98,7 @@ Response:
   },
   "summary": {
     "totalTransactions": 45,
-    "totalAmount": 28650.00
+    "totalAmount": 28650.0
   }
 }
 ```
@@ -123,6 +125,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -164,6 +167,7 @@ Authorization: Bearer <admin-token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -232,6 +236,7 @@ The system automatically converts KES to XLM for Stellar payments using current 
 **Current Rate:** 1 XLM ≈ KES 15.5
 
 **Example:**
+
 ```
 Payment: KES 637.50
 Rate: 1 XLM = KES 15.5
@@ -241,6 +246,7 @@ XLM Amount: 637.50 / 15.5 = 41.13 XLM
 ### Real-time Rates
 
 In production, integrate with:
+
 - Stellar DEX
 - Cryptocurrency exchanges
 - Forex APIs
@@ -269,14 +275,14 @@ const processPayment = async (collectionId) => {
   const response = await fetch('/api/v1/payments/process', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${adminToken}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${adminToken}`,
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ collectionId })
+    body: JSON.stringify({ collectionId }),
   });
 
   const result = await response.json();
-  
+
   if (result.success) {
     console.log('Payment processed:', result.data.stellarTxHash);
   }
@@ -309,18 +315,18 @@ const requestWithdrawal = async (amount, phoneNumber) => {
   const response = await fetch('/api/v1/payments/withdraw', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       amount,
       phoneNumber: '+254712345678',
-      paymentMethod: 'MPESA'
-    })
+      paymentMethod: 'MPESA',
+    }),
   });
 
   const result = await response.json();
-  
+
   if (result.success) {
     alert(`Withdrawal of KES ${amount} requested. 
            Transaction ID: ${result.data.id}
@@ -334,6 +340,7 @@ const requestWithdrawal = async (amount, phoneNumber) => {
 ### Common Errors
 
 **Insufficient Balance**
+
 ```json
 {
   "success": false,
@@ -342,6 +349,7 @@ const requestWithdrawal = async (amount, phoneNumber) => {
 ```
 
 **Collection Not Verified**
+
 ```json
 {
   "success": false,
@@ -350,6 +358,7 @@ const requestWithdrawal = async (amount, phoneNumber) => {
 ```
 
 **Payment Already Completed**
+
 ```json
 {
   "success": false,
@@ -358,6 +367,7 @@ const requestWithdrawal = async (amount, phoneNumber) => {
 ```
 
 **Wallet Not Found**
+
 ```json
 {
   "success": false,
@@ -371,15 +381,12 @@ Failed payments can be retried:
 
 ```javascript
 const retryPayment = async (transactionId) => {
-  const response = await fetch(
-    `/api/v1/payments/transactions/${transactionId}/retry`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
-      }
-    }
-  );
+  const response = await fetch(`/api/v1/payments/transactions/${transactionId}/retry`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+    },
+  });
 
   return await response.json();
 };
@@ -411,7 +418,7 @@ const retryPayment = async (transactionId) => {
 {
   "id": "txn-456",
   "userId": "user-789",
-  "amount": 637.50,
+  "amount": 637.5,
   "currency": "KES",
   "type": "WASTE_COLLECTION",
   "status": "COMPLETED",
@@ -436,16 +443,15 @@ const retryPayment = async (transactionId) => {
 ```javascript
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);
-  
+
   useEffect(() => {
     fetchTransactions();
   }, []);
 
   const fetchTransactions = async () => {
-    const response = await fetch(
-      '/api/v1/payments/transactions/me?page=1&limit=50',
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const response = await fetch('/api/v1/payments/transactions/me?page=1&limit=50', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     const { data } = await response.json();
     setTransactions(data);
@@ -454,7 +460,7 @@ const TransactionList = () => {
   return (
     <div>
       <h2>Transaction History</h2>
-      {transactions.map(txn => (
+      {transactions.map((txn) => (
         <div key={txn.id}>
           <p>{txn.description}</p>
           <p>KES {txn.amount}</p>
@@ -480,14 +486,14 @@ const WithdrawalForm = () => {
     const response = await fetch('/api/v1/payments/withdraw', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         amount: parseFloat(amount),
         phoneNumber,
-        paymentMethod: 'MPESA'
-      })
+        paymentMethod: 'MPESA',
+      }),
     });
 
     const result = await response.json();
@@ -565,6 +571,7 @@ const WithdrawalForm = () => {
 ### Key Metrics
 
 Track these metrics:
+
 - Payment success rate
 - Average processing time
 - Failed payment rate
@@ -574,6 +581,7 @@ Track these metrics:
 ### Alerts
 
 Set up alerts for:
+
 - Payment failure rate > 5%
 - Transaction processing > 30 seconds
 - Withdrawal queue backlog
@@ -646,6 +654,7 @@ curl -X POST http://localhost:3000/api/v1/payments/withdraw \
 ### Payment Stuck in Processing
 
 **Check:**
+
 - Stellar network status
 - Master wallet balance
 - Transaction hash on blockchain
@@ -654,6 +663,7 @@ curl -X POST http://localhost:3000/api/v1/payments/withdraw \
 ### Withdrawal Not Received
 
 **Steps:**
+
 1. Check transaction status
 2. Verify phone number
 3. Check mobile money account
@@ -663,12 +673,14 @@ curl -X POST http://localhost:3000/api/v1/payments/withdraw \
 ### Transaction Failed
 
 **Common Causes:**
+
 - Insufficient balance
 - Network issues
 - Invalid wallet address
 - Rate limit exceeded
 
 **Solution:**
+
 - Check error message
 - Retry transaction
 - Contact support if persists
@@ -676,6 +688,7 @@ curl -X POST http://localhost:3000/api/v1/payments/withdraw \
 ## Support
 
 For payment issues:
+
 - Check transaction status first
 - Review error messages
 - Check Stellar explorer

@@ -5,16 +5,19 @@ WasteFi uses the Stellar blockchain for fast, low-cost payments to waste collect
 ## Features
 
 ✅ **Automatic Wallet Creation**
+
 - Each user gets a Stellar wallet upon registration
 - Testnet accounts are automatically funded
 - Private keys encrypted and stored securely
 
 ✅ **Payment Processing**
+
 - Send XLM payments to collectors
 - Support for memos (transaction notes)
 - Transaction tracking and history
 
 ✅ **Balance Management**
+
 - Real-time balance queries
 - Multi-asset support (XLM + custom tokens)
 - Exchange rate conversion (XLM ↔ KES)
@@ -22,12 +25,14 @@ WasteFi uses the Stellar blockchain for fast, low-cost payments to waste collect
 ## API Endpoints
 
 ### Create Wallet
+
 ```bash
 POST /api/v1/wallet/create
 Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -40,12 +45,14 @@ Response:
 ```
 
 ### Get Balance
+
 ```bash
 GET /api/v1/wallet/balance
 Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -62,6 +69,7 @@ Response:
 ```
 
 ### Send Payment
+
 ```bash
 POST /api/v1/wallet/send
 Authorization: Bearer <token>
@@ -75,6 +83,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -86,12 +95,14 @@ Response:
 ```
 
 ### Get Transaction History
+
 ```bash
 GET /api/v1/wallet/transactions?limit=20
 Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -110,11 +121,13 @@ Response:
 ```
 
 ### Get Exchange Rate
+
 ```bash
 GET /api/v1/wallet/exchange-rate
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -141,11 +154,13 @@ STELLAR_MASTER_SECRET=SXXXXXXXXXXXXXXXX   # Platform wallet secret key
 ### Networks
 
 **Testnet** (Development)
+
 - Horizon URL: `https://horizon-testnet.stellar.org`
 - Network Passphrase: `Test SDF Network ; September 2015`
 - Free XLM from Friendbot
 
 **Mainnet** (Production)
+
 - Horizon URL: `https://horizon.stellar.org`
 - Network Passphrase: `Public Global Stellar Network ; September 2015`
 - Real XLM required
@@ -167,8 +182,8 @@ STELLAR_MASTER_SECRET=SXXXXXXXXXXXXXXXX   # Platform wallet secret key
 // Process payment for waste collection
 const result = await StellarService.processWasteCollectionPayment(
   collectorUserId,
-  '10.5',        // Amount in XLM
-  collectionId   // Reference ID
+  '10.5', // Amount in XLM
+  collectionId // Reference ID
 );
 
 if (result.success) {
@@ -179,16 +194,19 @@ if (result.success) {
 ## Security Features
 
 🔒 **Private Key Encryption**
+
 - All private keys encrypted with AES-256-CBC
 - Encryption key from JWT_SECRET
 - Never exposed in API responses
 
 🔒 **Secure Storage**
+
 - Private keys stored encrypted in database
 - Public keys safe to share
 - Decryption only when needed for transactions
 
 🔒 **Transaction Signing**
+
 - All transactions signed with private key
 - Transactions submitted to Stellar network
 - Immutable blockchain record
@@ -224,6 +242,7 @@ curl https://friendbot.stellar.org?addr=GXXXXXXX...
 ### View Transactions
 
 Use Stellar Laboratory or Explorer:
+
 - https://laboratory.stellar.org
 - https://stellarchain.io (testnet)
 
@@ -250,14 +269,17 @@ Before going to mainnet:
 ## Troubleshooting
 
 ### "Account not found"
+
 - Account not yet funded on mainnet
 - Fund with at least 1 XLM minimum balance
 
 ### "Insufficient balance"
+
 - Account doesn't have enough XLM
 - Remember: 0.5 XLM minimum balance required
 
 ### "Transaction failed"
+
 - Check network connectivity
 - Verify account has sufficient balance
 - Check transaction sequence number
@@ -265,6 +287,7 @@ Before going to mainnet:
 ## Support
 
 For Stellar integration issues:
+
 - Stellar Docs: https://developers.stellar.org
 - Discord: https://discord.gg/stellar
 - GitHub: https://github.com/stellar
@@ -272,12 +295,14 @@ For Stellar integration issues:
 ## Rate Limits
 
 Horizon API rate limits:
+
 - **Public**: 3,600 requests/hour
 - **Authenticated**: Higher limits available
 
 ## Monitoring
 
 Track these metrics:
+
 - Transaction success rate
 - Average transaction time
 - Failed transactions

@@ -15,6 +15,7 @@ Guide for importing and using WasteFi API with Postman.
 ### Method 1: Import from URL
 
 1. **Start WasteFi server**:
+
    ```bash
    npm run dev
    ```
@@ -36,6 +37,7 @@ Guide for importing and using WasteFi API with Postman.
 ### Method 2: Import from File
 
 1. **Download specification**:
+
    ```bash
    curl http://localhost:3000/api/docs.json -o wastefi-openapi.json
    ```
@@ -56,21 +58,21 @@ Guide for importing and using WasteFi API with Postman.
 
 ### Add Variables
 
-| Variable | Initial Value | Current Value | Type |
-|----------|---------------|---------------|------|
-| `baseUrl` | `http://localhost:3000/api/v1` | `http://localhost:3000/api/v1` | default |
-| `accessToken` | | | secret |
-| `refreshToken` | | | secret |
-| `userId` | | | default |
-| `collectionPointId` | | | default |
-| `collectionId` | | | default |
+| Variable            | Initial Value                  | Current Value                  | Type    |
+| ------------------- | ------------------------------ | ------------------------------ | ------- |
+| `baseUrl`           | `http://localhost:3000/api/v1` | `http://localhost:3000/api/v1` | default |
+| `accessToken`       |                                |                                | secret  |
+| `refreshToken`      |                                |                                | secret  |
+| `userId`            |                                |                                | default |
+| `collectionPointId` |                                |                                | default |
+| `collectionId`      |                                |                                | default |
 
 ### Production Environment
 
 Create second environment: **"WasteFi Production"**
 
-| Variable | Initial Value |
-|----------|---------------|
+| Variable  | Initial Value                    |
+| --------- | -------------------------------- |
 | `baseUrl` | `https://api.wastefi.com/api/v1` |
 
 ## Authentication Setup
@@ -87,10 +89,10 @@ Create a **Pre-request Script** at the collection level:
 // Auto-add Bearer token if available
 const accessToken = pm.environment.get('accessToken');
 if (accessToken && !pm.request.headers.has('Authorization')) {
-    pm.request.headers.add({
-        key: 'Authorization',
-        value: `Bearer ${accessToken}`
-    });
+  pm.request.headers.add({
+    key: 'Authorization',
+    value: `Bearer ${accessToken}`,
+  });
 }
 ```
 
@@ -105,15 +107,15 @@ Create a **Test Script** for login endpoint:
 ```javascript
 // Save tokens from login response
 if (pm.response.code === 200) {
-    const response = pm.response.json();
-    
-    if (response.success && response.data.tokens) {
-        pm.environment.set('accessToken', response.data.tokens.accessToken);
-        pm.environment.set('refreshToken', response.data.tokens.refreshToken);
-        pm.environment.set('userId', response.data.user.id);
-        
-        console.log('✅ Tokens saved to environment');
-    }
+  const response = pm.response.json();
+
+  if (response.success && response.data.tokens) {
+    pm.environment.set('accessToken', response.data.tokens.accessToken);
+    pm.environment.set('refreshToken', response.data.tokens.refreshToken);
+    pm.environment.set('userId', response.data.user.id);
+
+    console.log('✅ Tokens saved to environment');
+  }
 }
 ```
 
@@ -124,12 +126,12 @@ Create request: **"Refresh Token"**
 ```javascript
 // Tests tab
 if (pm.response.code === 200) {
-    const response = pm.response.json();
-    
-    if (response.success && response.data.accessToken) {
-        pm.environment.set('accessToken', response.data.accessToken);
-        console.log('✅ Access token refreshed');
-    }
+  const response = pm.response.json();
+
+  if (response.success && response.data.accessToken) {
+    pm.environment.set('accessToken', response.data.accessToken);
+    console.log('✅ Access token refreshed');
+  }
 }
 ```
 
@@ -295,17 +297,18 @@ Use test scripts to chain requests:
 ```javascript
 // After creating collection, get its details
 if (pm.response.code === 201) {
-    const collectionId = pm.response.json().data.id;
-    pm.environment.set('collectionId', collectionId);
-    
-    // Auto-run next request
-    postman.setNextRequest('Get Collection');
+  const collectionId = pm.response.json().data.id;
+  pm.environment.set('collectionId', collectionId);
+
+  // Auto-run next request
+  postman.setNextRequest('Get Collection');
 }
 ```
 
 ### Data-Driven Testing
 
 1. **Create CSV file** (`test-data.csv`):
+
    ```csv
    phoneNumber,firstName,lastName
    +254712345678,John,Doe
@@ -336,24 +339,24 @@ Add assertions to verify responses:
 
 ```javascript
 // Status code
-pm.test("Status code is 200", function () {
-    pm.response.to.have.status(200);
+pm.test('Status code is 200', function () {
+  pm.response.to.have.status(200);
 });
 
 // Response structure
-pm.test("Response has success field", function () {
-    pm.expect(pm.response.json()).to.have.property('success');
+pm.test('Response has success field', function () {
+  pm.expect(pm.response.json()).to.have.property('success');
 });
 
 // Response time
-pm.test("Response time is less than 500ms", function () {
-    pm.expect(pm.response.responseTime).to.be.below(500);
+pm.test('Response time is less than 500ms', function () {
+  pm.expect(pm.response.responseTime).to.be.below(500);
 });
 
 // Data validation
-pm.test("User has valid email", function () {
-    const user = pm.response.json().data;
-    pm.expect(user.email).to.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/);
+pm.test('User has valid email', function () {
+  const user = pm.response.json().data;
+  pm.expect(user.email).to.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/);
 });
 ```
 
@@ -394,6 +397,7 @@ Add descriptions to requests:
 ### Issue: Unauthorized (401)
 
 **Solution:**
+
 1. Check token is saved: `{{accessToken}}`
 2. Login again to refresh token
 3. Verify Authorization header format: `Bearer <token>`
@@ -401,6 +405,7 @@ Add descriptions to requests:
 ### Issue: Rate Limit (429)
 
 **Solution:**
+
 1. Add delays between requests
 2. Reduce test frequency
 3. Check rate limit headers in response
@@ -408,6 +413,7 @@ Add descriptions to requests:
 ### Issue: Variables Not Working
 
 **Solution:**
+
 1. Select correct environment (top right)
 2. Verify variable names match: `{{variableName}}`
 3. Check variable scope (environment vs. global)
@@ -415,6 +421,7 @@ Add descriptions to requests:
 ### Issue: Request Timeout
 
 **Solution:**
+
 1. Check server is running
 2. Verify baseUrl is correct
 3. Increase timeout: Settings → General → Request timeout
@@ -431,16 +438,19 @@ Add descriptions to requests:
 ### Share with Team
 
 **Method 1: Workspace**
+
 - Create Postman workspace
 - Invite team members
 - Share collections/environments
 
 **Method 2: Export File**
+
 - Export collection + environment
 - Share JSON files
 - Team imports into Postman
 
 **Method 3: Public Documentation**
+
 - Collection → **"..."** → **"Publish Docs"**
 - Configure documentation site
 - Share public URL
@@ -494,6 +504,7 @@ jobs:
 ## Support
 
 For API testing issues:
+
 - Check Swagger documentation first
 - Verify environment variables
 - Test in Swagger UI

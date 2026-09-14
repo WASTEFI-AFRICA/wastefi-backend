@@ -19,11 +19,13 @@ Complete API reference for the WasteFi Admin Dashboard endpoints.
 The Admin Dashboard API provides comprehensive endpoints for platform administration, monitoring, and analytics. All endpoints require **ADMIN** role authentication.
 
 ### Base URL
+
 ```
 /api/v1/admin
 ```
 
 ### Key Features
+
 - Real-time dashboard statistics
 - User, collection, and transaction management
 - System health monitoring
@@ -36,6 +38,7 @@ The Admin Dashboard API provides comprehensive endpoints for platform administra
 ## Authentication
 
 All admin endpoints require:
+
 1. Valid JWT token in Authorization header
 2. User with **ADMIN** role
 
@@ -44,6 +47,7 @@ Authorization: Bearer <your-jwt-token>
 ```
 
 **Example:**
+
 ```bash
 curl -H "Authorization: Bearer eyJhbGc..." \
   https://api.wastefi.com/api/v1/admin/dashboard
@@ -62,6 +66,7 @@ Get comprehensive platform statistics for the admin dashboard.
 **Authentication:** Required (Admin)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -145,6 +150,7 @@ Get comprehensive platform statistics for the admin dashboard.
 ```
 
 **Use Cases:**
+
 - Main dashboard overview
 - Real-time platform monitoring
 - Quick access to key metrics
@@ -160,14 +166,17 @@ Get recent system activity and audit logs.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `limit` (optional): Number of logs to return (1-200, default: 50)
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/activity?limit=20
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -193,6 +202,7 @@ GET /api/v1/admin/activity?limit=20
 ```
 
 **Use Cases:**
+
 - Audit trail monitoring
 - Security review
 - Admin action tracking
@@ -208,6 +218,7 @@ Get real-time system health status and service availability.
 **Authentication:** Required (Admin)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -231,11 +242,13 @@ Get real-time system health status and service availability.
 ```
 
 **Status Values:**
+
 - `healthy` - Response time < 1000ms
 - `degraded` - Response time >= 1000ms
 - `down` - Service unavailable
 
 **Use Cases:**
+
 - System monitoring
 - Service availability checks
 - Troubleshooting
@@ -253,6 +266,7 @@ Get paginated list of all users with filtering options.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (1-100, default: 20)
 - `role` (optional): Filter by role (ADMIN, COLLECTOR, COLLECTION_POINT)
@@ -261,11 +275,13 @@ Get paginated list of all users with filtering options.
 - `search` (optional): Search by name, email, or phone
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/users?page=1&limit=20&kycStatus=PENDING&search=john
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -293,6 +309,7 @@ GET /api/v1/admin/users?page=1&limit=20&kycStatus=PENDING&search=john
 ```
 
 **Use Cases:**
+
 - User management
 - KYC review workflow
 - User search and filtering
@@ -308,6 +325,7 @@ Get paginated list of all waste collections with filtering options.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (1-100, default: 20)
 - `status` (optional): Filter by status (PENDING, VERIFIED, REJECTED)
@@ -317,11 +335,13 @@ Get paginated list of all waste collections with filtering options.
 - `endDate` (optional): Filter to date (ISO 8601)
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/collections?status=PENDING&startDate=2026-09-01
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -355,6 +375,7 @@ GET /api/v1/admin/collections?status=PENDING&startDate=2026-09-01
 ```
 
 **Use Cases:**
+
 - Collection verification workflow
 - Material tracking
 - Collection point performance
@@ -370,6 +391,7 @@ Get paginated list of all transactions with filtering options.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (1-100, default: 20)
 - `type` (optional): Filter by type (WASTE_COLLECTION, WITHDRAWAL, etc.)
@@ -380,11 +402,13 @@ Get paginated list of all transactions with filtering options.
 - `endDate` (optional): Filter to date (ISO 8601)
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/transactions?status=FAILED&paymentMethod=MPESA
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -416,6 +440,7 @@ GET /api/v1/admin/transactions?status=FAILED&paymentMethod=MPESA
 ```
 
 **Use Cases:**
+
 - Transaction monitoring
 - Failed payment investigation
 - Financial reporting
@@ -431,15 +456,18 @@ Get analytics data for charts and visualizations.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `period` (optional): Time period (7d, 30d, 90d, 1y, default: 30d)
 - `type` (optional): Data type (collections, transactions, users, default: collections)
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/analytics?period=30d&type=transactions
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -451,6 +479,7 @@ GET /api/v1/admin/analytics?period=30d&type=transactions
 ```
 
 **Use Cases:**
+
 - Trend analysis
 - Performance charts
 - Business intelligence
@@ -466,15 +495,18 @@ Export platform data to JSON or CSV format.
 **Authentication:** Required (Admin)
 
 **Query Parameters:**
+
 - `type` (required): Data type (users, collections, transactions)
 - `format` (optional): Export format (json, csv, default: json)
 
 **Example Request:**
+
 ```bash
 GET /api/v1/admin/export?type=users&format=csv
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -486,6 +518,7 @@ GET /api/v1/admin/export?type=users&format=csv
 ```
 
 **Use Cases:**
+
 - Data backup
 - External reporting
 - Third-party integrations
@@ -497,6 +530,7 @@ GET /api/v1/admin/export?type=users&format=csv
 ### Common Error Responses
 
 **401 Unauthorized:**
+
 ```json
 {
   "success": false,
@@ -505,6 +539,7 @@ GET /api/v1/admin/export?type=users&format=csv
 ```
 
 **403 Forbidden:**
+
 ```json
 {
   "success": false,
@@ -513,6 +548,7 @@ GET /api/v1/admin/export?type=users&format=csv
 ```
 
 **400 Bad Request:**
+
 ```json
 {
   "success": false,
@@ -527,6 +563,7 @@ GET /api/v1/admin/export?type=users&format=csv
 ```
 
 **500 Internal Server Error:**
+
 ```json
 {
   "success": false,
@@ -659,14 +696,14 @@ function AdminDashboard() {
   return (
     <div className="dashboard">
       <h1>Admin Dashboard</h1>
-      
+
       <div className="stats-grid">
-        <StatCard 
-          title="Total Users" 
+        <StatCard
+          title="Total Users"
           value={stats.overview.totalUsers}
         />
-        <StatCard 
-          title="Total Revenue" 
+        <StatCard
+          title="Total Revenue"
           value={`KES ${stats.overview.totalRevenue.toLocaleString()}`}
         />
         {/* More stat cards... */}

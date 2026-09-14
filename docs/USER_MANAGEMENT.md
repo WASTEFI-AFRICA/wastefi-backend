@@ -17,12 +17,14 @@ Registration → KYC Submission → Verification → Active → Transacting
 ### User Profile Management
 
 #### Get Current User
+
 ```bash
 GET /api/v1/users/me
 Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -46,6 +48,7 @@ Response:
 ```
 
 #### Update Profile
+
 ```bash
 PUT /api/v1/users/me
 Authorization: Bearer <token>
@@ -63,6 +66,7 @@ Content-Type: application/json
 ### KYC Verification
 
 #### Submit KYC Documents
+
 ```bash
 POST /api/v1/users/kyc/submit
 Authorization: Bearer <token>
@@ -78,6 +82,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -91,12 +96,14 @@ Response:
 ```
 
 #### Get KYC Status
+
 ```bash
 GET /api/v1/users/kyc/status
 Authorization: Bearer <token>
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -116,6 +123,7 @@ Response:
 ### Admin Operations
 
 #### Verify KYC (Admin/Verifier Only)
+
 ```bash
 POST /api/v1/users/{userId}/kyc/verify
 Authorization: Bearer <admin-token>
@@ -128,6 +136,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -144,12 +153,14 @@ Response:
 ```
 
 #### List Users with Filters
+
 ```bash
 GET /api/v1/users?status=ACTIVE&role=COLLECTOR&kycStatus=APPROVED&page=1&limit=20
 Authorization: Bearer <admin-token>
 ```
 
 Query Parameters:
+
 - `status` - PENDING, ACTIVE, SUSPENDED, BANNED
 - `role` - COLLECTOR, ADMIN, COLLECTION_POINT, VERIFIER
 - `kycStatus` - NOT_STARTED, PENDING, APPROVED, REJECTED
@@ -157,6 +168,7 @@ Query Parameters:
 - `limit` - Items per page (default: 10, max: 100)
 
 Response:
+
 ```json
 {
   "success": true,
@@ -184,12 +196,14 @@ Response:
 ```
 
 #### Get User by ID
+
 ```bash
 GET /api/v1/users/{userId}
 Authorization: Bearer <admin-token>
 ```
 
 #### Update User Status
+
 ```bash
 PUT /api/v1/users/{userId}/status
 Authorization: Bearer <admin-token>
@@ -202,6 +216,7 @@ Content-Type: application/json
 ```
 
 #### Delete User
+
 ```bash
 DELETE /api/v1/users/{userId}
 Authorization: Bearer <admin-token>
@@ -210,12 +225,14 @@ Authorization: Bearer <admin-token>
 ## User Roles
 
 ### COLLECTOR (Default)
+
 - Collect and deliver waste
 - Receive payments
 - View personal transactions
 - Submit KYC documents
 
 ### ADMIN
+
 - All collector permissions
 - Manage users (view, update, delete)
 - Verify KYC documents
@@ -223,11 +240,13 @@ Authorization: Bearer <admin-token>
 - Manage collection points
 
 ### COLLECTION_POINT
+
 - Manage specific collection point
 - Verify waste collections
 - Process payments to collectors
 
 ### VERIFIER
+
 - Review and approve KYC documents
 - Verify waste collections
 - Cannot manage users or system settings
@@ -235,36 +254,44 @@ Authorization: Bearer <admin-token>
 ## User Status Flow
 
 ### NOT_STARTED → PENDING
+
 - User registers
 - Account created but not verified
 
 ### PENDING → ACTIVE
+
 - KYC documents submitted and approved
 - User can now transact
 
 ### ACTIVE → SUSPENDED
+
 - Admin suspends user (temporary)
 - Can be reactivated
 
 ### ACTIVE → BANNED
+
 - Admin bans user (permanent)
 - Cannot be reactivated
 
 ## KYC Status Flow
 
 ### NOT_STARTED
+
 - Default status after registration
 - User hasn't submitted documents
 
 ### PENDING
+
 - Documents submitted
 - Awaiting admin/verifier review
 
 ### APPROVED
+
 - Documents verified
 - User status changes to ACTIVE
 
 ### REJECTED
+
 - Documents rejected
 - User can resubmit
 
@@ -306,17 +333,18 @@ Authorization: Bearer <admin-token>
 ### Recommended Approach
 
 1. **Client-side upload to cloud storage**
+
    ```javascript
    // Upload to S3, Cloudinary, etc.
    const uploadFile = async (file) => {
      const formData = new FormData();
      formData.append('file', file);
-     
+
      const response = await fetch('https://api.cloudinary.com/...', {
        method: 'POST',
-       body: formData
+       body: formData,
      });
-     
+
      return response.json().url;
    };
    ```
@@ -327,16 +355,16 @@ Authorization: Bearer <admin-token>
      await fetch('/api/v1/users/kyc/submit', {
        method: 'POST',
        headers: {
-         'Authorization': `Bearer ${token}`,
-         'Content-Type': 'application/json'
+         Authorization: `Bearer ${token}`,
+         'Content-Type': 'application/json',
        },
        body: JSON.stringify({
          nationalId: '12345678',
          idDocumentUrl: idUrl,
          photoUrl: photoUrl,
          address: '123 Main St',
-         city: 'Nairobi'
-       })
+         city: 'Nairobi',
+       }),
      });
    };
    ```
@@ -356,6 +384,7 @@ Authorization: Bearer <admin-token>
    - ID number format valid
 
 3. **Approve or Reject**
+
    ```bash
    POST /api/v1/users/{userId}/kyc/verify
    {
@@ -372,17 +401,20 @@ Authorization: Bearer <admin-token>
 ## Security Considerations
 
 ### Data Protection
+
 - ✅ Personal data encrypted at rest
 - ✅ Sensitive fields not exposed in API
 - ✅ Document URLs should be signed/temporary
 - ✅ Access logs for admin actions
 
 ### Privacy
+
 - ⚠️ Only authorized personnel can view KYC documents
 - ⚠️ Documents stored securely (cloud storage with access control)
 - ⚠️ Comply with data protection regulations (GDPR, local laws)
 
 ### Fraud Prevention
+
 - Check for duplicate national IDs
 - Verify document authenticity
 - Monitor for suspicious patterns
@@ -397,7 +429,7 @@ Authorization: Bearer <admin-token>
 const register = await POST('/api/v1/auth/register', {
   phoneNumber: '+254712345678',
   firstName: 'John',
-  lastName: 'Doe'
+  lastName: 'Doe',
 });
 
 // 2. User uploads documents to cloud
@@ -410,7 +442,7 @@ await POST('/api/v1/users/kyc/submit', {
   idDocumentUrl: idUrl,
   photoUrl: selfieUrl,
   address: '123 Main Street',
-  city: 'Nairobi'
+  city: 'Nairobi',
 });
 
 // 4. Poll for status (or use webhooks)
@@ -435,25 +467,28 @@ const user = await GET(`/api/v1/users/${userId}`);
 // 3. Approve or reject
 await POST(`/api/v1/users/${userId}/kyc/verify`, {
   approved: true,
-  notes: 'Documents verified'
+  notes: 'Documents verified',
 });
 ```
 
 ## Best Practices
 
 ### For Users
+
 ✅ Provide clear, high-quality photos
 ✅ Ensure all text is readable
 ✅ Use valid, non-expired documents
 ✅ Provide accurate information
 
 ### For Admins
+
 ✅ Review documents within 24-48 hours
 ✅ Provide clear rejection reasons
 ✅ Keep verification notes detailed
 ✅ Flag suspicious submissions
 
 ### For Developers
+
 ✅ Use secure document storage
 ✅ Implement signed URLs for documents
 ✅ Log all verification actions
@@ -463,17 +498,20 @@ await POST(`/api/v1/users/${userId}/kyc/verify`, {
 ## Troubleshooting
 
 ### KYC Rejected
+
 - Review rejection notes
 - Resubmit with corrected documents
 - Contact support if unclear
 
 ### Documents Not Uploading
+
 - Check file size (max 5MB)
 - Check file format (JPEG, PNG)
 - Check internet connection
 - Try different browser
 
 ### Status Not Updating
+
 - Refresh the page
 - Check verification queue (admin)
 - Contact support
@@ -481,11 +519,13 @@ await POST(`/api/v1/users/${userId}/kyc/verify`, {
 ## Compliance
 
 ### Kenya Regulations
+
 - Comply with KYC/AML regulations
 - Store documents as required by law
 - Report suspicious activity
 
 ### Data Protection
+
 - GDPR compliance (if serving EU)
 - Kenya Data Protection Act
 - User consent for data processing

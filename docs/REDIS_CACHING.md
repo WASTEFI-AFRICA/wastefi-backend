@@ -38,6 +38,7 @@ WasteFi uses **Redis** for:
 ### Install Redis Server
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt update
 sudo apt install redis-server
@@ -46,18 +47,21 @@ sudo systemctl enable redis-server
 ```
 
 **macOS (Homebrew):**
+
 ```bash
 brew install redis
 brew services start redis
 ```
 
 **Windows:**
+
 ```bash
 # Download from: https://redis.io/download
 # Or use Windows Subsystem for Linux (WSL)
 ```
 
 **Docker:**
+
 ```bash
 docker run -d \
   --name wastefi-redis \
@@ -75,6 +79,7 @@ redis-cli ping
 ### NPM Dependencies
 
 Already installed:
+
 ```json
 {
   "redis": "^4.x",
@@ -101,6 +106,7 @@ REDIS_DB=0                  # Redis database number (0-15)
 ### Config File
 
 `src/config/index.ts`:
+
 ```typescript
 redis: {
   enabled: process.env.REDIS_ENABLED === 'true',
@@ -185,7 +191,7 @@ await RedisService.subscribe('notifications', (message) => {
 await RedisService.publish('notifications', {
   type: 'payment',
   userId: '123',
-  amount: 100
+  amount: 100,
 });
 
 // Unsubscribe
@@ -241,11 +247,15 @@ await CollectionPointCache.invalidate(pointId);
 import { SessionCache } from './utils/cache.util';
 
 // Store session
-await SessionCache.set(sessionId, {
-  userId: '123',
-  role: 'USER',
-  lastActivity: new Date()
-}, 86400); // 24 hours
+await SessionCache.set(
+  sessionId,
+  {
+    userId: '123',
+    role: 'USER',
+    lastActivity: new Date(),
+  },
+  86400
+); // 24 hours
 
 // Get session
 const session = await SessionCache.get(sessionId);
@@ -336,11 +346,9 @@ async function getUserStats(userId: string) {
 }
 
 // Cached version
-const getUserStatsCached = withCache(
-  getUserStats,
-  (userId) => `stats:user:${userId}`,
-  { ttl: 600 }
-);
+const getUserStatsCached = withCache(getUserStats, (userId) => `stats:user:${userId}`, {
+  ttl: 600,
+});
 
 // Usage (automatically caches)
 const stats = await getUserStatsCached('123');
@@ -371,12 +379,12 @@ async function updateUser(userId: string, data: UpdateData) {
   // Update database
   const user = await prisma.user.update({
     where: { id: userId },
-    data
+    data,
   });
-  
+
   // Update cache
   await RedisService.set(UserCache.profile(userId), user, 300);
-  
+
   return user;
 }
 ```
@@ -390,10 +398,10 @@ async function recordCollection(data: CollectionData) {
   // Store in cache immediately
   const cacheKey = `collection:pending:${data.id}`;
   await RedisService.set(cacheKey, data, 3600);
-  
+
   // Queue for async DB write
   await RedisService.lpush('collection:write:queue', data);
-  
+
   return data;
 }
 
@@ -414,17 +422,13 @@ async function processCollectionQueue() {
 async function warmCache() {
   // Pre-load frequently accessed data
   const collectionPoints = await prisma.collectionPoint.findMany({
-    where: { isVerified: true }
+    where: { isVerified: true },
   });
-  
+
   for (const point of collectionPoints) {
-    await RedisService.set(
-      CollectionPointCache.point(point.id),
-      point,
-      3600
-    );
+    await RedisService.set(CollectionPointCache.point(point.id), point, 3600);
   }
-  
+
   logger.info('Cache warmed', { points: collectionPoints.length });
 }
 
@@ -482,12 +486,12 @@ async function updateCollectionPoint(id: string, data: any) {
   // Update database
   const point = await prisma.collectionPoint.update({
     where: { id },
-    data
+    data,
   });
-  
+
   // Invalidate cache
   await CollectionPointCache.invalidate(id);
-  
+
   return point;
 }
 ```
@@ -523,12 +527,14 @@ logger.info('Cache metrics', { hitRate, hits: cacheHits, misses: cacheMisses });
 ### 6. Avoid Caching Everything
 
 **Don't cache:**
+
 - User credentials
 - Payment tokens
 - OTPs/verification codes (except temporarily)
 - Highly sensitive data
 
 **Do cache:**
+
 - User profiles
 - Collection points
 - Material pricing
@@ -538,6 +544,7 @@ logger.info('Cache metrics', { hitRate, hits: cacheHits, misses: cacheMisses });
 ### 7. Set Memory Limits
 
 Configure in Redis:
+
 ```conf
 maxmemory 256mb
 maxmemory-policy allkeys-lru
@@ -574,11 +581,13 @@ await RedisService.set('key2', 'value2');
 await RedisService.set('key3', 'value3');
 
 // Use batch operations
-await BatchCache.setMany(new Map([
-  ['key1', 'value1'],
-  ['key2', 'value2'],
-  ['key3', 'value3']
-]));
+await BatchCache.setMany(
+  new Map([
+    ['key1', 'value1'],
+    ['key2', 'value2'],
+    ['key3', 'value3'],
+  ])
+);
 ```
 
 ### 2. Use Appropriate Data Structures
@@ -608,11 +617,13 @@ await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 ### Issue: Redis Connection Fails
 
 **Symptoms:**
+
 ```
 ❌ Redis connection failed
 ```
 
 **Solutions:**
+
 1. Check Redis is running: `redis-cli ping`
 2. Verify host/port in `.env`
 3. Check firewall settings
@@ -623,6 +634,7 @@ await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 **Symptoms:** Always fetching from database
 
 **Solutions:**
+
 1. Check `REDIS_ENABLED=true` in `.env`
 2. Verify Redis service is connected: `RedisService.isAvailable()`
 3. Check TTL is not too short
@@ -633,6 +645,7 @@ await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 **Symptoms:** Redis using too much memory
 
 **Solutions:**
+
 1. Check key count: `redis-cli DBSIZE`
 2. Find large keys: `redis-cli --bigkeys`
 3. Set maxmemory limit in redis.conf
@@ -644,6 +657,7 @@ await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 **Symptoms:** Cache returns old data
 
 **Solutions:**
+
 1. Reduce TTL for that data type
 2. Implement cache invalidation on updates
 3. Use write-through pattern for critical data
@@ -720,6 +734,7 @@ redis-cli FLUSHALL
 ## Support
 
 For caching issues:
+
 - Check Redis logs
 - Verify configuration
 - Test with redis-cli

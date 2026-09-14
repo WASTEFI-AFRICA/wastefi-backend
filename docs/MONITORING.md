@@ -19,15 +19,16 @@ WasteFi Backend includes comprehensive logging, monitoring, and error handling c
 ### Log Levels
 
 ```typescript
-LogLevel.ERROR  // Critical errors requiring immediate attention
-LogLevel.WARN   // Warning conditions
-LogLevel.INFO   // Informational messages (default)
-LogLevel.DEBUG  // Detailed debug information
+LogLevel.ERROR; // Critical errors requiring immediate attention
+LogLevel.WARN; // Warning conditions
+LogLevel.INFO; // Informational messages (default)
+LogLevel.DEBUG; // Detailed debug information
 ```
 
 ### Configuration
 
 Set log level in `.env`:
+
 ```env
 LOG_LEVEL=info  # error | warn | info | debug
 ```
@@ -182,8 +183,8 @@ import { RateLimiter } from './middleware/rate-limiter.middleware';
 
 // Create custom limiter
 const customLimiter = new RateLimiter(
-  60000,  // 1 minute window
-  50      // 50 requests max
+  60000, // 1 minute window
+  50 // 50 requests max
 );
 
 // Apply to routes
@@ -195,6 +196,7 @@ router.post('/heavy-operation', customLimiter.middleware(), handler);
 ### Automatic Sanitization
 
 All requests are automatically sanitized to prevent:
+
 - NoSQL injection
 - Prototype pollution
 - XSS attacks
@@ -210,7 +212,7 @@ router.post(
   [
     body('phoneNumber').matches(/^\+?[1-9]\d{1,14}$/),
     body('email').isEmail(),
-    validate,  // Check for errors
+    validate, // Check for errors
   ],
   controller
 );
@@ -399,6 +401,7 @@ POST /api/v1/auth/register
 ## Security Considerations
 
 ⚠️ **Never Log:**
+
 - Passwords or password hashes
 - JWT tokens or API keys
 - Credit card numbers
@@ -407,6 +410,7 @@ POST /api/v1/auth/register
 - Personal identification documents
 
 ✅ **Safe to Log:**
+
 - User IDs
 - Phone numbers (partially masked)
 - Transaction amounts
@@ -420,6 +424,7 @@ POST /api/v1/auth/register
 ### High Memory Usage
 
 Check for:
+
 - Memory leaks in rate limiter
 - Large log files not rotated
 - Too many concurrent requests
@@ -427,6 +432,7 @@ Check for:
 ### Slow Performance
 
 Check:
+
 - Database query performance
 - Stellar API response time
 - Large response payloads
@@ -435,6 +441,7 @@ Check:
 ### Frequent Errors
 
 Check:
+
 - Database connection pool
 - Stellar network status
 - Invalid user input
@@ -443,6 +450,7 @@ Check:
 ## Support
 
 For monitoring and logging issues:
+
 - Check application logs
 - Review system_logs table
 - Monitor health endpoint

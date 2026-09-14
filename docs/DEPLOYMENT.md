@@ -639,6 +639,7 @@ REDIS_TTL_SESSION=86400
 ## Support
 
 For deployment issues:
+
 - Check logs first
 - Review troubleshooting section
 - Contact: support@wastefi.com
