@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -10,6 +11,7 @@ import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
 import { NotificationService } from './services/notification.service';
 import { RecycleGraphService } from './services/recyclegraph.service';
+import { WebSocketService } from './services/websocket.service';
 import { logger } from './utils/logger.util';
 import {
   errorHandler,
@@ -27,6 +29,7 @@ import { sanitizeInput } from './middleware/validation.middleware';
 dotenv.config();
 
 const app: Application = express();
+const httpServer = createServer(app);
 
 // Initialize database connection
 DatabaseService.connect();
@@ -42,6 +45,9 @@ NotificationService.initialize();
 
 // Initialize RecycleGraph service
 RecycleGraphService.initialize();
+
+// Initialize WebSocket service
+WebSocketService.initialize(httpServer);
 
 // Trust proxy (for rate limiting and IP detection)
 app.set('trust proxy', 1);
@@ -128,7 +134,7 @@ app.use(errorHandler);
 
 // Start server
 const PORT = config.app.port;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   logger.info('🚀 WasteFi Backend server started', {
     port: PORT,
     environment: config.app.env,
@@ -138,6 +144,7 @@ app.listen(PORT, () => {
   console.log(`🚀 WasteFi Backend server running on port ${PORT}`);
   console.log(`📊 Environment: ${config.app.env}`);
   console.log(`🔗 API Version: ${config.app.apiVersion}`);
+  console.log(`🔌 WebSocket enabled at ws://localhost:${PORT}/socket.io/`);
 });
 
 // Graceful shutdown
@@ -169,4 +176,4 @@ process.on('unhandledRejection', (reason: any) => {
   process.exit(1);
 });
 
-export default app;
+export default httpServer;
