@@ -3,7 +3,7 @@
  * Shows how to implement version-specific logic
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { getApiVersion, isVersion, forVersions } from '../middleware/api-versioning.middleware';
 
 const router = Router();
@@ -65,7 +65,7 @@ router.get('/users/:id', async (req: Request, res: Response) => {
  */
 router.post(
   '/data',
-  forVersions(['v2'], (_req: Request, _res: Response, next: Function) => {
+  forVersions(['v2'], (_req: Request, _res: Response, next: NextFunction) => {
     // This middleware only runs for V2
     console.log('V2-specific processing');
     next();
