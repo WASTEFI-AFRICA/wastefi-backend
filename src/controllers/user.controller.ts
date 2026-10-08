@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types/auth.types';
 import { UserService } from '../services/user.service';
 import { logger } from '../utils/logger.util';
+import { FileUploadUtil } from '../utils/file-upload.util';
 
 export class UserController {
   /**
@@ -73,6 +74,62 @@ export class UserController {
       res.status(500).json({
         success: false,
         error: 'Failed to update profile',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Upload profile picture
+   */
+  static async uploadProfilePicture(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+        });
+        return;
+      }
+
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          error: 'No file uploaded',
+        });
+        return;
+      }
+
+      // Generate file URL
+      const fileUrl = FileUploadUtil.getFileUrl(req.file.filename);
+
+      // Update user profile picture
+      const updatedUser = await UserService.updateProfilePicture(req.user.userId, fileUrl);
+
+      logger.info('Profile picture uploaded', {
+        userId: req.user.userId,
+        filename: req.file.filename,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: updatedUser,
+        message: 'Profile picture uploaded successfully',
+      });
+    } catch (error) {
+      // Clean up uploaded file if database update fails
+      if (req.file) {
+        const fileUrl = FileUploadUtil.getFileUrl(req.file.filename);
+        await FileUploadUtil.deleteFile(fileUrl);
+      }
+
+      logger.error('Failed to upload profile picture', {
+        error: error as Error,
+        userId: req.user?.userId,
+      });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to upload profile picture',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
     }

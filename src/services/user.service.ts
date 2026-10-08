@@ -1,5 +1,6 @@
 import { prisma } from './database.service';
 import { UserStatus, KYCStatus } from '@prisma/client';
+import { FileUploadUtil } from '../utils/file-upload.util';
 
 export interface UpdateProfileData {
   firstName?: string;
@@ -39,6 +40,7 @@ export class UserService {
         role: true,
         status: true,
         kycStatus: true,
+        profilePicture: true,
         nationalId: true,
         address: true,
         city: true,
@@ -68,9 +70,48 @@ export class UserService {
         email: true,
         firstName: true,
         lastName: true,
+        profilePicture: true,
         address: true,
         city: true,
         country: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Update user profile picture
+   */
+  static async updateProfilePicture(userId: string, fileUrl: string) {
+    // Get current user to check for old profile picture
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePicture: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Delete old profile picture if exists
+    if (user.profilePicture) {
+      await FileUploadUtil.deleteFile(user.profilePicture);
+    }
+
+    // Update user with new profile picture
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: fileUrl,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        phoneNumber: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profilePicture: true,
         updatedAt: true,
       },
     });
