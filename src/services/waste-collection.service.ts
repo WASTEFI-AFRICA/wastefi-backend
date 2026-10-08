@@ -124,9 +124,18 @@ export class WasteCollectionService {
 
     if (filters.collectorId) where.collectorId = filters.collectorId;
     if (filters.collectionPointId) where.collectionPointId = filters.collectionPointId;
-    if (filters.materialType) where.materialType = filters.materialType;
+    
+    // Enhanced material type search - supports partial matching
+    if (filters.materialType) {
+      where.materialType = {
+        contains: filters.materialType,
+        mode: 'insensitive',
+      };
+    }
+    
     if (filters.status) where.paymentStatus = filters.status;
 
+    // Date range filtering
     if (filters.startDate || filters.endDate) {
       where.createdAt = {};
       if (filters.startDate) where.createdAt.gte = filters.startDate;
@@ -167,6 +176,8 @@ export class WasteCollectionService {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPreviousPage: page > 1,
       },
     };
   }
