@@ -390,6 +390,8 @@ export class AdminService {
       kycStatus?: KYCStatus;
       status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
       search?: string;
+      sortBy?: string;
+      order?: string;
     }
   ) {
     try {
@@ -408,12 +410,19 @@ export class AdminService {
         ];
       }
 
+      // Validate and set sorting
+      const validSortFields = ['createdAt', 'lastLoginAt', 'kycStatus', 'firstName'];
+      const sortBy = filters?.sortBy && validSortFields.includes(filters.sortBy) 
+        ? filters.sortBy 
+        : 'createdAt';
+      const order = filters?.order === 'asc' ? 'asc' : 'desc';
+
       const [users, total] = await Promise.all([
         prisma.user.findMany({
           where,
           skip,
           take: limit,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { [sortBy]: order },
           select: {
             id: true,
             firstName: true,

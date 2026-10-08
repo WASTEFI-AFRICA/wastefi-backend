@@ -15,7 +15,7 @@ export class AuthService {
    * Register a new user
    */
   static async register(data: RegisterData): Promise<TokenResponse> {
-    // Check if user already exists
+    // Check if user already exists by phone number
     const existingUser = await prisma.user.findUnique({
       where: { phoneNumber: data.phoneNumber },
     });
@@ -24,15 +24,25 @@ export class AuthService {
       throw new Error('User with this phone number already exists');
     }
 
-    // Check email if provided
+    // Check email uniqueness (case-insensitive) if provided
     if (data.email) {
-      const existingEmail = await prisma.user.findUnique({
-        where: { email: data.email },
+      const normalizedEmail = data.email.toLowerCase();
+      
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email: {
+            equals: normalizedEmail,
+            mode: 'insensitive',
+          },
+        },
       });
 
       if (existingEmail) {
         throw new Error('User with this email already exists');
       }
+
+      // Store email in lowercase for consistency
+      data.email = normalizedEmail;
     }
 
     // Hash password if provided

@@ -86,13 +86,15 @@ export class AdminController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const { role, kycStatus, status, search } = req.query;
+      const { role, kycStatus, status, search, sortBy, order } = req.query;
 
       const filters: any = {};
       if (role) filters.role = role as UserRole;
       if (kycStatus) filters.kycStatus = kycStatus as KYCStatus;
       if (status) filters.status = status;
       if (search) filters.search = search as string;
+      if (sortBy) filters.sortBy = sortBy as string;
+      if (order) filters.order = order as string;
 
       const result = await AdminService.getUsers(page, limit, filters);
 

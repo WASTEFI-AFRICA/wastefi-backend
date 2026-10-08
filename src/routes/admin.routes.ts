@@ -48,6 +48,8 @@ router.get(
     query('kycStatus').optional().isIn(['PENDING', 'APPROVED', 'REJECTED', 'NOT_SUBMITTED']),
     query('status').optional().isIn(['ACTIVE', 'INACTIVE', 'SUSPENDED']),
     query('search').optional().isString(),
+    query('sortBy').optional().isIn(['createdAt', 'lastLoginAt', 'kycStatus', 'firstName']),
+    query('order').optional().isIn(['asc', 'desc']),
     validate,
   ],
   AdminController.getUsers
