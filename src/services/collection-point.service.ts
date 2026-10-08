@@ -41,9 +41,11 @@ export interface CollectionPointFilters {
 
 export class CollectionPointService {
   /**
-   * List collection points with optional filters
+   * List collection points with optional filters and pagination
    */
-  static async listCollectionPoints(filters: CollectionPointFilters, limit?: number) {
+  static async listCollectionPoints(filters: CollectionPointFilters, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
     const where: any = {
       isActive: true,
     };
@@ -56,15 +58,13 @@ export class CollectionPointService {
       where.country = { contains: filters.country, mode: 'insensitive' };
     }
 
-    const collectionPoints = await prisma.collectionPoint.findMany({
-      where,
-      take: limit || 50,
-      orderBy: { createdAt: 'desc' },
-    });
-
     // If location-based filtering is requested
     if (filters.latitude && filters.longitude && filters.radius) {
-      const nearby = collectionPoints.filter((point) => {
+      const allPoints = await prisma.collectionPoint.findMany({
+        where,
+      });
+
+      const nearby = allPoints.filter((point) => {
         const distance = GeolocationUtil.calculateDistance(
           filters.latitude!,
           filters.longitude!,
@@ -75,7 +75,7 @@ export class CollectionPointService {
       });
 
       // Add distance and sort by proximity
-      return nearby
+      const pointsWithDistance = nearby
         .map((point) => ({
           ...point,
           distance: GeolocationUtil.calculateDistance(
@@ -86,9 +86,44 @@ export class CollectionPointService {
           ),
         }))
         .sort((a, b) => a.distance - b.distance);
+
+      const total = pointsWithDistance.length;
+      const paginatedPoints = pointsWithDistance.slice(skip, skip + limit);
+
+      return {
+        collectionPoints: paginatedPoints,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPreviousPage: page > 1,
+        },
+      };
     }
 
-    return collectionPoints;
+    const [collectionPoints, total] = await Promise.all([
+      prisma.collectionPoint.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.collectionPoint.count({ where }),
+    ]);
+
+    return {
+      collectionPoints,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 
   /**

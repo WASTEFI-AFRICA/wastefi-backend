@@ -5,11 +5,11 @@ import { logger } from '../utils/logger.util';
 
 export class CollectionPointController {
   /**
-   * List collection points with filters
+   * List collection points with filters and pagination
    */
   static async listCollectionPoints(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { city, country, latitude, longitude, radius, limit } = req.query;
+      const { city, country, latitude, longitude, radius, page = 1, limit = 20 } = req.query;
 
       const filters = {
         city: city as string,
@@ -19,15 +19,16 @@ export class CollectionPointController {
         radius: radius ? parseFloat(radius as string) : undefined,
       };
 
-      const collectionPoints = await CollectionPointService.listCollectionPoints(
+      const result = await CollectionPointService.listCollectionPoints(
         filters,
-        limit ? parseInt(limit as string) : undefined
+        Number(page),
+        Number(limit)
       );
 
       res.status(200).json({
         success: true,
-        data: collectionPoints,
-        count: collectionPoints.length,
+        data: result.collectionPoints,
+        pagination: result.pagination,
       });
     } catch (error) {
       logger.error('Failed to list collection points', { error: error as Error });
