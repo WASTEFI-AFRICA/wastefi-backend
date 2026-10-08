@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import { AuthController } from '../controllers/auth.controller';
 import { authenticateJWT } from '../middleware/auth.middleware';
+import { PasswordValidatorUtil } from '../utils/password-validator.util';
 
 const router = Router();
 
@@ -40,6 +41,11 @@ const router = Router();
  *                 format: email
  *                 description: User's email address (optional)
  *                 example: "john.doe@example.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: User's password (optional, must be at least 8 characters with uppercase, lowercase, number, and special character)
+ *                 example: "SecurePass123!"
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -75,6 +81,15 @@ router.post(
     body('firstName').trim().notEmpty().withMessage('First name is required'),
     body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('email').optional().isEmail().withMessage('Invalid email format'),
+    body('password')
+      .optional()
+      .custom((value) => {
+        if (value) {
+          return PasswordValidatorUtil.customValidator(value);
+        }
+        return true;
+      })
+      .withMessage(PasswordValidatorUtil.getRequirementsDescription()),
   ],
   AuthController.register
 );
@@ -99,6 +114,15 @@ router.post(
  *                 type: string
  *                 description: User's registered phone number
  *                 example: "+254712345678"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: User's password (optional, for password-based authentication)
+ *                 example: "SecurePass123!"
+ *               otp:
+ *                 type: string
+ *                 description: One-time password (optional, for OTP-based authentication)
+ *                 example: "123456"
  *     responses:
  *       200:
  *         description: Login successful
@@ -131,6 +155,8 @@ router.post(
     body('phoneNumber')
       .matches(/^\+?[1-9]\d{1,14}$/)
       .withMessage('Invalid phone number format'),
+    body('password').optional().isString().withMessage('Password must be a string'),
+    body('otp').optional().isString().withMessage('OTP must be a string'),
   ],
   AuthController.login
 );

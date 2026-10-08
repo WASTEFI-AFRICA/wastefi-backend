@@ -189,6 +189,7 @@ Features:
 #### Features & Integration
 
 - [Authentication Guide](docs/AUTHENTICATION.md) - JWT and API key auth
+- [Password Security](docs/PASSWORD_SECURITY.md) - Password strength requirements
 - [Stellar Integration](docs/STELLAR_INTEGRATION.md) - Blockchain payments
 - [Wallet Setup](docs/WALLET_SETUP.md) - Stellar wallet management
 - [User Management](docs/USER_MANAGEMENT.md) - User profiles and KYC

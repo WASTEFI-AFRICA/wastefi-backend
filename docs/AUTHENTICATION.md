@@ -14,9 +14,19 @@ Content-Type: application/json
   "phoneNumber": "+254712345678",
   "firstName": "John",
   "lastName": "Doe",
-  "email": "john@example.com"
+  "email": "john@example.com",
+  "password": "SecurePass123!"
 }
 ```
+
+**Note:** Password is optional but recommended. If provided, it must meet strength requirements:
+- At least 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character (!@#$%^&*()_+-=[]{};':"\\|,.<>/?)
+
+See [Password Security](./PASSWORD_SECURITY.md) for detailed requirements.
 
 Response:
 
@@ -40,6 +50,31 @@ Response:
 
 ### Login
 
+Login supports both password and OTP authentication:
+
+**With Password:**
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "+254712345678",
+  "password": "SecurePass123!"
+}
+```
+
+**With OTP:**
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "phoneNumber": "+254712345678",
+  "otp": "123456"
+}
+```
+
+**Backwards Compatible (Phone Only):**
 ```bash
 POST /api/v1/auth/login
 Content-Type: application/json
@@ -147,17 +182,21 @@ router.post('/admin/users', authenticate, requireRole('ADMIN'), UserController.c
 - Refresh tokens expire in 30 days
 - Tokens include issuer validation
 
+✅ **Password Security**
+
+- Strong password requirements enforced
+- Minimum 8 characters with complexity requirements
+- bcrypt hashing with 10 salt rounds
+- Secure password comparison
+- Password strength indicator available
+- See [Password Security](./PASSWORD_SECURITY.md) for details
+
 ✅ **API Key Security**
 
 - Keys are hashed (SHA-256) before storage
 - Last used timestamp tracking
 - Optional expiration dates
 - Can be revoked anytime
-
-✅ **Password Hashing**
-
-- bcrypt with 10 salt rounds
-- Secure password comparison
 
 ✅ **Data Encryption**
 
@@ -201,15 +240,31 @@ router.post('/admin/users', authenticate, requireRole('ADMIN'), UserController.c
 }
 ```
 
+**Password Validation Error:**
+```json
+{
+  "success": false,
+  "error": "Validation failed",
+  "details": [
+    {
+      "field": "password",
+      "message": "Password does not meet requirements: Password must contain at least one uppercase letter; Password must contain at least one special character"
+    }
+  ]
+}
+```
+
 ## Best Practices
 
 1. **Mobile Apps**: Use JWT authentication with refresh tokens
 2. **Server-to-Server**: Use API keys
 3. **Store Tokens Securely**: Use secure storage (Keychain, KeyStore)
-4. **Rotate API Keys**: Create new keys periodically
-5. **Monitor Usage**: Check API key last used timestamps
-6. **Handle Expiration**: Implement token refresh logic
-7. **Use HTTPS**: Always use HTTPS in production
+4. **Use Strong Passwords**: Follow password strength requirements (see [Password Security](./PASSWORD_SECURITY.md))
+5. **Rotate API Keys**: Create new keys periodically
+6. **Monitor Usage**: Check API key last used timestamps
+7. **Handle Expiration**: Implement token refresh logic
+8. **Use HTTPS**: Always use HTTPS in production
+9. **Password Authentication**: Enable password-based login for enhanced security
 
 ## Environment Variables
 
