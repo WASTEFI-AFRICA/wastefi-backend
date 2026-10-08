@@ -3,6 +3,7 @@ import { body, query } from 'express-validator';
 import { UserController } from '../controllers/user.controller';
 import { authenticateJWT, requireRole } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
+import { profilePictureUpload, handleUploadError } from '../middleware/file-upload.middleware';
 
 const router = Router();
 
@@ -30,6 +31,19 @@ router.put(
     validate,
   ],
   UserController.updateProfile
+);
+
+/**
+ * @route   POST /api/v1/users/me/profile-picture
+ * @desc    Upload user profile picture
+ * @access  Private
+ */
+router.post(
+  '/me/profile-picture',
+  authenticateJWT,
+  profilePictureUpload.single('profilePicture'),
+  handleUploadError,
+  UserController.uploadProfilePicture
 );
 
 /**

@@ -281,6 +281,34 @@ export class WasteCollectionController {
   }
 
   /**
+   * Get collection statistics by material type
+   */
+  static async getMaterialStatistics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { startDate, endDate, collectionPointId } = req.query;
+
+      const filters = {
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        collectionPointId: collectionPointId as string,
+      };
+
+      const stats = await WasteCollectionService.getMaterialStatistics(filters);
+
+      res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      logger.error('Failed to get material statistics', { error: error as Error });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch material statistics',
+      });
+    }
+  }
+
+  /**
    * Delete collection (Admin only)
    */
   static async deleteCollection(req: AuthRequest, res: Response): Promise<void> {
