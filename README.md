@@ -1,332 +1,169 @@
-# WasteFi Backend
+# WasteFi — Backend
 
-**API, Integrations, and Business Logic**
+REST API for WasteFi, a platform that pays waste collectors in emerging markets
+for verified recyclable material drop-offs. Handles accounts and authentication,
+collection records, material pricing, payouts over mobile money and Stellar, and
+the digital material passports that make a collection auditable.
 
-![CI](https://github.com/wastefi/backend/workflows/CI/badge.svg)
-![CD](https://github.com/wastefi/backend/workflows/CD/badge.svg)
-[![codecov](https://codecov.io/gh/wastefi/backend/branch/main/graph/badge.svg)](https://codecov.io/gh/wastefi/backend)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+For the on-chain side, see
+[wastefi-contracts](https://github.com/WASTEFI-AFRICA/wastefi-contracts).
 
-## Overview
+## Stack
 
-WasteFi Backend provides the core API and business logic for the WasteFi platform - a financial inclusion solution through waste collection powered by open material standards.
+- TypeScript, Node.js
+- Express
+- PostgreSQL via Prisma
+- Redis for caching and rate-limit counters (optional; the API runs without it)
+- Stellar SDK for on-chain payouts
+- Socket.IO for live collection and payment updates
 
-## Features
+## API
 
-- RESTful API for waste collection management
-- Stellar blockchain integration for payments
-- Mobile money integration (M-Pesa, MTN, Airtel)
-- RecycleGraph protocol integration for material tracking
-- Digital product passport generation
-- Carbon credit calculation
-- SMS notifications for offline users
-- **Comprehensive logging and monitoring**
-- **Request tracking with unique IDs**
-- **Rate limiting and DDoS protection**
-- **Input validation and sanitization**
-- **Centralized error handling**
+Routes are mounted under `/api/{API_VERSION}`, where `API_VERSION` comes from the
+environment and defaults to `v1`:
 
-## Tech Stack
+| Prefix | Purpose |
+| --- | --- |
+| `/auth` | Registration, login, phone verification, password reset |
+| `/users` | Profile and account management |
+| `/collection-points` | Collection point registry and geolocation lookup |
+| `/collections` | Submitting and querying waste collections |
+| `/payments` | Payout initiation and mobile money callbacks |
+| `/wallet` | Stellar wallet balances and transfers |
+| `/passports` | Digital material passports |
+| `/admin` | Administrative operations and fraud review |
+| `/backups` | Database backup management |
 
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **Database**: PostgreSQL with Prisma ORM
-- **Blockchain**: Stellar (Soroban)
-- **Caching**: Redis
-- **Authentication**: JWT
+`/metrics` is mounted at the root, outside the version prefix, and serves
+Prometheus metrics.
 
-## Getting Started
+Swagger UI is served at `/api/docs` and the OpenAPI JSON at `/api/docs.json`.
+Both are mounted unconditionally, so they are reachable in production as well as
+in development; gate them at the reverse proxy if that is not what you want. See
+[docs/SWAGGER_GUIDE.md](docs/SWAGGER_GUIDE.md).
 
-### Prerequisites
+## Mobile money
 
-- Node.js 18+ and npm
-- PostgreSQL 14+
-- Redis (optional, for caching)
+Payouts reach collectors through three providers, each behind a common
+interface in `src/services/mobile-money/`: M-Pesa (Kenya), MTN Mobile Money,
+and Airtel Money. Every provider needs its own credentials and a publicly
+reachable callback URL, because settlement is asynchronous — the API records a
+payout as pending and only marks it complete when the provider posts back.
 
-### Installation
+Callbacks are the security-sensitive surface here: they arrive unauthenticated
+from the provider's network and move money on a payout record. See
+[docs/MOBILE_MONEY.md](docs/MOBILE_MONEY.md) and
+[docs/PAYMENTS.md](docs/PAYMENTS.md).
 
-```bash
-# Install dependencies
+## Local development
+
+Requires Node.js 18 or later and PostgreSQL 14 or later. Redis is optional.
+
+```sh
+cp .env.example .env            # then fill in the values
 npm install
-
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env with your configuration
-
-# Generate Prisma Client
 npm run prisma:generate
-
-# Run database migrations
-npm run prisma:migrate
-
-# (Optional) Seed the database with sample data
-npm run prisma:seed
-```
-
-### Development
-
-```bash
-# Run in development mode
+npm run prisma:migrate          # apply migrations to the database in DATABASE_URL
+npm run prisma:seed             # optional: sample users, points and materials
 npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
 ```
 
-### Database Management
+The server listens on `PORT` (default 3000).
 
-```bash
-# Run migrations
-npm run prisma:migrate
+Environment variables are documented in [`.env.example`](.env.example). Only the
+`.env.*.example` templates are tracked; files holding real values are gitignored
+and must never be committed. For database setup options, including Docker, see
+[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md).
 
-# Generate Prisma Client
-npm run prisma:generate
+### With Docker
 
-# Open Prisma Studio (Database GUI)
-npm run prisma:studio
-
-# Seed database
-npm run prisma:seed
-
-# Push schema without migrations (dev only)
-npm run db:push
-
-# Reset database (WARNING: deletes all data)
-npm run db:reset
+```sh
+docker compose up -d
 ```
 
-### Linting and Formatting
+This brings up the API alongside PostgreSQL, Redis, and nginx as configured in
+[`docker-compose.yml`](docker-compose.yml).
 
-```bash
-# Run linter
-npm run lint
+## Known breakage
 
-# Format code
-npm run format
-```
+`npm run build` and `npm run type-check` currently fail on two pre-existing
+issues on `main`:
 
-## Project Structure
+- `src/services/waste-collection.service.ts` imports `CacheUtil` from
+  `src/utils/cache.util.ts`, which does not export it. The two call sites use
+  `CacheUtil.get` and `CacheUtil.set`; the module offers `cacheAside` and
+  per-entity cache helpers instead.
+- `src/middleware/file-upload.middleware.ts` has unused parameters that trip
+  `noUnusedParameters`.
 
-```
-wastefi-backend/
-├── src/
-│   ├── config/          # Configuration files
-│   ├── controllers/     # Route controllers
-│   ├── middleware/      # Express middleware
-│   │   ├── auth.middleware.ts         # Authentication
-│   │   ├── error.middleware.ts        # Error handling
-│   │   ├── rate-limiter.middleware.ts # Rate limiting
-│   │   ├── request-logger.middleware.ts # Request logging
-│   │   └── validation.middleware.ts   # Input validation
-│   ├── models/          # Database models
-│   ├── routes/          # API routes
-│   ├── services/        # Business logic
-│   │   ├── auth.service.ts       # Authentication logic
-│   │   ├── database.service.ts   # Database management
-│   │   └── stellar.service.ts    # Stellar integration
-│   ├── types/           # TypeScript types
-│   ├── utils/           # Utility functions
-│   │   ├── encryption.util.ts # Encryption utilities
-│   │   ├── jwt.util.ts        # JWT utilities
-│   │   └── logger.util.ts     # Logging system
-│   └── server.ts        # Application entry point
-├── prisma/              # Prisma schema and migrations
-├── scripts/             # Utility scripts
-├── docs/                # Documentation
-├── dist/                # Compiled JavaScript
-└── package.json
-```
-
-## API Documentation
-
-### Interactive Documentation (Swagger UI)
-
-Access the interactive API documentation:
-
-```
-http://localhost:3000/api/docs
-```
-
-Features:
-
-- 🔍 Browse all API endpoints
-- 📝 View request/response schemas
-- ✅ Test endpoints directly in browser
-- 🔐 Built-in authentication testing
-- 📥 Download OpenAPI specification
-
-**OpenAPI Spec**: `http://localhost:3000/api/docs.json`
-
-### Key Endpoints
-
-- **Authentication**: `/api/v1/auth/*`
-  - POST `/register` - Register new user
-  - POST `/login` - Login user
-  - GET `/profile` - Get user profile
-  - POST `/api-keys` - Create API key
-
-- **Wallet**: `/api/v1/wallet/*`
-  - POST `/create` - Create Stellar wallet
-  - GET `/balance` - Get wallet balance
-  - POST `/send` - Send payment
-  - GET `/transactions` - Transaction history
-
-- **Health**: `/health` - Service health check
-
-### Documentation
-
-#### Getting Started
-
-- [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
-- [API Quick Reference](docs/API_QUICK_REFERENCE.md) - Quick lookup guide
-- [Swagger Guide](docs/SWAGGER_GUIDE.md) - Using interactive documentation
-- [Postman Setup](docs/POSTMAN_SETUP.md) - Testing with Postman
-
-#### Features & Integration
-
-- [Authentication Guide](docs/AUTHENTICATION.md) - JWT and API key auth
-- [Password Security](docs/PASSWORD_SECURITY.md) - Password strength requirements
-- [Stellar Integration](docs/STELLAR_INTEGRATION.md) - Blockchain payments
-- [Wallet Setup](docs/WALLET_SETUP.md) - Stellar wallet management
-- [User Management](docs/USER_MANAGEMENT.md) - User profiles and KYC
-- [Collection Points](docs/COLLECTION_POINTS.md) - Geolocation services
-- [Waste Collections](docs/WASTE_COLLECTIONS.md) - Collection tracking
-- [Payments](docs/PAYMENTS.md) - Payment processing
-- [Mobile Money Integration](docs/MOBILE_MONEY.md) - M-Pesa, MTN, Airtel
-- [Material Passports](docs/RECYCLEGRAPH_INTEGRATION.md) - RecycleGraph DPP
-- [WebSocket Real-Time Updates](docs/WEBSOCKET.md) - Live notifications
-- [Admin Dashboard](docs/ADMIN_DASHBOARD.md) - Admin APIs
-
-#### Operations & Deployment
-
-- [Monitoring & Logging](docs/MONITORING.md) - Observability
-- [Performance Monitoring](docs/PERFORMANCE_MONITORING.md) - Prometheus metrics
-- [Rate Limiting](docs/RATE_LIMITING.md) - Rate limit configuration
-- [API Versioning](docs/API_VERSIONING.md) - Version management
-- [Backup & Recovery](docs/BACKUP_RECOVERY.md) - Database backups
-- [Redis Caching](docs/REDIS_CACHING.md) - Cache configuration
-- [Testing Guide](docs/TESTING.md) - Test suite documentation
-- [Deployment Guide](docs/DEPLOYMENT.md) - Deployment instructions
-- [CI/CD Pipeline](docs/CICD.md) - Automated workflows
-
-#### Production & Security
-
-- [Production Readiness](PRODUCTION_READINESS.md) - Pre-launch checklist
-- [Security Policy](SECURITY.md) - Security practices and reporting
-- [Changelog](CHANGELOG.md) - Version history
-
-## Environment Variables
-
-See `.env.example` for all available configuration options.
-
-Key variables:
-
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret (32+ chars)
-- `REDIS_ENABLED` - Enable Redis caching (true/false)
-- `STELLAR_NETWORK` - Stellar network (testnet/public)
-- Mobile money credentials (M-Pesa, MTN, Airtel)
-- Notification services (Twilio, SendGrid)
-
-See [Production Readiness](PRODUCTION_READINESS.md) for complete configuration guide.
+Neither is caused by the other, and both need a decision about intended
+behaviour rather than a mechanical fix, so they are left as-is and recorded
+here.
 
 ## Testing
 
-```bash
-# Run all tests
-npm test
-
-# Run with coverage
-npm run test:coverage
-
-# Run specific test file
-npm test -- auth.test.ts
-
-# Run in watch mode
-npm test -- --watch
+```sh
+npm test                 # all suites
+npm run test:unit        # unit tests only
+npm run test:integration # integration tests (needs a reachable test database)
+npm run test:coverage    # with a coverage report
 ```
 
-Current test coverage: 67 passing tests (3 skipped)
-Target coverage: 70% (see [Testing Guide](docs/TESTING.md))
+Integration tests read `.env.test`, which is not tracked. Copy
+[`.env.test.example`](.env.test.example) to `.env.test` and point
+`DATABASE_URL` at a database you are willing to have reset.
+
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development server with reload |
+| `npm run build` | Generate the Prisma client and compile TypeScript to `dist/` |
+| `npm start` | Run the compiled server |
+| `npm run lint` | ESLint over the TypeScript sources |
+| `npm run format` | Prettier over `src/` |
+| `npm run prisma:studio` | Prisma Studio against the current database |
+| `npm run db:reset` | Drop, recreate and re-migrate the database |
+| `npm run stellar:generate-wallet` | Generate a Stellar keypair for local use |
+
+## Operations
+
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — deploying the API
+- [docs/CICD.md](docs/CICD.md) — the GitHub Actions pipelines
+- [docs/MONITORING.md](docs/MONITORING.md) and [docs/PERFORMANCE_MONITORING.md](docs/PERFORMANCE_MONITORING.md) — Prometheus and Grafana
+- [docs/BACKUP_RECOVERY.md](docs/BACKUP_RECOVERY.md) — backup and restore
+- [docs/RATE_LIMITING.md](docs/RATE_LIMITING.md) — rate-limit tiers
+- [docs/REDIS_CACHING.md](docs/REDIS_CACHING.md) — what is cached and for how long
+
+## Documentation
+
+- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) — full endpoint reference
+- [docs/API_QUICK_REFERENCE.md](docs/API_QUICK_REFERENCE.md) — one-page summary
+- [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) — token flow and roles
+- [docs/API_VERSIONING.md](docs/API_VERSIONING.md) — versioning policy
+- [docs/STELLAR_INTEGRATION.md](docs/STELLAR_INTEGRATION.md) — on-chain payouts
+- [docs/RECYCLEGRAPH_INTEGRATION.md](docs/RECYCLEGRAPH_INTEGRATION.md) — material standards
+- [docs/WEBSOCKET.md](docs/WEBSOCKET.md) — live update channels
+- [docs/SECURITY_ARCHITECTURE.md](docs/SECURITY_ARCHITECTURE.md) — authentication, data protection and hardening
+- [docs/TESTING.md](docs/TESTING.md) — test layout and conventions
+
+## Related repositories
+
+- [wastefi-contracts](https://github.com/WASTEFI-AFRICA/wastefi-contracts) — Soroban smart contracts
+- [wastefi-frontend](https://github.com/WASTEFI-AFRICA/wastefi-frontend) — collector and operator progressive web app
+- [wastefi-docs](https://github.com/WASTEFI-AFRICA/wastefi-docs) — platform documentation site
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Commit Convention
-
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting)
-- `refactor:` Code refactoring
-- `test:` Test additions or changes
-- `chore:` Build process or auxiliary tool changes
+See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests need `npm run lint` and
+`npm test` to pass, and should not add new type errors beyond the two recorded
+under [known breakage](#known-breakage).
 
 ## Security
 
-Security is a top priority. Please review our [Security Policy](SECURITY.md) for:
-
-- Supported versions
-- Security features
-- Reporting vulnerabilities
-- Best practices
-
-**Report security issues to**: security@wastefi.africa
-
-## Support
-
-- **Documentation**: Check the [docs](docs/) folder
-- **API Reference**: Visit `/api/docs` when server is running
-- **Issues**: [GitHub Issues](https://github.com/wastefi-africa/wastefi-backend/issues)
-- **Email**: support@wastefi.africa
-- **Community**: Join our Slack workspace
-
-## Roadmap
-
-See [CHANGELOG.md](CHANGELOG.md) for completed features.
-
-### Future Enhancements
-
-- GraphQL API support
-- Multi-language support (i18n)
-- Advanced analytics dashboard
-- Machine learning for fraud detection
-- Mobile app SDK
-- Webhook subscriptions
-- Two-factor authentication (2FA)
-- OAuth 2.0 integration
+To report a vulnerability, see [SECURITY.md](SECURITY.md). Please do not open a
+public issue for one.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details
-
-## Acknowledgments
-
-- [Stellar Development Foundation](https://stellar.org/) - Blockchain infrastructure
-- [RecycleGraph](https://recyclegraph.io/) - Material tracking protocol
-- Open source community - For excellent tools and libraries
-
-## Project Status
-
-**Version**: 1.0.0  
-**Status**: ✅ Production Ready  
-**Build**: ![CI](https://github.com/wastefi/backend/workflows/CI/badge.svg)  
-**Coverage**: [![codecov](https://codecov.io/gh/wastefi/backend/branch/main/graph/badge.svg)](https://codecov.io/gh/wastefi/backend)
-
----
-
-**Built with ❤️ by the WasteFi Team**  
-**Empowering financial inclusion through waste collection**
+MIT. See [LICENSE](LICENSE).

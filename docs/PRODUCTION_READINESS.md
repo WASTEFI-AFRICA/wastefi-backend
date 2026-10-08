@@ -129,7 +129,7 @@ RATE_LIMIT_PREMIUM_MAX=1000
 
 ### Security Checks
 
-✅ **CRITICAL**: Ensure all secrets are:
+Done **CRITICAL**: Ensure all secrets are:
 
 - Randomly generated (use `openssl rand -base64 32`)
 - Stored securely (never in source control)

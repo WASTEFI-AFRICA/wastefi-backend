@@ -18,9 +18,9 @@ class DatabaseService {
     try {
       const prisma = DatabaseService.getInstance();
       await prisma.$connect();
-      console.log('✅ Database connected successfully');
+      console.log('Database connected successfully');
     } catch (error) {
-      console.error('❌ Database connection failed:', error);
+      console.error('Database connection failed:', error);
       process.exit(1);
     }
   }
@@ -29,9 +29,9 @@ class DatabaseService {
     try {
       const prisma = DatabaseService.getInstance();
       await prisma.$disconnect();
-      console.log('✅ Database disconnected successfully');
+      console.log('Database disconnected successfully');
     } catch (error) {
-      console.error('❌ Database disconnection failed:', error);
+      console.error('Database disconnection failed:', error);
     }
   }
 

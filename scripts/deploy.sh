@@ -10,7 +10,7 @@ ENVIRONMENT=${1:-production}
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="backups/${TIMESTAMP}"
 
-echo "🚀 Starting WasteFi Backend deployment (${ENVIRONMENT})..."
+echo "Starting WasteFi Backend deployment (${ENVIRONMENT})..."
 
 # Color codes
 RED='\033[0;31m'
@@ -20,15 +20,15 @@ NC='\033[0m' # No Color
 
 # Functions
 log_info() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}${NC} $1"
 }
 
 log_warn() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}${NC} $1"
 }
 
 # Check if environment file exists
@@ -121,12 +121,12 @@ docker-compose logs --tail=20 api
 echo ""
 log_info "Deployment completed successfully!"
 echo ""
-echo "📊 Service URLs:"
+echo "Service URLs:"
 echo "   API: http://localhost:3000"
 echo "   Health Check: http://localhost:3000/health"
 echo "   API Docs: http://localhost:3000/api/docs"
 echo ""
-echo "📝 Useful commands:"
+echo "Useful commands:"
 echo "   View logs: docker-compose logs -f api"
 echo "   Restart: docker-compose restart api"
 echo "   Stop: docker-compose down"

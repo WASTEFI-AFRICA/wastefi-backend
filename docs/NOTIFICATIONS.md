@@ -350,7 +350,7 @@ if (result.sms && !result.sms.success) {
 Never let notification failures block critical operations:
 
 ```typescript
-// ❌ Bad
+// Not done Bad
 try {
   await processPayment();
   await NotificationService.sendPaymentNotification(...);
@@ -358,7 +358,7 @@ try {
   // Payment might be rolled back if notification fails
 }
 
-// ✅ Good
+// Done Good
 try {
   await processPayment();
 } catch (error) {

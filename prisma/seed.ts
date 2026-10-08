@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Starting database seed...');
 
   // Create a sample admin user
   const admin = await prisma.user.upsert({
@@ -20,7 +20,7 @@ async function main() {
       country: 'Kenya',
     },
   });
-  console.log('✅ Created admin user:', admin.id);
+  console.log('Created admin user:', admin.id);
 
   // Create sample collection points
   const existingPoint1 = await prisma.collectionPoint.findFirst({
@@ -53,7 +53,7 @@ async function main() {
       acceptedMaterials: JSON.stringify(['PET', 'HDPE', 'Glass', 'Aluminum', 'Steel']),
     },
   });
-  console.log('✅ Created collection point:', collectionPoint1.id);
+  console.log('Created collection point:', collectionPoint1.id);
 
   const existingPoint2 = await prisma.collectionPoint.findFirst({
     where: { contactPhone: '+254700000002' },
@@ -85,14 +85,14 @@ async function main() {
       acceptedMaterials: JSON.stringify(['PET', 'HDPE', 'PP', 'Glass']),
     },
   });
-  console.log('✅ Created collection point:', collectionPoint2.id);
+  console.log('Created collection point:', collectionPoint2.id);
 
-  console.log('🌱 Database seeding completed!');
+  console.log('Database seeding completed!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {

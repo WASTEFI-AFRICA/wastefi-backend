@@ -8,9 +8,11 @@ dist/
 build/
 
 # Environment variables
+# Only the *.example templates are tracked; real values stay local.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Logs
 logs/

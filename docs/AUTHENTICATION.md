@@ -176,13 +176,13 @@ router.post('/admin/users', authenticate, requireRole('ADMIN'), UserController.c
 
 ## Security Features
 
-✅ **JWT with HS256 signing**
+Done **JWT with HS256 signing**
 
 - Access tokens expire in 7 days
 - Refresh tokens expire in 30 days
 - Tokens include issuer validation
 
-✅ **Password Security**
+Done **Password Security**
 
 - Strong password requirements enforced
 - Minimum 8 characters with complexity requirements
@@ -191,14 +191,14 @@ router.post('/admin/users', authenticate, requireRole('ADMIN'), UserController.c
 - Password strength indicator available
 - See [Password Security](./PASSWORD_SECURITY.md) for details
 
-✅ **API Key Security**
+Done **API Key Security**
 
 - Keys are hashed (SHA-256) before storage
 - Last used timestamp tracking
 - Optional expiration dates
 - Can be revoked anytime
 
-✅ **Data Encryption**
+Done **Data Encryption**
 
 - AES-256-CBC for sensitive data
 - Used for storing Stellar private keys

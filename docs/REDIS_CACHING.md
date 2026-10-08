@@ -18,12 +18,12 @@ Complete guide for Redis integration and caching strategies in WasteFi Backend.
 
 WasteFi uses **Redis** for:
 
-- ✅ Response caching
-- ✅ Session management
-- ✅ Rate limiting
-- ✅ Distributed locking
-- ✅ Pub/Sub messaging
-- ✅ Temporary data storage
+- Response caching
+- Session management
+- Rate limiting
+- Distributed locking
+- Pub/Sub messaging
+- Temporary data storage
 
 ### Key Features
 
@@ -455,14 +455,14 @@ async function cacheVerificationCode(phone: string, code: string) {
 ### 1. Always Handle Redis Unavailability
 
 ```typescript
-// ✅ Good - Graceful fallback
+// Done Good - Graceful fallback
 const cached = await RedisService.get('key');
 if (cached) {
   return cached;
 }
 const data = await fetchFromDB();
 
-// ❌ Bad - Fails if Redis is down
+// Not done Bad - Fails if Redis is down
 const data = await RedisService.get('key')!; // Assumes always available
 ```
 
@@ -499,10 +499,10 @@ async function updateCollectionPoint(id: string, data: any) {
 ### 4. Use Structured Keys
 
 ```typescript
-// ✅ Good - Hierarchical, easy to invalidate
+// Done Good - Hierarchical, easy to invalidate
 const key = 'user:123:collections:pending';
 
-// ❌ Bad - Flat, hard to manage
+// Not done Bad - Flat, hard to manage
 const key = 'user123collectionspending';
 ```
 
@@ -605,10 +605,10 @@ await RedisService.incrementRateLimit('counter');
 ### 3. Avoid Large Keys
 
 ```typescript
-// ❌ Bad - Storing entire collection
+// Not done Bad - Storing entire collection
 await RedisService.set('all:collections', allCollections);
 
-// ✅ Good - Store references, paginate
+// Done Good - Store references, paginate
 await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 ```
 
@@ -619,7 +619,7 @@ await RedisService.set('collections:ids', collectionIds.slice(0, 100));
 **Symptoms:**
 
 ```
-❌ Redis connection failed
+Not done Redis connection failed
 ```
 
 **Solutions:**

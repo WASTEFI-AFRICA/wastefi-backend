@@ -6,13 +6,13 @@ The waste collection API handles the core functionality of recording waste deliv
 
 ## Features
 
-✅ **Collection Recording** - Record waste deliveries with photos
-✅ **Automatic Pricing** - Calculate payments based on material type and weight
-✅ **Image Upload** - Support for multiple images per collection
-✅ **Verification System** - Admin/verifier approval workflow
-✅ **Payment Tracking** - Track payment status (pending, completed, failed)
-✅ **Statistics** - Collection analytics and reporting
-✅ **Material Categories** - Support for plastics, metals, glass, paper, electronics
+Done **Collection Recording**- Record waste deliveries with photos
+Done **Automatic Pricing**- Calculate payments based on material type and weight
+Done **Image Upload**- Support for multiple images per collection
+Done **Verification System**- Admin/verifier approval workflow
+Done **Payment Tracking**- Track payment status (pending, completed, failed)
+Done **Statistics**- Collection analytics and reporting
+Done **Material Categories**- Support for plastics, metals, glass, paper, electronics
 
 ## Material Pricing
 
@@ -300,11 +300,11 @@ Authorization: Bearer <admin-token>
 
 ### Image Requirements
 
-✅ **Format**: JPEG, PNG
-✅ **Max Size**: 5MB per image
-✅ **Recommended**: 1-4 images per collection
-✅ **Content**: Clear view of materials
-✅ **Quality**: Good lighting, in focus
+Done **Format**: JPEG, PNG
+Done **Max Size**: 5MB per image
+Done **Recommended**: 1-4 images per collection
+Done **Content**: Clear view of materials
+Done **Quality**: Good lighting, in focus
 
 ### Image Best Practices
 
@@ -454,11 +454,11 @@ CANCELLED                   FAILED
 ### For Verifiers
 
 **Check:**
-✅ Images are clear and show materials
-✅ Material type matches what's shown
-✅ Weight seems reasonable for quantity
-✅ No contamination or wrong materials
-✅ Collection point is correct
+Done Images are clear and show materials
+Done Material type matches what's shown
+Done Weight seems reasonable for quantity
+Done No contamination or wrong materials
+Done Collection point is correct
 
 **Actions:**
 
@@ -469,11 +469,11 @@ CANCELLED                   FAILED
 ### For Collectors
 
 **To Speed Up Verification:**
-✅ Take clear, well-lit photos
-✅ Show all materials in frame
-✅ Clean and sort materials properly
-✅ Provide accurate weight
-✅ Add helpful notes
+Done Take clear, well-lit photos
+Done Show all materials in frame
+Done Clean and sort materials properly
+Done Provide accurate weight
+Done Add helpful notes
 
 ## Statistics & Analytics
 
@@ -513,7 +513,7 @@ console.log(`
   Collections: ${data.totalCollections}
   Weight: ${data.totalWeight} kg
   Payments: KES ${data.totalPayments}
-  
+
   Top Materials:
   ${data.byMaterial
     .map((m) => `  - ${m.materialType}: ${m.count} collections, ${m.totalWeight} kg`)
@@ -556,30 +556,30 @@ curl -X POST http://localhost:3000/api/v1/collections/col-123/verify \
 
 ### For Collectors
 
-✅ **Sort materials** before delivery
-✅ **Clean materials** (remove caps, labels)
-✅ **Weigh accurately** if possible
-✅ **Take clear photos** from multiple angles
-✅ **Visit during operating hours**
-✅ **Deliver to nearest collection point**
+Done **Sort materials** before delivery
+Done **Clean materials**(remove caps, labels)
+Done **Weigh accurately** if possible
+Done **Take clear photos** from multiple angles
+Done **Visit during operating hours**
+Done **Deliver to nearest collection point**
 
 ### For Admins
 
-✅ **Verify within 24 hours**
-✅ **Provide clear feedback** in notes
-✅ **Be consistent** with verification standards
-✅ **Adjust pricing** based on market rates
-✅ **Monitor fraud** and patterns
-✅ **Respond to disputes** promptly
+Done **Verify within 24 hours**
+Done **Provide clear feedback** in notes
+Done **Be consistent** with verification standards
+Done **Adjust pricing** based on market rates
+Done **Monitor fraud** and patterns
+Done **Respond to disputes** promptly
 
 ### For Developers
 
-✅ **Compress images** before upload
-✅ **Implement retry logic** for failed uploads
-✅ **Cache pricing data** locally
-✅ **Show estimated earnings** before submission
-✅ **Handle offline mode** gracefully
-✅ **Validate inputs** before API calls
+Done **Compress images** before upload
+Done **Implement retry logic** for failed uploads
+Done **Cache pricing data** locally
+Done **Show estimated earnings** before submission
+Done **Handle offline mode** gracefully
+Done **Validate inputs** before API calls
 
 ## Troubleshooting
 

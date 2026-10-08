@@ -31,10 +31,10 @@ WasteFi Backend uses **GitHub Actions** for CI/CD automation with the following 
 │   Git Push  │
 └──────┬──────┘
        │
-       ├─► CI Pipeline ──► Lint ──► Test ──► Build ──► Security ──► Docker Build
+       ├─ CI Pipeline ── Lint ── Test ── Build ── Security ── Docker Build
        │                                                                    │
-       │                                                                    ✓
-       └─► CD Pipeline ──► Build Image ──► Push to Registry ──► Deploy ──► Health Check
+       │ Done
+       └─ CD Pipeline ── Build Image ── Push to Registry ── Deploy ── Health Check
 ```
 
 ## CI Pipeline
@@ -94,12 +94,12 @@ Runs on every push and pull request to `main` and `develop` branches.
 ### Example Run
 
 ```bash
-✓ Lint Code (1m 15s)
-✓ Run Tests (4m 32s)
-✓ Build Application (2m 05s)
-✓ Security Scan (1m 48s)
-✓ Build Docker Image (2m 55s)
-✓ Notify Status (12s)
+Done Lint Code (1m 15s)
+Done Run Tests (4m 32s)
+Done Build Application (2m 05s)
+Done Security Scan (1m 48s)
+Done Build Docker Image (2m 55s)
+Done Notify Status (12s)
 
 Total: 12 minutes 47 seconds
 ```
@@ -212,9 +212,9 @@ Navigate to: `Settings → Environments`
 
 **Environment Protection Rules (Production):**
 
-- ✅ Required reviewers (1-2 people)
-- ✅ Wait timer: 0 minutes
-- ✅ Deployment branches: main, tags
+- Required reviewers (1-2 people)
+- Wait timer: 0 minutes
+- Deployment branches: main, tags
 
 #### 3. Enable GitHub Packages
 
@@ -324,7 +324,7 @@ wastefi
 View pipeline status:
 
 ```
-https://github.com/your-org/wastefi-backend/actions
+https://github.com/WASTEFI-AFRICA/wastefi-backend/actions
 ```
 
 ### Build Status Badge
@@ -332,8 +332,8 @@ https://github.com/your-org/wastefi-backend/actions
 Add to README.md:
 
 ```markdown
-![CI](https://github.com/your-org/wastefi-backend/workflows/CI/badge.svg)
-![CD](https://github.com/your-org/wastefi-backend/workflows/CD/badge.svg)
+![CI](https://github.com/WASTEFI-AFRICA/wastefi-backend/workflows/CI/badge.svg)
+![CD](https://github.com/WASTEFI-AFRICA/wastefi-backend/workflows/CD/badge.svg)
 ```
 
 ### Notifications

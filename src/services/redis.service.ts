@@ -59,13 +59,13 @@ class RedisService {
       await this.client.ping();
       this.isConnected = true;
 
-      logger.info('✅ Redis connected successfully', {
+      logger.info('Redis connected successfully', {
         host: config.redis.host,
         port: config.redis.port,
         db: config.redis.db,
       });
     } catch (error: unknown) {
-      logger.error('❌ Redis connection failed', { error: error as Error });
+      logger.error('Redis connection failed', { error: error as Error });
       this.isConnected = false;
       // Don't throw - allow app to run without Redis
     }

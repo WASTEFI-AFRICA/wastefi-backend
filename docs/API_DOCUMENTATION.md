@@ -129,7 +129,7 @@ Content-Type: application/json
 }
 ```
 
-⚠️ **Important**: Store the API key securely. It's only shown once and cannot be retrieved later.
+Warning **Important**: Store the API key securely. It's only shown once and cannot be retrieved later.
 
 ## Rate Limiting
 
@@ -268,11 +268,11 @@ http://localhost:3000/api/docs
 
 The Swagger UI provides:
 
-- ✅ Complete API reference
-- ✅ Try-it-out functionality
-- ✅ Request/response examples
-- ✅ Schema definitions
-- ✅ Authentication testing
+- Complete API reference
+- Try-it-out functionality
+- Request/response examples
+- Schema definitions
+- Authentication testing
 
 ### OpenAPI Specification
 
@@ -538,7 +538,7 @@ Check rate limit headers and adjust request frequency accordingly.
 ### Contact
 
 - Email: support@wastefi.com
-- GitHub: https://github.com/wastefi/backend
+- GitHub: https://github.com/WASTEFI-AFRICA/wastefi-backend
 
 ## Changelog
 

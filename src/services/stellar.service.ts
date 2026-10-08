@@ -43,7 +43,7 @@ export class StellarService {
       this.network = StellarSdk.Networks.TESTNET;
     }
 
-    console.log(`✅ Stellar service initialized (${config.stellar.network})`);
+    console.log(`Stellar service initialized (${config.stellar.network})`);
   }
 
   /**
@@ -81,7 +81,7 @@ export class StellarService {
         `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`
       );
       await response.json();
-      console.log('✅ Testnet account funded:', publicKey);
+      console.log('Testnet account funded:', publicKey);
       return true;
     } catch (error) {
       console.error('Failed to fund testnet account:', error);
@@ -211,7 +211,7 @@ export class StellarService {
       await this.fundTestnetAccount(wallet.publicKey);
     }
 
-    console.log(`✅ Created wallet for user ${userId}: ${wallet.publicKey}`);
+    console.log(`Created wallet for user ${userId}: ${wallet.publicKey}`);
 
     return wallet;
   }

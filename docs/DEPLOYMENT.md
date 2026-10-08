@@ -56,7 +56,7 @@ WasteFi Backend can be deployed using:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/wastefi/backend.git
+git clone https://github.com/WASTEFI-AFRICA/wastefi-backend.git
 cd backend
 
 # 2. Copy environment file
@@ -95,7 +95,7 @@ docker-compose --version
 
 ```bash
 # Clone repository
-git clone https://github.com/wastefi/backend.git
+git clone https://github.com/WASTEFI-AFRICA/wastefi-backend.git
 cd backend
 
 # Create production environment file
@@ -186,7 +186,7 @@ npm install -g pm2
 
 ```bash
 # Clone repository
-git clone https://github.com/wastefi/backend.git
+git clone https://github.com/WASTEFI-AFRICA/wastefi-backend.git
 cd backend
 
 # Install dependencies
@@ -507,12 +507,12 @@ sudo ufw deny 5432/tcp
 
 ### Environment Security
 
-- ✅ Never commit `.env` files
-- ✅ Use strong passwords (32+ characters)
-- ✅ Rotate secrets regularly
-- ✅ Use secret management (AWS Secrets Manager, HashiCorp Vault)
-- ✅ Enable database encryption
-- ✅ Use SSL for all connections
+- Never commit `.env` files
+- Use strong passwords (32+ characters)
+- Rotate secrets regularly
+- Use secret management (AWS Secrets Manager, HashiCorp Vault)
+- Enable database encryption
+- Use SSL for all connections
 
 ## Troubleshooting
 

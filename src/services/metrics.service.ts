@@ -162,7 +162,7 @@ class MetricsService {
       });
 
       this.initialized = true;
-      logger.info('✅ Metrics service initialized');
+      logger.info('Metrics service initialized');
     } catch (error) {
       logger.error('Failed to initialize metrics service', { error: error as Error });
     }

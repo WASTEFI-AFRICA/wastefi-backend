@@ -114,7 +114,7 @@ if (pm.response.code === 200) {
     pm.environment.set('refreshToken', response.data.tokens.refreshToken);
     pm.environment.set('userId', response.data.user.id);
 
-    console.log('✅ Tokens saved to environment');
+    console.log('Done Tokens saved to environment');
   }
 }
 ```
@@ -130,7 +130,7 @@ if (pm.response.code === 200) {
 
   if (response.success && response.data.accessToken) {
     pm.environment.set('accessToken', response.data.accessToken);
-    console.log('✅ Access token refreshed');
+    console.log('Done Access token refreshed');
   }
 }
 ```
@@ -150,15 +150,15 @@ if (pm.response.code === 200) {
        "email": "john@example.com"
      }
      ```
-   - ✅ Tokens auto-saved
+   - Tokens auto-saved
 
 2. **Get Profile**
    - Request: `GET /auth/profile`
-   - ✅ Token auto-added
+   - Token auto-added
 
 3. **Create Wallet**
    - Request: `POST /wallet/create`
-   - ✅ Wallet created automatically
+   - Wallet created automatically
 
 4. **Find Collection Point**
    - Request: `GET /collection-points/nearby`

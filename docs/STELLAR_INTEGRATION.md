@@ -4,19 +4,19 @@ WasteFi uses the Stellar blockchain for fast, low-cost payments to waste collect
 
 ## Features
 
-✅ **Automatic Wallet Creation**
+Done **Automatic Wallet Creation**
 
 - Each user gets a Stellar wallet upon registration
 - Testnet accounts are automatically funded
 - Private keys encrypted and stored securely
 
-✅ **Payment Processing**
+Done **Payment Processing**
 
 - Send XLM payments to collectors
 - Support for memos (transaction notes)
 - Transaction tracking and history
 
-✅ **Balance Management**
+Done **Balance Management**
 
 - Real-time balance queries
 - Multi-asset support (XLM + custom tokens)
@@ -193,19 +193,19 @@ if (result.success) {
 
 ## Security Features
 
-🔒 **Private Key Encryption**
+ **Private Key Encryption**
 
 - All private keys encrypted with AES-256-CBC
 - Encryption key from JWT_SECRET
 - Never exposed in API responses
 
-🔒 **Secure Storage**
+ **Secure Storage**
 
 - Private keys stored encrypted in database
 - Public keys safe to share
 - Decryption only when needed for transactions
 
-🔒 **Transaction Signing**
+ **Transaction Signing**
 
 - All transactions signed with private key
 - Transactions submitted to Stellar network
@@ -213,12 +213,12 @@ if (result.success) {
 
 ## Benefits of Stellar
 
-✅ **Fast Transactions** - 3-5 second confirmation
-✅ **Low Fees** - ~$0.00001 per transaction
-✅ **Cross-Border** - Send money anywhere
-✅ **Transparent** - All transactions on public ledger
-✅ **Decentralized** - No single point of failure
-✅ **Asset Support** - Can issue custom tokens
+Done **Fast Transactions**- 3-5 second confirmation
+Done **Low Fees**- ~$0.00001 per transaction
+Done **Cross-Border**- Send money anywhere
+Done **Transparent**- All transactions on public ledger
+Done **Decentralized**- No single point of failure
+Done **Asset Support**- Can issue custom tokens
 
 ## Asset Issuance (Future)
 

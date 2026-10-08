@@ -402,16 +402,16 @@ Authorization: Bearer <admin-token>
 
 ### Data Protection
 
-- ✅ Personal data encrypted at rest
-- ✅ Sensitive fields not exposed in API
-- ✅ Document URLs should be signed/temporary
-- ✅ Access logs for admin actions
+- Personal data encrypted at rest
+- Sensitive fields not exposed in API
+- Document URLs should be signed/temporary
+- Access logs for admin actions
 
 ### Privacy
 
-- ⚠️ Only authorized personnel can view KYC documents
-- ⚠️ Documents stored securely (cloud storage with access control)
-- ⚠️ Comply with data protection regulations (GDPR, local laws)
+- Only authorized personnel can view KYC documents
+- Documents stored securely (cloud storage with access control)
+- Comply with data protection regulations (GDPR, local laws)
 
 ### Fraud Prevention
 
@@ -475,25 +475,25 @@ await POST(`/api/v1/users/${userId}/kyc/verify`, {
 
 ### For Users
 
-✅ Provide clear, high-quality photos
-✅ Ensure all text is readable
-✅ Use valid, non-expired documents
-✅ Provide accurate information
+Done Provide clear, high-quality photos
+Done Ensure all text is readable
+Done Use valid, non-expired documents
+Done Provide accurate information
 
 ### For Admins
 
-✅ Review documents within 24-48 hours
-✅ Provide clear rejection reasons
-✅ Keep verification notes detailed
-✅ Flag suspicious submissions
+Done Review documents within 24-48 hours
+Done Provide clear rejection reasons
+Done Keep verification notes detailed
+Done Flag suspicious submissions
 
 ### For Developers
 
-✅ Use secure document storage
-✅ Implement signed URLs for documents
-✅ Log all verification actions
-✅ Send notifications on status changes
-✅ Implement rate limiting on submissions
+Done Use secure document storage
+Done Implement signed URLs for documents
+Done Log all verification actions
+Done Send notifications on status changes
+Done Implement rate limiting on submissions
 
 ## Troubleshooting
 

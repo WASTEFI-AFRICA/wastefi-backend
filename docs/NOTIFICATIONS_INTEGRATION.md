@@ -276,12 +276,12 @@ NotificationService.sendPasswordReset(user.email, user.firstName, resetToken, re
 Always use `.catch()` to prevent notification failures from blocking the main flow:
 
 ```typescript
-// ✅ Good - Non-blocking
+// Done Good - Non-blocking
 NotificationService.sendWelcome(...).catch(error => {
   logger.error('Notification failed', { error });
 });
 
-// ❌ Bad - Blocks if notification fails
+// Not done Bad - Blocks if notification fails
 await NotificationService.sendWelcome(...);
 ```
 

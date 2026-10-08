@@ -17,12 +17,12 @@ Complete guide for using and maintaining the Swagger/OpenAPI documentation in Wa
 
 WasteFi Backend uses **Swagger/OpenAPI 3.0** for API documentation. This provides:
 
-- ✅ Interactive API explorer
-- ✅ Automatic request/response validation
-- ✅ Schema definitions
-- ✅ Try-it-out functionality
-- ✅ Code generation support
-- ✅ API client testing
+- Interactive API explorer
+- Automatic request/response validation
+- Schema definitions
+- Try-it-out functionality
+- Code generation support
+- API client testing
 
 ## Accessing Documentation
 
@@ -321,11 +321,11 @@ Reference shared schemas:
 
 Document all endpoints with:
 
-- ✅ Summary and description
-- ✅ All parameters
-- ✅ Request body schema
-- ✅ All response codes
-- ✅ Examples
+- Summary and description
+- All parameters
+- Request body schema
+- All response codes
+- Examples
 
 ### 2. Use Tags
 

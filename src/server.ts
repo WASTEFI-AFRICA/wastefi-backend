@@ -180,22 +180,22 @@ app.use(errorHandler);
 // Start server
 const PORT = config.app.port;
 httpServer.listen(PORT, () => {
-  logger.info('🚀 WasteFi Backend server started', {
+  logger.info('WasteFi Backend server started', {
     port: PORT,
     environment: config.app.env,
     apiVersion: config.app.apiVersion,
     stellarNetwork: config.stellar.network,
   });
-  console.log(`🚀 WasteFi Backend server running on port ${PORT}`);
-  console.log(`📊 Environment: ${config.app.env}`);
-  console.log(`🔗 API Version: ${config.app.apiVersion}`);
-  console.log(`🔌 WebSocket enabled at ws://localhost:${PORT}/socket.io/`);
+  console.log(`WasteFi Backend server running on port ${PORT}`);
+  console.log(`Environment: ${config.app.env}`);
+  console.log(`API Version: ${config.app.apiVersion}`);
+  console.log(`WebSocket enabled at ws://localhost:${PORT}/socket.io/`);
 });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.warn('Received SIGINT, shutting down gracefully...');
-  console.log('\n⚠️  Shutting down gracefully...');
+  console.log('\nShutting down gracefully...');
   await DatabaseService.disconnect();
   await RedisService.disconnect();
   process.exit(0);
@@ -203,7 +203,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   logger.warn('Received SIGTERM, shutting down gracefully...');
-  console.log('\n⚠️  Shutting down gracefully...');
+  console.log('\nShutting down gracefully...');
   await DatabaseService.disconnect();
   await RedisService.disconnect();
   process.exit(0);
@@ -212,14 +212,14 @@ process.on('SIGTERM', async () => {
 // Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
   logger.error('Uncaught Exception', { error, stack: error.stack });
-  console.error('💥 Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: any) => {
   logger.error('Unhandled Rejection', { reason });
-  console.error('💥 Unhandled Rejection:', reason);
+  console.error('Unhandled Rejection:', reason);
   process.exit(1);
 });
 

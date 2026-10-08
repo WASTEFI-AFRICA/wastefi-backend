@@ -527,7 +527,7 @@ function ConnectionMonitor() {
   return (
     <div className="connection-status">
       <span className={connected ? 'online' : 'offline'}>
-        {connected ? '🟢 Connected' : '🔴 Disconnected'}
+        {connected? 'Low Connected': 'Critical Disconnected'}
       </span>
       {lastPing && <span>Last ping: {lastPing.toLocaleTimeString()}</span>}
     </div>

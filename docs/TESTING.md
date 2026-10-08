@@ -17,12 +17,12 @@ Complete guide for testing the WasteFi Backend application.
 
 WasteFi Backend uses **Jest** as the testing framework with support for:
 
-- ✅ Unit tests
-- ✅ Integration tests
-- ✅ API endpoint tests
-- ✅ Code coverage reporting
-- ✅ Mocking and stubbing
-- ✅ Async/await support
+- Unit tests
+- Integration tests
+- API endpoint tests
+- Code coverage reporting
+- Mocking and stubbing
+- Async/await support
 
 ### Test Stack
 
@@ -370,11 +370,11 @@ describe('Feature', () => {
 ### 2. Test Naming
 
 ```typescript
-// ❌ Bad
+// Not done Bad
 it('test1', () => {});
 it('should work', () => {});
 
-// ✅ Good
+// Done Good
 it('should return user when valid ID is provided', () => {});
 it('should throw error when user is not found', () => {});
 it('should calculate distance between two coordinates', () => {});
@@ -479,7 +479,7 @@ await expect(promise).rejects.toThrow();
 ### 6. Test Independence
 
 ```typescript
-// ❌ Bad - Tests depend on each other
+// Not done Bad - Tests depend on each other
 let userId;
 
 it('should create user', () => {
@@ -490,7 +490,7 @@ it('should get user', () => {
   getUser(userId); // Depends on previous test
 });
 
-// ✅ Good - Tests are independent
+// Done Good - Tests are independent
 it('should create user', () => {
   const userId = createUser();
   expect(userId).toBeDefined();
@@ -506,14 +506,14 @@ it('should get user', () => {
 ### 7. Avoid Testing Implementation Details
 
 ```typescript
-// ❌ Bad - Testing implementation
+// Not done Bad - Testing implementation
 it('should call internal method', () => {
   const spy = jest.spyOn(service, '_internalMethod');
   service.publicMethod();
   expect(spy).toHaveBeenCalled();
 });
 
-// ✅ Good - Testing behavior
+// Done Good - Testing behavior
 it('should return correct result', () => {
   const result = service.publicMethod();
   expect(result).toBe(expected);
