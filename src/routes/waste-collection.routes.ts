@@ -63,6 +63,24 @@ router.get(
 );
 
 /**
+ * @route   GET /api/v1/collections/statistics/materials
+ * @desc    Get collection statistics by material type
+ * @access  Private (Admin/Collection Point)
+ */
+router.get(
+  '/statistics/materials',
+  authenticateJWT,
+  requireRole('ADMIN', 'COLLECTION_POINT'),
+  [
+    query('startDate').optional().isISO8601().withMessage('Invalid start date'),
+    query('endDate').optional().isISO8601().withMessage('Invalid end date'),
+    query('collectionPointId').optional().isUUID().withMessage('Invalid collection point ID'),
+    validate,
+  ],
+  WasteCollectionController.getMaterialStatistics
+);
+
+/**
  * @route   GET /api/v1/collections
  * @desc    List all collections with filters
  * @access  Private (Admin/Collection Point)

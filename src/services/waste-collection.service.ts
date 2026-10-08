@@ -1,6 +1,7 @@
 import { prisma } from './database.service';
 import { TransactionStatus } from '@prisma/client';
 import { MaterialPricingUtil } from '../utils/material-pricing.util';
+import { CacheUtil } from '../utils/cache.util';
 
 export interface RecordCollectionData {
   collectionPointId: string;
@@ -395,5 +396,96 @@ export class WasteCollectionService {
       averageWeight: (item._sum.weight || 0) / item._count,
       averageEarnings: (item._sum.paymentAmount || 0) / item._count,
     }));
+  }
+
+  /**
+   * Get collection statistics by material type with caching
+   */
+  static async getMaterialStatistics(filters: {
+    startDate?: Date;
+    endDate?: Date;
+    collectionPointId?: string;
+  }) {
+    // Generate cache key
+    const cacheKey = `material-stats:${filters.collectionPointId || 'all'}:${filters.startDate?.toISOString() || 'none'}:${filters.endDate?.toISOString() || 'none'}`;
+
+    // Try to get from cache
+    const cached = await CacheUtil.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Build where clause
+    const where: any = {};
+
+    if (filters.collectionPointId) {
+      where.collectionPointId = filters.collectionPointId;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      where.createdAt = {};
+      if (filters.startDate) where.createdAt.gte = filters.startDate;
+      if (filters.endDate) where.createdAt.lte = filters.endDate;
+    }
+
+    // Get statistics grouped by material type
+    const materialStats = await prisma.wasteCollection.groupBy({
+      by: ['materialType'],
+      where,
+      _sum: {
+        weight: true,
+        paymentAmount: true,
+      },
+      _count: true,
+      _avg: {
+        weight: true,
+      },
+    });
+
+    // Get category breakdown
+    const categoryStats = await prisma.wasteCollection.groupBy({
+      by: ['materialCategory'],
+      where,
+      _sum: {
+        weight: true,
+      },
+      _count: true,
+    });
+
+    // Format the response
+    const result = {
+      summary: {
+        totalCollections: materialStats.reduce((sum, item) => sum + item._count, 0),
+        totalWeight: materialStats.reduce((sum, item) => sum + (item._sum.weight || 0), 0),
+        totalValue: materialStats.reduce((sum, item) => sum + (item._sum.paymentAmount || 0), 0),
+      },
+      byMaterialType: materialStats.map((item) => ({
+        materialType: item.materialType,
+        count: item._count,
+        totalWeight: item._sum.weight || 0,
+        averageWeight: item._avg.weight || 0,
+        totalValue: item._sum.paymentAmount || 0,
+        averageValue: (item._sum.paymentAmount || 0) / item._count,
+      })),
+      byCategory: categoryStats.map((item) => ({
+        category: item.materialCategory,
+        count: item._count,
+        totalWeight: item._sum.weight || 0,
+        percentage:
+          (item._sum.weight || 0) /
+          categoryStats.reduce((sum, c) => sum + (c._sum.weight || 0), 1) *
+          100,
+      })),
+      filters: {
+        startDate: filters.startDate?.toISOString(),
+        endDate: filters.endDate?.toISOString(),
+        collectionPointId: filters.collectionPointId,
+      },
+    };
+
+    // Cache the result for 5 minutes
+    await CacheUtil.set(cacheKey, result, 300);
+
+    return result;
   }
 }
