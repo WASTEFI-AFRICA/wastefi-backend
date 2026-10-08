@@ -59,6 +59,7 @@ model User {
   id            String      @id @default(uuid())
   email         String?     @unique
   phoneNumber   String      @unique
+  password      String?     // Hashed password (optional, for password-based auth)
   firstName     String
   lastName      String
   role          UserRole    @default(COLLECTOR)

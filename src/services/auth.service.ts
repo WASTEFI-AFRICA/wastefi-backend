@@ -35,11 +35,18 @@ export class AuthService {
       }
     }
 
+    // Hash password if provided
+    let hashedPassword: string | undefined;
+    if (data.password) {
+      hashedPassword = await EncryptionUtil.hashPassword(data.password);
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
         phoneNumber: data.phoneNumber,
         email: data.email,
+        password: hashedPassword,
         firstName: data.firstName,
         lastName: data.lastName,
         role: data.role || UserRole.COLLECTOR,
@@ -67,8 +74,28 @@ export class AuthService {
       throw new Error('Account is not active. Please complete verification.');
     }
 
-    // In production, verify OTP or password here
-    // For now, we'll allow login with just phone number
+    // Verify password if provided and user has a password set
+    if (credentials.password) {
+      if (!user.password) {
+        throw new Error('Password authentication not set up for this account');
+      }
+
+      const isPasswordValid = await EncryptionUtil.comparePassword(
+        credentials.password,
+        user.password
+      );
+
+      if (!isPasswordValid) {
+        throw new Error('Invalid credentials');
+      }
+    } else if (credentials.otp) {
+      // In production, verify OTP here
+      // For now, we'll skip OTP verification
+      // TODO: Implement OTP verification
+    } else {
+      // Allow login without password/OTP for backwards compatibility
+      // In production, you should enforce either password or OTP
+    }
 
     // Update last login
     await prisma.user.update({
