@@ -3,6 +3,10 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+# Prisma needs OpenSSL to detect which query engine to generate; the Alpine base
+# image does not include it.
+RUN apk add --no-cache openssl
+
 # Set working directory
 WORKDIR /app
 
@@ -26,8 +30,8 @@ RUN npm run build
 # Stage 2: Production
 FROM node:20-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# dumb-init for proper signal handling, and OpenSSL for the Prisma query engine
+RUN apk add --no-cache dumb-init openssl
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -47,6 +51,12 @@ RUN npm ci --only=production && \
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+
+# Directories the app writes to at runtime (profile pictures, database backups).
+# /app is owned by root, so the non-root user cannot create these itself; without
+# this the container exits at startup with EACCES on /app/uploads. Mount a volume
+# at these paths if the data must outlive the container.
+RUN mkdir -p /app/uploads /app/backups && chown -R nodejs:nodejs /app/uploads /app/backups
 
 # Switch to non-root user
 USER nodejs
