@@ -13,7 +13,7 @@ export class JWTUtil {
       expiresIn: '7d',
       issuer: 'wastefi',
     };
-    return jwt.sign(payload, this.secret, options);
+    return jwt.sign({ ...payload, tokenType: 'access' }, this.secret, options);
   }
 
   /**
@@ -24,17 +24,24 @@ export class JWTUtil {
       expiresIn: '30d',
       issuer: 'wastefi',
     };
-    return jwt.sign(payload, this.secret, options);
+    return jwt.sign({ ...payload, tokenType: 'refresh' }, this.secret, options);
   }
 
   /**
-   * Verify and decode JWT token
+   * Verify and decode a JWT.
+   *
+   * `expectedType` is enforced because both token kinds are signed with the same
+   * secret. Without it a 30-day refresh token worked as a bearer token and a
+   * short-lived access token worked as a refresh token.
    */
-  static verifyToken(token: string): JWTPayload {
+  static verifyToken(token: string, expectedType: 'access' | 'refresh' = 'access'): JWTPayload {
     try {
       const decoded = jwt.verify(token, this.secret, {
         issuer: 'wastefi',
       }) as JWTPayload;
+      if (decoded.tokenType !== expectedType) {
+        throw new jwt.JsonWebTokenError('wrong token type');
+      }
       return decoded;
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {

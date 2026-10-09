@@ -1,8 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { logger } from '../utils/logger.util';
-import jwt from 'jsonwebtoken';
-import { config } from '../config';
+import { JWTUtil } from '../utils/jwt.util';
 
 export interface SocketUser {
   userId: string;
@@ -46,8 +45,8 @@ export class WebSocketService {
         // Remove 'Bearer ' prefix if present
         const cleanToken = token.replace('Bearer ', '');
 
-        // Verify JWT token
-        const decoded = jwt.verify(cleanToken, config.jwt.secret) as any;
+        // Same verification as the HTTP API: signature, issuer, and access-token type.
+        const decoded = JWTUtil.verifyToken(cleanToken);
 
         // Attach user info to socket
         socket.data.userId = decoded.userId;

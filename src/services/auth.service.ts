@@ -206,7 +206,7 @@ export class AuthService {
    */
   static async refreshToken(refreshToken: string): Promise<TokenResponse> {
     try {
-      const decoded = JWTUtil.verifyToken(refreshToken);
+      const decoded = JWTUtil.verifyToken(refreshToken, 'refresh');
 
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },

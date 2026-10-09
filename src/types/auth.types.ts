@@ -6,6 +6,8 @@ export interface JWTPayload {
   phoneNumber: string;
   role: UserRole;
   email?: string;
+  /** Distinguishes access from refresh tokens so one cannot stand in for the other. */
+  tokenType?: 'access' | 'refresh';
 }
 
 export interface AuthRequest extends Request {
