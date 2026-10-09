@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import { config } from './config';
 import { swaggerSpec } from './config/swagger';
 import DatabaseService from './services/database.service';
+import { BootstrapService } from './services/bootstrap.service';
 import RedisService from './services/redis.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
@@ -35,8 +36,10 @@ dotenv.config();
 const app: Application = express();
 const httpServer = createServer(app);
 
-// Initialize database connection
-DatabaseService.connect();
+// Initialize database connection, then create the first administrator if configured
+DatabaseService.connect()
+  .then(() => BootstrapService.ensureInitialAdmin())
+  .catch((error: unknown) => logger.error('Initial admin setup failed', { error: error as Error }));
 
 // Initialize Redis connection
 RedisService.connect();
