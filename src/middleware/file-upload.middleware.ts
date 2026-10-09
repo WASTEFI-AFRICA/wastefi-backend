@@ -1,5 +1,4 @@
 import multer, { FileFilterCallback } from 'multer';
-import path from 'path';
 import { Request } from 'express';
 import { FileUploadUtil } from '../utils/file-upload.util';
 
@@ -8,19 +7,19 @@ FileUploadUtil.initializeDirectories();
 
 // Configure multer storage
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
+  destination: (_req: Request, _file: Express.Multer.File, cb) => {
     cb(null, FileUploadUtil.PROFILE_PICTURES_DIR);
   },
   filename: (req: Request, file: Express.Multer.File, cb) => {
-    // @ts-ignore - user is added by auth middleware
-    const userId = req.user?.userId || 'unknown';
+    // `user` is attached to the request by the auth middleware.
+    const userId = (req as Request & { user?: { userId?: string } }).user?.userId || 'unknown';
     const fileName = FileUploadUtil.generateFileName(userId, file.originalname);
     cb(null, fileName);
   },
 });
 
 // File filter for validation
-const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
   if (FileUploadUtil.isValidImageType(file.mimetype)) {
     cb(null, true);
   } else {
@@ -44,7 +43,7 @@ export const profilePictureUpload = multer({
 /**
  * Middleware to handle multer errors
  */
-export const handleUploadError = (error: any, req: Request, res: any, next: any) => {
+export const handleUploadError = (error: any, _req: Request, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({

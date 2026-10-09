@@ -16,7 +16,7 @@ export class PasswordValidatorUtil {
   private static readonly UPPERCASE_REGEX = /[A-Z]/;
   private static readonly LOWERCASE_REGEX = /[a-z]/;
   private static readonly NUMBER_REGEX = /[0-9]/;
-  private static readonly SPECIAL_CHAR_REGEX = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+  private static readonly SPECIAL_CHAR_REGEX = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/;
 
   /**
    * Validate password against strength requirements
@@ -57,7 +57,9 @@ export class PasswordValidatorUtil {
 
     // Check for special character
     if (!this.SPECIAL_CHAR_REGEX.test(password)) {
-      feedback.push('Password must contain at least one special character (!@#$%^&*()_+-=[]{};\':"\\|,.<>/?)');
+      feedback.push(
+        'Password must contain at least one special character (!@#$%^&*()_+-=[]{};\':"\\|,.<>/?)'
+      );
     } else {
       score += 1;
     }

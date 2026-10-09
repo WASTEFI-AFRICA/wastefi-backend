@@ -1,7 +1,7 @@
 import { prisma } from './database.service';
 import { TransactionStatus } from '@prisma/client';
 import { MaterialPricingUtil } from '../utils/material-pricing.util';
-import { CacheUtil } from '../utils/cache.util';
+import { cacheAside } from '../utils/cache.util';
 
 export interface RecordCollectionData {
   collectionPointId: string;
@@ -125,7 +125,7 @@ export class WasteCollectionService {
 
     if (filters.collectorId) where.collectorId = filters.collectorId;
     if (filters.collectionPointId) where.collectionPointId = filters.collectionPointId;
-    
+
     // Enhanced material type search - supports partial matching
     if (filters.materialType) {
       where.materialType = {
@@ -133,7 +133,7 @@ export class WasteCollectionService {
         mode: 'insensitive',
       };
     }
-    
+
     if (filters.status) where.paymentStatus = filters.status;
 
     // Date range filtering
@@ -417,15 +417,17 @@ export class WasteCollectionService {
     endDate?: Date;
     collectionPointId?: string;
   }) {
-    // Generate cache key
     const cacheKey = `material-stats:${filters.collectionPointId || 'all'}:${filters.startDate?.toISOString() || 'none'}:${filters.endDate?.toISOString() || 'none'}`;
 
-    // Try to get from cache
-    const cached = await CacheUtil.get<any>(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    // Cached for 5 minutes; falls back to the database when Redis is unavailable.
+    return cacheAside(cacheKey, () => this.computeMaterialStatistics(filters), { ttl: 300 });
+  }
 
+  private static async computeMaterialStatistics(filters: {
+    startDate?: Date;
+    endDate?: Date;
+    collectionPointId?: string;
+  }) {
     // Build where clause
     const where: any = {};
 
@@ -483,8 +485,8 @@ export class WasteCollectionService {
         count: item._count,
         totalWeight: item._sum.weight || 0,
         percentage:
-          (item._sum.weight || 0) /
-          categoryStats.reduce((sum, c) => sum + (c._sum.weight || 0), 1) *
+          ((item._sum.weight || 0) /
+            categoryStats.reduce((sum, c) => sum + (c._sum.weight || 0), 1)) *
           100,
       })),
       filters: {
@@ -493,9 +495,6 @@ export class WasteCollectionService {
         collectionPointId: filters.collectionPointId,
       },
     };
-
-    // Cache the result for 5 minutes
-    await CacheUtil.set(cacheKey, result, 300);
 
     return result;
   }
