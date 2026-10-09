@@ -177,50 +177,55 @@ app.use(notFoundHandler);
 // Global error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-const PORT = config.app.port;
-httpServer.listen(PORT, () => {
-  logger.info('WasteFi Backend server started', {
-    port: PORT,
-    environment: config.app.env,
-    apiVersion: config.app.apiVersion,
-    stellarNetwork: config.stellar.network,
+// Start listening and install process-level handlers. Tests import `app` and drive it
+// with supertest, so under NODE_ENV=test the server must not bind a port or
+// terminate the test process on an unhandled rejection.
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = config.app.port;
+  httpServer.listen(PORT, () => {
+    logger.info('WasteFi Backend server started', {
+      port: PORT,
+      environment: config.app.env,
+      apiVersion: config.app.apiVersion,
+      stellarNetwork: config.stellar.network,
+    });
+    console.log(`WasteFi Backend server running on port ${PORT}`);
+    console.log(`Environment: ${config.app.env}`);
+    console.log(`API Version: ${config.app.apiVersion}`);
+    console.log(`WebSocket enabled at ws://localhost:${PORT}/socket.io/`);
   });
-  console.log(`WasteFi Backend server running on port ${PORT}`);
-  console.log(`Environment: ${config.app.env}`);
-  console.log(`API Version: ${config.app.apiVersion}`);
-  console.log(`WebSocket enabled at ws://localhost:${PORT}/socket.io/`);
-});
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  logger.warn('Received SIGINT, shutting down gracefully...');
-  console.log('\nShutting down gracefully...');
-  await DatabaseService.disconnect();
-  await RedisService.disconnect();
-  process.exit(0);
-});
+  // Graceful shutdown
+  process.on('SIGINT', async () => {
+    logger.warn('Received SIGINT, shutting down gracefully...');
+    console.log('\nShutting down gracefully...');
+    await DatabaseService.disconnect();
+    await RedisService.disconnect();
+    process.exit(0);
+  });
 
-process.on('SIGTERM', async () => {
-  logger.warn('Received SIGTERM, shutting down gracefully...');
-  console.log('\nShutting down gracefully...');
-  await DatabaseService.disconnect();
-  await RedisService.disconnect();
-  process.exit(0);
-});
+  process.on('SIGTERM', async () => {
+    logger.warn('Received SIGTERM, shutting down gracefully...');
+    console.log('\nShutting down gracefully...');
+    await DatabaseService.disconnect();
+    await RedisService.disconnect();
+    process.exit(0);
+  });
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error: Error) => {
-  logger.error('Uncaught Exception', { error, stack: error.stack });
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error: Error) => {
+    logger.error('Uncaught Exception', { error, stack: error.stack });
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
+  });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason: any) => {
-  logger.error('Unhandled Rejection', { reason });
-  console.error('Unhandled Rejection:', reason);
-  process.exit(1);
-});
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error('Unhandled Rejection', { reason });
+    console.error('Unhandled Rejection:', reason);
+    process.exit(1);
+  });
+}
 
+export { app };
 export default httpServer;

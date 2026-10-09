@@ -15,15 +15,15 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  // TODO: Increase coverage thresholds as more tests are added
-  // Target: 70% coverage across all metrics
-  // Current: ~3-5% - need to write more comprehensive tests
+  // Thresholds sit just below the measured coverage so that coverage cannot
+  // silently regress. Measured at 22.9% statements, 12.4% branches, 14.9%
+  // functions and 23.3% lines. Raise these as tests are added.
   coverageThreshold: {
     global: {
-      branches: 2.5,
-      functions: 3,
-      lines: 4,
-      statements: 4,
+      branches: 11,
+      functions: 13,
+      lines: 21,
+      statements: 21,
     },
   },
   moduleNameMapper: {
