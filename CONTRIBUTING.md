@@ -24,9 +24,8 @@ npm test
 npm run build
 ```
 
-`npm run build` currently fails on two pre-existing type errors that are
-unrelated to most changes; see the known breakage section of the
-[README](README.md#known-breakage). Check that your change does not add a third.
+The integration tests need a PostgreSQL database with migrations applied; the
+[README](README.md#testing) shows how to start one in a minute.
 
 Integration tests need `.env.test`; copy
 [`.env.test.example`](.env.test.example) and point `DATABASE_URL` at a scratch

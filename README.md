@@ -84,34 +84,37 @@ docker compose up -d
 This brings up the API alongside PostgreSQL, Redis, and nginx as configured in
 [`docker-compose.yml`](docker-compose.yml).
 
-## Known breakage
-
-`npm run build` and `npm run type-check` currently fail on two pre-existing
-issues on `main`:
-
-- `src/services/waste-collection.service.ts` imports `CacheUtil` from
-  `src/utils/cache.util.ts`, which does not export it. The two call sites use
-  `CacheUtil.get` and `CacheUtil.set`; the module offers `cacheAside` and
-  per-entity cache helpers instead.
-- `src/middleware/file-upload.middleware.ts` has unused parameters that trip
-  `noUnusedParameters`.
-
-Neither is caused by the other, and both need a decision about intended
-behaviour rather than a mechanical fix, so they are left as-is and recorded
-here.
-
 ## Testing
 
 ```sh
 npm test                 # all suites
 npm run test:unit        # unit tests only
-npm run test:integration # integration tests (needs a reachable test database)
+npm run test:integration # end-to-end API tests (need a database, see below)
 npm run test:coverage    # with a coverage report
 ```
 
-Integration tests read `.env.test`, which is not tracked. Copy
-[`.env.test.example`](.env.test.example) to `.env.test` and point
-`DATABASE_URL` at a database you are willing to have reset.
+`tests/integration/api-flow.test.ts` drives the real Express app against a real
+PostgreSQL database with nothing mocked: registration, login, account activation,
+role checks, token forgery, recording and verifying collections, payment
+calculation, and the production secret check. It needs `DATABASE_URL` to point at
+a database that has had migrations applied:
+
+```sh
+docker run -d --name wastefi-test-db -p 5433:5432 \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=wastefi_test postgres:14-alpine
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/wastefi_test
+npx prisma migrate deploy
+npm test
+```
+
+CI does the same with a Postgres service container. The tests create their own
+rows under a unique phone prefix and delete them afterwards.
+
+Measured coverage is 22.9% of statements, 12.4% of branches. The CI threshold sits
+just under that so it cannot silently fall. The authentication and collection
+paths are covered; payments, wallet, mobile money, admin, notifications and the
+material passport service are not. `tests/integration/auth.test.ts` mocks Prisma
+and checks request validation only.
 
 ## Scripts
 
@@ -125,6 +128,35 @@ Integration tests read `.env.test`, which is not tracked. Copy
 | `npm run prisma:studio` | Prisma Studio against the current database |
 | `npm run db:reset` | Drop, recreate and re-migrate the database |
 | `npm run stellar:generate-wallet` | Generate a Stellar keypair for local use |
+
+## Deploying
+
+`render.yaml` is a [Render](https://render.com) blueprint: the API as a Docker web
+service and a managed PostgreSQL. In Render choose New > Blueprint, select this
+repository, and set `CLIENT_URL` to the frontend's origin. The start command runs
+`prisma migrate deploy` before the server starts, and `JWT_SECRET` is generated
+for you. In production the server refuses to start without a unique `JWT_SECRET`.
+
+Accounts are not created with an admin, so create one from your own machine using
+the database's external connection string:
+
+```sh
+DATABASE_URL='<external connection string>' SEED_ADMIN_PASSWORD='<choose one>' npm run prisma:seed
+```
+
+Leave `SEED_ADMIN_PASSWORD` unset and the seed generates a random password and
+prints it once. The seed also adds two sample collection points.
+
+On Render's free plan the service sleeps when idle and the database is deleted
+after 30 days.
+
+## How accounts work today
+
+Registration creates a `PENDING` account, and login requires an `ACTIVE` one with
+a password. OTP and phone verification are **not implemented**: `verifyUser`
+exists but nothing calls it, and the `otp` login field is rejected. Until that is
+built, an admin activates new accounts with
+`PUT /api/v1/users/:userId/status` and `{"status": "ACTIVE"}`.
 
 ## Operations
 
@@ -156,8 +188,7 @@ Integration tests read `.env.test`, which is not tracked. Copy
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests need `npm run lint` and
-`npm test` to pass, and should not add new type errors beyond the two recorded
-under [known breakage](#known-breakage).
+`npm test` to pass.
 
 ## Security
 
