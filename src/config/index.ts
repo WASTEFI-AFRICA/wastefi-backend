@@ -1,3 +1,18 @@
+const INSECURE_JWT_SECRET = 'default-secret-change-me';
+
+/**
+ * The JWT signing secret. A missing secret falls back to a public default so that
+ * local development works without setup, but a production process must never sign
+ * tokens with a value anyone can read in this repository, so it refuses to start.
+ */
+function resolveJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production' && (!secret || secret === INSECURE_JWT_SECRET)) {
+    throw new Error('JWT_SECRET must be set to a unique value when NODE_ENV=production');
+  }
+  return secret || INSECURE_JWT_SECRET;
+}
+
 export const config = {
   app: {
     env: process.env.NODE_ENV || 'development',
@@ -9,7 +24,7 @@ export const config = {
     url: process.env.DATABASE_URL || '',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'default-secret-change-me',
+    secret: resolveJwtSecret(),
     expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string,
   },
   stellar: {
