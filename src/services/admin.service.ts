@@ -412,9 +412,8 @@ export class AdminService {
 
       // Validate and set sorting
       const validSortFields = ['createdAt', 'lastLoginAt', 'kycStatus', 'firstName'];
-      const sortBy = filters?.sortBy && validSortFields.includes(filters.sortBy) 
-        ? filters.sortBy 
-        : 'createdAt';
+      const sortBy =
+        filters?.sortBy && validSortFields.includes(filters.sortBy) ? filters.sortBy : 'createdAt';
       const order = filters?.order === 'asc' ? 'asc' : 'desc';
 
       const [users, total] = await Promise.all([

@@ -43,7 +43,11 @@ export class CollectionPointService {
   /**
    * List collection points with optional filters and pagination
    */
-  static async listCollectionPoints(filters: CollectionPointFilters, page: number = 1, limit: number = 20) {
+  static async listCollectionPoints(
+    filters: CollectionPointFilters,
+    page: number = 1,
+    limit: number = 20
+  ) {
     const skip = (page - 1) * limit;
 
     const where: any = {
