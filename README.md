@@ -131,24 +131,61 @@ and checks request validation only.
 
 ## Deploying
 
-`render.yaml` is a [Render](https://render.com) blueprint: the API as a Docker web
-service and a managed PostgreSQL. In Render choose New > Blueprint, select this
-repository, and set `CLIENT_URL` to the frontend's origin. The start command runs
-`prisma migrate deploy` before the server starts, and `JWT_SECRET` is generated
-for you. In production the server refuses to start without a unique `JWT_SECRET`.
+The `Dockerfile` is the unit of deployment. Its default command applies pending
+Prisma migrations and then starts the server, so a fresh database is ready on first
+boot on any host. Two platforms are configured; both need a PostgreSQL database and
+these variables:
 
-Accounts are not created with an admin, so create one from your own machine using
-the database's external connection string:
+| Variable | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | the PostgreSQL connection string |
+| `JWT_SECRET` | a unique random value. In production the server refuses to start without one. Generate with `openssl rand -hex 32` |
+| `REDIS_ENABLED` | `false` (Redis is optional) |
+| `CLIENT_URL` | the frontend's origin, to restrict CORS in production. Optional until the frontend exists |
+
+`PORT` is provided by the platform. Everything else (Twilio, SMTP, mobile money,
+Stellar) is optional and the API starts without it.
+
+### Railway
+
+`railway.toml` tells Railway to build the `Dockerfile` and wait for `/health` before
+routing traffic.
+
+1. In [Railway](https://railway.com), create a project with **New > GitHub Repo** and
+   choose this repository. Railway needs the Railway GitHub app installed on the
+   organization, which an organization owner must approve.
+2. In the same project, **New > Database > Add PostgreSQL**.
+3. Open the API service's **Variables** tab and add:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference to the database
+     service; check that the service is actually named `Postgres`)
+   - `JWT_SECRET`, `NODE_ENV=production` and `REDIS_ENABLED=false` from the table above
+4. Under **Settings > Networking**, choose **Generate Domain**.
+5. Watch the deploy logs for the three migrations being applied and the server
+   starting, then check `https://<your-domain>/health`. It should report
+   `"database":"connected"`.
+
+### Render
+
+`render.yaml` is a blueprint for a Docker web service plus a managed database. Choose
+**New > Blueprint** in [Render](https://render.com), select this repository, and
+supply `CLIENT_URL` when asked. `JWT_SECRET` is generated for you. On the free plan
+the service sleeps when idle and the database is deleted after 30 days.
+
+### Create the admin account
+
+Nothing creates an admin automatically. Run the seed once from your own machine
+against the deployed database, using its **public** connection string (on Railway,
+`DATABASE_PUBLIC_URL` in the database service's Variables tab; on Render, the
+external URL):
 
 ```sh
-DATABASE_URL='<external connection string>' SEED_ADMIN_PASSWORD='<choose one>' npm run prisma:seed
+npm install
+DATABASE_URL='<public connection string>' SEED_ADMIN_PASSWORD='<choose one>' npm run prisma:seed
 ```
 
 Leave `SEED_ADMIN_PASSWORD` unset and the seed generates a random password and
 prints it once. The seed also adds two sample collection points.
-
-On Render's free plan the service sleeps when idle and the database is deleted
-after 30 days.
 
 ## How accounts work today
 
