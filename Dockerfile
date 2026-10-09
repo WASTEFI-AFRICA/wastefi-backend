@@ -71,5 +71,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start application
-CMD ["node", "dist/server.js"]
+# Apply any pending database migrations, then start the server. Doing this in the
+# image means every host (Docker Compose, Render, Railway, a plain `docker run`)
+# starts the same way and a fresh database is ready on first boot. Prisma takes an
+# advisory lock while migrating, so several instances starting together are safe.
+# If the migration fails the container exits and the host's restart policy applies.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

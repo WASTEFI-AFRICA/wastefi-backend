@@ -1,8 +1,8 @@
 # Render blueprint: the API as a Docker web service plus a managed PostgreSQL.
 #
 # Deploy from the Render dashboard (New > Blueprint) and point it at this
-# repository. The start command applies any pending Prisma migrations before the
-# server starts, so a fresh database is ready on first boot.
+# repository. The image's default command applies any pending Prisma migrations
+# before the server starts, so a fresh database is ready on first boot.
 #
 # After the first deploy, create the admin account (see "Deploying" in the README).
 # Free-tier notes: the web service sleeps after inactivity, and the free database
@@ -19,7 +19,6 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health
-    dockerCommand: sh -c "npx prisma migrate deploy && node dist/server.js"
     envVars:
       - key: NODE_ENV
         value: production
