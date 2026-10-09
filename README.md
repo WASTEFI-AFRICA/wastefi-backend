@@ -33,6 +33,12 @@ environment and defaults to `v1`:
 | `/passports` | Digital material passports |
 | `/admin` | Administrative operations and fraud review |
 | `/backups` | Database backup management |
+| `/public` | Unauthenticated aggregate statistics (`GET /public/stats`), used by the frontend's public stats page |
+
+`GET /api/v1/public/stats` needs no login. It returns counts and totals plus the
+material, weight, city and time of the latest verified collections, and nothing that
+identifies a person. Weight and value count verified collections only, so unverified
+submissions cannot inflate it. It is cached for 30 seconds.
 
 `/metrics` is mounted at the root, outside the version prefix, and serves
 Prometheus metrics.
