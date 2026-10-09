@@ -1,9 +1,13 @@
 name: Scheduled Database Backup
 
+# Manual only for now. This job SSHes to a production host using the PROD_HOST,
+# PROD_USER and PROD_SSH_KEY secrets. None exist yet, so on a schedule it failed
+# every day. Once a production server is deployed and those secrets are set,
+# restore the schedule:
+#
+#   schedule:
+#     - cron: '0 2 * * *'   # daily at 02:00 UTC
 on:
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
