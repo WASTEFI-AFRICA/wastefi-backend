@@ -69,7 +69,20 @@ app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+// In production, CLIENT_URL (comma-separated origins) restricts cross-origin access to
+// the deployed frontend. Elsewhere, and when it is unset, any origin is allowed so
+// local development needs no setup.
+const allowedOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors(
+    process.env.NODE_ENV === 'production' && allowedOrigins.length
+      ? { origin: allowedOrigins }
+      : undefined
+  )
+);
 
 // Request processing middleware
 app.use(compression());
