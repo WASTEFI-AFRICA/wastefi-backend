@@ -174,26 +174,35 @@ the service sleeps when idle and the database is deleted after 30 days.
 
 ### Create the admin account
 
-Nothing creates an admin automatically. Run the seed once from your own machine
-against the deployed database, using its **public** connection string (on Railway,
-`DATABASE_PUBLIC_URL` in the database service's Variables tab; on Render, the
-external URL):
+Registration cannot create an administrator, so a fresh deployment starts with none.
+On a hosted deployment, where the database is private and there is no shell, create the
+first one from the environment. Set both variables on the API service and redeploy:
 
-```sh
-npm install
-DATABASE_URL='<public connection string>' SEED_ADMIN_PASSWORD='<choose one>' npm run prisma:seed
-```
+| Variable | Value |
+| --- | --- |
+| `INITIAL_ADMIN_PHONE` | the admin's phone number in international format, for example `+254700000000` |
+| `INITIAL_ADMIN_PASSWORD` | a password that meets the password policy (8+ characters with upper and lower case, a number and a symbol) |
 
-Leave `SEED_ADMIN_PASSWORD` unset and the seed generates a random password and
-prints it once. The seed also adds two sample collection points.
+On startup, if no administrator exists, the server creates one with that phone and
+password, already active. It does nothing if an admin exists, so leaving the variables
+set is harmless, but remove `INITIAL_ADMIN_PASSWORD` once you have logged in. A weak
+password or malformed number is logged as a warning and the server still starts. The
+password is hashed and never logged.
+
+For local development, `npm run prisma:seed` creates the same admin plus two sample
+collection points. Leave `SEED_ADMIN_PASSWORD` unset and it generates a password and
+prints it once.
 
 ## How accounts work today
 
-Registration creates a `PENDING` account, and login requires an `ACTIVE` one with
-a password. OTP and phone verification are **not implemented**: `verifyUser`
-exists but nothing calls it, and the `otp` login field is rejected. Until that is
-built, an admin activates new accounts with
-`PUT /api/v1/users/:userId/status` and `{"status": "ACTIVE"}`.
+Registration always creates a `COLLECTOR`: any `role` in the request is ignored, and
+there is not yet an endpoint to promote an account, so other roles come from the seed
+or the initial-admin setup above.
+
+A new account is `PENDING`, and login requires an `ACTIVE` one with a password. OTP and
+phone verification are **not implemented**: `verifyUser` exists but nothing calls it,
+and the `otp` login field is rejected. Until that is built, an admin activates new
+accounts with `PUT /api/v1/users/:userId/status` and `{"status": "ACTIVE"}`.
 
 ## Operations
 
