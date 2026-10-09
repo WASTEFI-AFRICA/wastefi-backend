@@ -147,6 +147,7 @@ import adminRoutes from './routes/admin.routes';
 import materialPassportRoutes from './routes/material-passport.routes';
 import metricsRoutes from './routes/metrics.routes';
 import backupRoutes from './routes/backup.routes';
+import publicRoutes from './routes/public.routes';
 
 // API Documentation
 app.use(
@@ -183,6 +184,7 @@ app.use(`/api/${config.app.apiVersion}/payments`, paymentRoutes);
 app.use(`/api/${config.app.apiVersion}/admin`, adminRoutes);
 app.use(`/api/${config.app.apiVersion}/passports`, materialPassportRoutes);
 app.use(`/api/${config.app.apiVersion}/backups`, backupRoutes);
+app.use(`/api/${config.app.apiVersion}/public`, publicRoutes);
 
 // Metrics endpoint (no auth required for Prometheus scraping)
 app.use('/metrics', metricsRoutes);

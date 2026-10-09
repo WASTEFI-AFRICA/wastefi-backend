@@ -27,6 +27,9 @@ const { app } = require('../../src/server');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { prisma } = require('../../src/services/database.service');
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { PublicStatsService } = require('../../src/services/public-stats.service');
+
 const API = '/api/v1';
 const PASSWORD = 'Str0ng!Passw0rd#1';
 
@@ -435,6 +438,77 @@ describe('waste collections', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.verifiedAt).toEqual(expect.any(String));
     expect(res.body.data.verifiedBy).toEqual(expect.any(String));
+  });
+});
+
+describe('public stats', () => {
+  const stats = async () => {
+    // The endpoint caches for 30 seconds; the tests change data and read it back.
+    PublicStatsService.resetCache();
+    return request(app).get(`${API}/public/stats`);
+  };
+
+  it('is readable without logging in', async () => {
+    const res = await stats();
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.currency).toBe('KES');
+    expect(res.headers['cache-control']).toMatch(/max-age=30/);
+    expect(Object.keys(res.body.data.totals).sort()).toEqual([
+      'activeCollectionPoints',
+      'activeCollectors',
+      'collectionsRecorded',
+      'collectionsVerified',
+      'verifiedValue',
+      'verifiedWeightKg',
+    ]);
+  });
+
+  it('counts the verified collection from the flow above', async () => {
+    const { data } = (await stats()).body;
+
+    expect(data.totals.collectionsVerified).toBeGreaterThanOrEqual(1);
+    expect(data.totals.verifiedWeightKg).toBeGreaterThanOrEqual(12.5);
+    expect(data.totals.activeCollectors).toBeGreaterThanOrEqual(2);
+    expect(data.totals.activeCollectionPoints).toBeGreaterThanOrEqual(1);
+    const pet = data.byMaterial.find((m: { materialType: string }) => m.materialType === 'PET');
+    expect(pet.weightKg).toBeGreaterThanOrEqual(12.5);
+    expect(data.recentVerified[0]).toEqual(
+      expect.objectContaining({ materialType: 'PET', city: 'Nairobi' })
+    );
+  });
+
+  it('does not count a collection until it has been verified', async () => {
+    const before = (await stats()).body.data.totals;
+
+    const created = await request(app)
+      .post(`${API}/collections`)
+      .set('Authorization', `Bearer ${collectorToken}`)
+      .send({ collectionPointId, materialType: 'HDPE', materialCategory: 'PLASTIC', weight: 7 });
+    expect(created.status).toBe(201);
+
+    const after = (await stats()).body.data.totals;
+    expect(after.collectionsRecorded).toBe(before.collectionsRecorded + 1);
+    expect(after.collectionsVerified).toBe(before.collectionsVerified);
+    expect(after.verifiedWeightKg).toBe(before.verifiedWeightKg);
+
+    await request(app)
+      .post(`${API}/collections/${created.body.data.id}/verify`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ approved: true });
+
+    const verifiedNow = (await stats()).body.data.totals;
+    expect(verifiedNow.collectionsVerified).toBe(before.collectionsVerified + 1);
+    expect(verifiedNow.verifiedWeightKg).toBeCloseTo(before.verifiedWeightKg + 7, 2);
+  });
+
+  it('exposes no personal data', async () => {
+    const body = JSON.stringify((await stats()).body);
+
+    for (const secret of [COLLECTOR_PHONE, ADMIN_PHONE, collectorId, 'phoneNumber', 'password']) {
+      expect(body).not.toContain(secret);
+    }
   });
 });
 
