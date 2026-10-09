@@ -61,6 +61,19 @@ export class WasteCollectionController {
         return;
       }
 
+      // A collector may read only their own collections. Roles that verify
+      // collections need to read any of them. Without this check any logged-in
+      // user could read every collector's records by guessing or enumerating ids.
+      const canReadAny = ['ADMIN', 'VERIFIER', 'COLLECTION_POINT'].includes(req.user?.role ?? '');
+      if (!canReadAny && collection.collectorId !== req.user?.userId) {
+        res.status(403).json({
+          success: false,
+          error: 'Forbidden',
+          message: 'Insufficient permissions',
+        });
+        return;
+      }
+
       res.status(200).json({
         success: true,
         data: collection,
