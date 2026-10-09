@@ -27,7 +27,7 @@ export class AuthService {
     // Check email uniqueness (case-insensitive) if provided
     if (data.email) {
       const normalizedEmail = data.email.toLowerCase();
-      
+
       const existingEmail = await prisma.user.findFirst({
         where: {
           email: {
@@ -84,27 +84,29 @@ export class AuthService {
       throw new Error('Account is not active. Please complete verification.');
     }
 
-    // Verify password if provided and user has a password set
-    if (credentials.password) {
-      if (!user.password) {
-        throw new Error('Password authentication not set up for this account');
-      }
-
-      const isPasswordValid = await EncryptionUtil.comparePassword(
-        credentials.password,
-        user.password
+    // A password is mandatory. OTP login is not implemented yet, so it must not
+    // be a way in: an earlier version skipped verification entirely when no
+    // password was sent, which let anyone log in as any active account (including
+    // the seeded admin) knowing only its phone number.
+    if (!credentials.password) {
+      throw new Error(
+        credentials.otp ? 'OTP login is not available. Use your password.' : 'Password is required'
       );
+    }
 
-      if (!isPasswordValid) {
-        throw new Error('Invalid credentials');
-      }
-    } else if (credentials.otp) {
-      // In production, verify OTP here
-      // For now, we'll skip OTP verification
-      // TODO: Implement OTP verification
-    } else {
-      // Allow login without password/OTP for backwards compatibility
-      // In production, you should enforce either password or OTP
+    // Same message whether the account has no password or the password is wrong,
+    // so the response does not reveal which accounts are passwordless.
+    if (!user.password) {
+      throw new Error('Invalid credentials');
+    }
+
+    const isPasswordValid = await EncryptionUtil.comparePassword(
+      credentials.password,
+      user.password
+    );
+
+    if (!isPasswordValid) {
+      throw new Error('Invalid credentials');
     }
 
     // Update last login

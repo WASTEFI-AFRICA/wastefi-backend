@@ -155,8 +155,7 @@ router.post(
     body('phoneNumber')
       .matches(/^\+?[1-9]\d{1,14}$/)
       .withMessage('Invalid phone number format'),
-    body('password').optional().isString().withMessage('Password must be a string'),
-    body('otp').optional().isString().withMessage('OTP must be a string'),
+    body('password').isString().notEmpty().withMessage('Password is required'),
   ],
   AuthController.login
 );

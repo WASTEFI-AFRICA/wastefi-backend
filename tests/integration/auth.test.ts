@@ -139,9 +139,19 @@ describe('Authentication API', () => {
       expect(response.status).toBe(400);
     });
 
-    it('should accept valid phone number', async () => {
+    it('should return 400 if password is missing', async () => {
+      // A phone number alone must never be enough to log in.
       const response = await request(app).post('/api/v1/auth/login').send({
         phoneNumber: '+254712345678',
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should accept a phone number and password', async () => {
+      const response = await request(app).post('/api/v1/auth/login').send({
+        phoneNumber: '+254712345678',
+        password: 'Str0ng!Passw0rd#1',
       });
 
       // Will fail at controller level (mocked), but validation should pass
