@@ -59,7 +59,9 @@ export class AuthService {
         password: hashedPassword,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role || UserRole.COLLECTOR,
+        // Never taken from the request: a client choosing its own role could register
+        // as ADMIN. Elevated roles are assigned by an administrator.
+        role: UserRole.COLLECTOR,
         status: 'PENDING', // Requires verification
       },
     });

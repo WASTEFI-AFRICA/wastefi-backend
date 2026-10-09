@@ -117,6 +117,25 @@ describe('registration', () => {
     collectorId = res.body.data.user.id;
   });
 
+  // Regression: the whole request body used to reach the service, so a client could
+  // register as ADMIN by adding "role" to the request.
+  it('ignores a role supplied by the client', async () => {
+    const res = await request(app)
+      .post(`${API}/auth/register`)
+      .send({
+        phoneNumber: phone(5),
+        firstName: 'Sneaky',
+        lastName: 'User',
+        password: PASSWORD,
+        role: 'ADMIN',
+      });
+
+    expect(res.status).toBe(201);
+    const stored = await prisma.user.findUnique({ where: { phoneNumber: phone(5) } });
+    expect(stored.role).toBe('COLLECTOR');
+    await prisma.user.delete({ where: { phoneNumber: phone(5) } });
+  });
+
   it('stores a hash, never the password itself', async () => {
     const stored = await prisma.user.findUnique({ where: { phoneNumber: COLLECTOR_PHONE } });
     expect(stored.password).toBeTruthy();
