@@ -1,8 +1,11 @@
 import { Router, Request, Response } from 'express';
 import MetricsService from '../services/metrics.service';
+import { requireMetricsToken } from '../middleware/metrics-auth.middleware';
 import { logger } from '../utils/logger.util';
 
 const router = Router();
+
+router.use(requireMetricsToken);
 
 /**
  * @swagger

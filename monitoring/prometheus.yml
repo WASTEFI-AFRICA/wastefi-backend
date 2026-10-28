@@ -25,6 +25,7 @@ scrape_configs:
     static_configs:
       - targets: ['api:3000']
     metrics_path: '/metrics'
+    bearer_token: '${METRICS_TOKEN}'
     scrape_interval: 10s
     scrape_timeout: 5s
 

@@ -41,7 +41,11 @@ identifies a person. Weight and value count verified collections only, so unveri
 submissions cannot inflate it. It is cached for 30 seconds.
 
 `/metrics` is mounted at the root, outside the version prefix, and serves
-Prometheus metrics.
+Prometheus metrics. In production it requires a bearer token from the
+`METRICS_TOKEN` environment variable (open, e.g. for local Prometheus, in
+non-production environments); configure the scrape job with
+`bearer_token: ${METRICS_TOKEN}`, substituting the variable in your
+orchestrator (Prometheus itself does not expand `${VAR}` without envsubst).
 
 Swagger UI is served at `/api/docs` and the OpenAPI JSON at `/api/docs.json`.
 Both are mounted unconditionally, so they are reachable in production as well as
