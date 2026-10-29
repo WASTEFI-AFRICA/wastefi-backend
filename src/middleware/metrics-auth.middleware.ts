@@ -6,22 +6,14 @@ import { Request, Response, NextFunction } from 'express';
  * METRICS_TOKEN is required; anywhere else the endpoints stay open
  * (local dev, CI). Fails closed when METRICS_TOKEN is not set.
  */
-export const requireMetricsToken = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const requireMetricsToken = (req: Request, res: Response, next: NextFunction): void => {
   if (process.env.NODE_ENV !== 'production') {
     next();
     return;
   }
   const expected = process.env.METRICS_TOKEN;
   const header = req.headers.authorization;
-  if (
-    expected &&
-    header !== undefined &&
-    safeEqual(`Bearer ${expected}`, header)
-  ) {
+  if (expected && header !== undefined && safeEqual(`Bearer ${expected}`, header)) {
     next();
     return;
   }
