@@ -11,6 +11,7 @@ import { config } from './config';
 import { swaggerSpec } from './config/swagger';
 import DatabaseService from './services/database.service';
 import { BootstrapService } from './services/bootstrap.service';
+import { OnChainCollectionService } from './services/onchain-collection.service';
 import RedisService from './services/redis.service';
 import { StellarService } from './services/stellar.service';
 import { MobileMoneyService } from './services/mobile-money/mobile-money.service';
@@ -36,11 +37,13 @@ dotenv.config();
 const app: Application = express();
 const httpServer = createServer(app);
 
-// Initialize database connection, create the first administrator if configured, and
-// re-encrypt any wallet secrets still under the old scheme
+// Initialize database connection, create the first administrator if configured,
+// re-encrypt any wallet secrets still under the old scheme, and start recording
+// approved collections on-chain if SOROBAN_ADMIN_SECRET is set
 DatabaseService.connect()
   .then(() => BootstrapService.ensureInitialAdmin())
   .then(() => BootstrapService.migrateWalletSecrets())
+  .then(() => OnChainCollectionService.start())
   .catch((error: unknown) => logger.error('Startup setup failed', { error: error as Error }));
 
 // Initialize Redis connection

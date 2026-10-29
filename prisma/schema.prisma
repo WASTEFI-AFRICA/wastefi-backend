@@ -122,6 +122,10 @@ model CollectionPoint {
   // Metadata
   operatingHours  String?   // JSON string
   acceptedMaterials String? // JSON array
+
+  // The point's identity in the waste_transaction contract. Only the public key is
+  // kept: nothing signs as the point yet.
+  stellarAddress  String?
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -165,6 +169,18 @@ model WasteCollection {
   paymentStatus         TransactionStatus @default(PENDING)
   transactionId         String?
   
+  // On-chain record (see OnChainCollectionService). Null until an approved
+  // verification queues it.
+  chainStatus           ChainStatus?
+  chainTransactionId    String?   // waste_transaction id (u64)
+  chainAmount           String?   // WASTE owed, in base units (7 decimals)
+  chainPaymentId        String?   // payment_distribution id (u64)
+  chainRecordTxHash     String?
+  chainVerifyTxHash     String?
+  chainPaymentTxHash    String?
+  chainError            String?
+  chainAttempts         Int       @default(0)
+
   // Metadata
   notes                 String?
   createdAt             DateTime  @default(now())
@@ -174,6 +190,7 @@ model WasteCollection {
   @@index([collectionPointId])
   @@index([materialType])
   @@index([createdAt])
+  @@index([chainStatus])
   @@map("waste_collections")
 }
 
@@ -296,4 +313,13 @@ model SystemLog {
   @@index([service])
   @@index([createdAt])
   @@map("system_logs")
+}
+
+// Progress of a verified collection through the Soroban contracts
+enum ChainStatus {
+  PENDING   // queued, nothing on-chain yet
+  RECORDED  // recorded in waste_transaction
+  VERIFIED  // verified in waste_transaction (reputation updated)
+  PAID      // payment completed, WASTE minted to the collector
+  FAILED    // last attempt failed; retried until the attempt limit
 }

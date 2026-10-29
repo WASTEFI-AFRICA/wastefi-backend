@@ -1,5 +1,6 @@
 import { prisma } from './database.service';
-import { TransactionStatus } from '@prisma/client';
+import { ChainStatus, TransactionStatus } from '@prisma/client';
+import { OnChainCollectionService } from './onchain-collection.service';
 import { MaterialPricingUtil } from '../utils/material-pricing.util';
 import { cacheAside } from '../utils/cache.util';
 
@@ -254,9 +255,12 @@ export class WasteCollectionService {
 
     if (!approved) {
       updateData.paymentStatus = TransactionStatus.CANCELLED;
+    } else if (OnChainCollectionService.enabled) {
+      // Approved collections are also recorded and paid on Soroban, in the background
+      updateData.chainStatus = ChainStatus.PENDING;
     }
 
-    return prisma.wasteCollection.update({
+    const updated = await prisma.wasteCollection.update({
       where: { id: collectionId },
       data: updateData,
       include: {
@@ -269,6 +273,12 @@ export class WasteCollectionService {
         },
       },
     });
+
+    if (updateData.chainStatus === ChainStatus.PENDING) {
+      OnChainCollectionService.kick(collectionId);
+    }
+
+    return updated;
   }
 
   /**

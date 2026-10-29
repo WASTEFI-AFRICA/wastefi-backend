@@ -52,6 +52,42 @@ Both are mounted unconditionally, so they are reachable in production as well as
 in development; gate them at the reverse proxy if that is not what you want. See
 [docs/SWAGGER_GUIDE.md](docs/SWAGGER_GUIDE.md).
 
+## Stellar: recording collections on-chain
+
+When a collection point approves a collection, the API also records it on the
+WasteFi Soroban contracts and pays the collector in WASTE. This runs in the
+background (`src/services/onchain-collection.service.ts`), so approval in the API
+never waits for the chain and is never undone by it. Each approved collection
+goes through four contract calls:
+
+1. `waste_transaction.record_with_price_lookup`, signed by the collector's
+   custodial wallet. The contract prices it from `material_pricing`.
+2. `waste_transaction.verify_transaction`, signed by the contracts' admin. This
+   also updates the collector's on-chain reputation.
+3. `payment_distribution.process_payment`, signed by the admin.
+4. `payment_distribution.update_payment_status(Completed)`, signed by the admin,
+   which mints the WASTE to the collector.
+
+The collection's `chainStatus` moves through `PENDING`, `RECORDED`, `VERIFIED`
+and `PAID`, and the three transaction hashes are stored on it and returned by
+`GET /api/v1/collections/:id`. Every step checks the chain before acting, so an
+interrupted collection resumes where it stopped. Failed steps are retried every
+minute, up to five attempts, and `GET /api/v1/public/stats` reports how many
+collections were paid on-chain and how much WASTE was minted.
+
+Collectors are registered in `collector_registry` under a pseudonym derived
+from their user id. Names and phone numbers never go on the public ledger.
+
+The wallets are **custodial and testnet-only**: the API generates each
+collector's key and stores it encrypted with `WALLET_ENCRYPTION_KEY`, and on
+testnet funds it from Friendbot. To turn recording on, set:
+
+| Variable | Value |
+| --- | --- |
+| `SOROBAN_ADMIN_SECRET` | secret key of the contracts' admin account (the deployer in wastefi-contracts). Recording is off while this is unset |
+| `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
+| `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
+
 ## Mobile money
 
 Payouts reach collectors through three providers, each behind a common

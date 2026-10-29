@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { resolveSorobanContracts } from './soroban-contracts';
 
 const INSECURE_JWT_SECRET = 'default-secret-change-me';
 
@@ -56,6 +57,21 @@ export const config = {
   },
   wallet: {
     encryptionKey: resolveWalletEncryptionKey(),
+  },
+  soroban: {
+    // On-chain recording of verified collections runs only when this is set. It is
+    // the secret of the contracts' admin account, which verifies and pays.
+    adminSecret: process.env.SOROBAN_ADMIN_SECRET || '',
+    rpcUrl: process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
+    networkPassphrase:
+      process.env.STELLAR_NETWORK === 'mainnet'
+        ? 'Public Global Stellar Network ; September 2015'
+        : 'Test SDF Network ; September 2015',
+    explorerUrl:
+      process.env.STELLAR_NETWORK === 'mainnet'
+        ? 'https://stellar.expert/explorer/public'
+        : 'https://stellar.expert/explorer/testnet',
+    contracts: resolveSorobanContracts(),
   },
   stellar: {
     network: process.env.STELLAR_NETWORK || 'testnet',
