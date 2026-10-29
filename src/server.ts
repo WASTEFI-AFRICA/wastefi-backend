@@ -38,11 +38,13 @@ const app: Application = express();
 const httpServer = createServer(app);
 
 // Initialize database connection, create the first administrator if configured,
-// re-encrypt any wallet secrets still under the old scheme, and start recording
-// approved collections on-chain if SOROBAN_ADMIN_SECRET is set
+// re-encrypt any wallet secrets still under the old scheme, create demo data if
+// SEED_DEMO_DATA is set, and start recording approved collections on-chain if
+// SOROBAN_ADMIN_SECRET is set
 DatabaseService.connect()
   .then(() => BootstrapService.ensureInitialAdmin())
   .then(() => BootstrapService.migrateWalletSecrets())
+  .then(() => BootstrapService.ensureDemoData())
   .then(() => OnChainCollectionService.start())
   .catch((error: unknown) => logger.error('Startup setup failed', { error: error as Error }));
 

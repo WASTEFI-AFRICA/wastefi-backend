@@ -257,7 +257,23 @@ set is harmless, but remove `INITIAL_ADMIN_PASSWORD` once you have logged in. A 
 password or malformed number is logged as a warning and the server still starts. The
 password is hashed and never logged.
 
-For local development, `npm run prisma:seed` creates the same admin plus two sample
+### Demo data
+
+A public demo needs something to try. With `SEED_DEMO_DATA=true` and
+`DEMO_ACCOUNT_PASSWORD` set (it must meet the password policy), the server creates
+at startup:
+
+- three collection points (two in Nairobi, one in Mombasa)
+- a demo collector, `+254700000101`, and a demo collection point operator,
+  `+254700000102`, both signing in with `DEMO_ACCOUNT_PASSWORD`
+- four pending collections from the demo collector
+
+Nothing is created already verified. Signing in as the operator and approving a
+collection runs the real flow, including the on-chain record and the WASTE payout,
+so every verified collection on the demo has a transaction to show for it. The
+seeding only creates what is missing, so it is safe to leave on.
+
+For local development, `npm run prisma:seed` creates an admin account plus two sample
 collection points. Leave `SEED_ADMIN_PASSWORD` unset and it generates a password and
 prints it once.
 

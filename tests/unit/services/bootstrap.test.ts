@@ -11,8 +11,15 @@ jest.mock('../../../src/services/database.service', () => ({
       create: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn(),
     },
+    collectionPoint: { findFirst: jest.fn(), create: jest.fn() },
+    wasteCollection: { count: jest.fn() },
   },
+}));
+jest.mock('../../../src/services/waste-collection.service', () => ({
+  __esModule: true,
+  WasteCollectionService: { recordCollection: jest.fn() },
 }));
 jest.mock('../../../src/utils/logger.util', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
@@ -142,5 +149,84 @@ describe('BootstrapService.migrateWalletSecrets', () => {
     await BootstrapService.migrateWalletSecrets();
 
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('BootstrapService.ensureDemoData', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { WasteCollectionService } = require('../../../src/services/waste-collection.service');
+  const saved = { seed: process.env.SEED_DEMO_DATA, password: process.env.DEMO_ACCOUNT_PASSWORD };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    process.env.SEED_DEMO_DATA = 'true';
+    process.env.DEMO_ACCOUNT_PASSWORD = STRONG;
+    prisma.collectionPoint.findFirst.mockResolvedValue(null);
+    prisma.collectionPoint.create.mockImplementation(
+      async ({ data }: { data: { name: string } }) => ({
+        id: `point-${data.name}`,
+      })
+    );
+    prisma.user.upsert.mockImplementation(
+      async ({ create }: { create: { phoneNumber: string; role: string } }) => ({
+        id: `user-${create.phoneNumber}`,
+        role: create.role,
+      })
+    );
+    prisma.wasteCollection.count.mockResolvedValue(0);
+  });
+
+  afterAll(() => {
+    if (saved.seed === undefined) delete process.env.SEED_DEMO_DATA;
+    else process.env.SEED_DEMO_DATA = saved.seed;
+    if (saved.password === undefined) delete process.env.DEMO_ACCOUNT_PASSWORD;
+    else process.env.DEMO_ACCOUNT_PASSWORD = saved.password;
+  });
+
+  it('does nothing unless SEED_DEMO_DATA is true', async () => {
+    delete process.env.SEED_DEMO_DATA;
+
+    await BootstrapService.ensureDemoData();
+
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
+    expect(prisma.collectionPoint.create).not.toHaveBeenCalled();
+  });
+
+  it('does nothing with a missing or weak demo password', async () => {
+    delete process.env.DEMO_ACCOUNT_PASSWORD;
+    await BootstrapService.ensureDemoData();
+    process.env.DEMO_ACCOUNT_PASSWORD = 'weak';
+    await BootstrapService.ensureDemoData();
+
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
+  });
+
+  it('creates points, a collector, an operator and pending collections', async () => {
+    await BootstrapService.ensureDemoData();
+
+    expect(prisma.collectionPoint.create).toHaveBeenCalledTimes(3);
+    const roles = prisma.user.upsert.mock.calls.map(
+      (c: [{ create: { role: string } }]) => c[0].create.role
+    );
+    expect(roles).toEqual(['COLLECTOR', 'COLLECTION_POINT']);
+    const created = prisma.user.upsert.mock.calls[0][0].create;
+    expect(created.status).toBe('ACTIVE');
+    expect(created.password).not.toBe(STRONG);
+    expect(WasteCollectionService.recordCollection).toHaveBeenCalledTimes(4);
+    for (const [collectorId, data] of WasteCollectionService.recordCollection.mock.calls) {
+      expect(collectorId).toBe('user-+254700000101');
+      expect(data).not.toHaveProperty('verifiedAt');
+    }
+  });
+
+  it('reuses existing points and adds no collections once the collector has some', async () => {
+    prisma.collectionPoint.findFirst.mockResolvedValue({ id: 'existing-point' });
+    prisma.wasteCollection.count.mockResolvedValue(4);
+
+    await BootstrapService.ensureDemoData();
+
+    expect(prisma.collectionPoint.create).not.toHaveBeenCalled();
+    expect(prisma.user.upsert.mock.calls[0][0].update).toEqual({});
+    expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
   });
 });

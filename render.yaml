@@ -48,3 +48,10 @@ services:
       # recorded and paid on Soroban only while this is set.
       - key: SOROBAN_ADMIN_SECRET
         sync: false
+      # Demo data for the public deployment: collection points, a demo collector
+      # and a demo collection point operator who both sign in with
+      # DEMO_ACCOUNT_PASSWORD, and a few pending collections to approve.
+      - key: SEED_DEMO_DATA
+        value: 'true'
+      - key: DEMO_ACCOUNT_PASSWORD
+        sync: false
