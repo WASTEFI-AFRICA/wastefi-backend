@@ -119,7 +119,13 @@ if (config.app.env === 'development') {
   app.use(morgan('dev'));
 }
 
-// Health check endpoint
+// Liveness: answers without touching the database, so container health checks and
+// uptime pings never keep a scale-to-zero database (such as Neon's free tier) awake.
+app.get('/ping', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Readiness: checks the database and Redis
 app.get('/health', async (_req, res) => {
   const dbHealthy = await DatabaseService.healthCheck();
   const redisHealthy = await RedisService.healthCheck();

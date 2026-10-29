@@ -25,7 +25,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { app } = require('../../src/server');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { prisma } = require('../../src/services/database.service');
+const { prisma, default: DatabaseService } = require('../../src/services/database.service');
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { PublicStatsService } = require('../../src/services/public-stats.service');
@@ -106,6 +106,24 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
   await prisma.collectionPoint.deleteMany({ where: { id: collectionPointId } });
   await prisma.$disconnect();
+});
+
+describe('health endpoints', () => {
+  it('answers /ping without the database', async () => {
+    const spy = jest.spyOn(DatabaseService, 'healthCheck');
+    const res = await request(app).get('/ping');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('reports the database on /health', async () => {
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body.database).toBe('connected');
+  });
 });
 
 describe('registration', () => {
