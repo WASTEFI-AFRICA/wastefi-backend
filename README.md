@@ -179,8 +179,7 @@ and checks request validation only.
 
 The `Dockerfile` is the unit of deployment. Its default command applies pending
 Prisma migrations and then starts the server, so a fresh database is ready on first
-boot on any host. Two platforms are configured; both need a PostgreSQL database and
-these variables:
+boot on any host. Any host needs a PostgreSQL database and these variables:
 
 | Variable | Value |
 | --- | --- |
@@ -194,10 +193,38 @@ these variables:
 `PORT` is provided by the platform. Everything else (Twilio, SMTP, mobile money,
 Stellar) is optional and the API starts without it.
 
+Two endpoints report health. `/ping` answers without touching the database and is
+what container health checks and uptime monitors should call. `/health` also checks
+the database and Redis.
+
+### Render with a Neon database (free)
+
+This is how the public demo runs. Render's free web service sleeps after 15 minutes
+without traffic, and Render's own free PostgreSQL is deleted after 30 days, so the
+database lives on [Neon](https://neon.com), whose free plan does not expire. Neon
+suspends the database after 5 minutes without queries; the API is built so that an
+idle server sends none (`/ping` and the on-chain retry sweep stay off the database
+when there is nothing to do).
+
+1. In Neon, create a project (a region near Frankfurt, such as AWS eu-central-1,
+   keeps latency low). On the dashboard, choose **Connect**, turn **Connection
+   pooling** off, and copy the connection string. It ends in `?sslmode=require`.
+2. In [Render](https://render.com), choose **New > Blueprint**, select this
+   repository, and fill in the values `render.yaml` asks for: `DATABASE_URL` (the
+   Neon string), `CLIENT_URL`, `INITIAL_ADMIN_PHONE`, `INITIAL_ADMIN_PASSWORD`, and
+   `SOROBAN_ADMIN_SECRET` if collections should be recorded on-chain. Render
+   generates `JWT_SECRET` and `WALLET_ENCRYPTION_KEY`.
+3. Watch the deploy logs for the migrations being applied and the server starting,
+   then check `https://<service>.onrender.com/health`. It should report
+   `"database":"connected"`.
+4. Optional: point a free uptime monitor (for example UptimeRobot) at
+   `https://<service>.onrender.com/ping` every 5 to 10 minutes, so visitors never
+   wait for the service to wake up.
+
 ### Railway
 
 `railway.toml` tells Railway to build the `Dockerfile` and wait for `/health` before
-routing traffic.
+routing traffic. Railway has no lasting free tier.
 
 1. In [Railway](https://railway.com), create a project with **New > GitHub Repo** and
    choose this repository. Railway needs the Railway GitHub app installed on the
@@ -209,17 +236,9 @@ routing traffic.
    - `JWT_SECRET`, `WALLET_ENCRYPTION_KEY`, `NODE_ENV=production` and
      `REDIS_ENABLED=false` from the table above
 4. Under **Settings > Networking**, choose **Generate Domain**.
-5. Watch the deploy logs for the three migrations being applied and the server
-   starting, then check `https://<your-domain>/health`. It should report
+5. Watch the deploy logs for the migrations being applied and the server starting,
+   then check `https://<your-domain>/health`. It should report
    `"database":"connected"`.
-
-### Render
-
-`render.yaml` is a blueprint for a Docker web service plus a managed database. Choose
-**New > Blueprint** in [Render](https://render.com), select this repository, and
-supply `CLIENT_URL` when asked. `JWT_SECRET` and `WALLET_ENCRYPTION_KEY` are
-generated for you. On the free plan
-the service sleeps when idle and the database is deleted after 30 days.
 
 ### Create the admin account
 
