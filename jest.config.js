@@ -5,7 +5,14 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
+    // The Stellar SDK's CommonJS build requires a few ESM-only packages. Node 22
+    // loads them natively, but Jest does not, so compile just those to CommonJS.
+    '^.+\\.js$': ['ts-jest', { tsconfig: { allowJs: true } }],
   },
+  transformIgnorePatterns: [
+    // Also matches copies nested under another package's node_modules.
+    '/node_modules/(?!(?:.*/node_modules/)?(?:uint8array-extras|@exodus/bytes|@noble/ed25519|@noble/hashes)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

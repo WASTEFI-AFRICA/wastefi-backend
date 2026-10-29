@@ -1,7 +1,7 @@
 # Multi-stage build for WasteFi Backend
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Prisma needs OpenSSL to detect which query engine to generate; the Alpine base
 # image does not include it.
@@ -28,7 +28,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Production
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 # dumb-init for proper signal handling, and OpenSSL for the Prisma query engine
 RUN apk add --no-cache dumb-init openssl
