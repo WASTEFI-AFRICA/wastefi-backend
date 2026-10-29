@@ -54,6 +54,10 @@ type CollectionWithRelations = Prisma.WasteCollectionGetPayload<{
 export class OnChainCollectionService {
   private static inFlight = new Set<string>();
   private static timer: NodeJS.Timeout | null = null;
+  // Whether the sweep might find work. The sweep only queries the database while
+  // this is set, so an idle server lets a scale-to-zero database (Neon's free tier)
+  // suspend instead of waking it every minute.
+  private static workPending = false;
 
   static get enabled(): boolean {
     return SorobanService.enabled;
@@ -62,7 +66,9 @@ export class OnChainCollectionService {
   /** Start the retry sweep. Does nothing unless on-chain recording is enabled. */
   static start(): void {
     if (!this.enabled || this.timer) return;
-    this.timer = setInterval(() => void this.sweep(), SWEEP_INTERVAL_MS);
+    // Look once for work left unfinished before a restart.
+    this.workPending = true;
+    this.timer = setInterval(() => void this.tick(), SWEEP_INTERVAL_MS);
     this.timer.unref();
     logger.info('On-chain collection recording enabled');
   }
@@ -75,11 +81,25 @@ export class OnChainCollectionService {
   /** Process a collection in the background. Used right after it is approved. */
   static kick(collectionId: string): void {
     if (!this.enabled) return;
+    this.workPending = true;
     void this.process(collectionId);
   }
 
-  /** Process every collection that still has steps left, a few at a time. */
-  static async sweep(): Promise<void> {
+  /** One run of the timer: sweep only while there may be work, and stop once there is none. */
+  static async tick(): Promise<void> {
+    if (!this.workPending) return;
+    try {
+      this.workPending = (await this.sweep()) > 0;
+    } catch (error) {
+      logger.error('On-chain sweep failed', { reason: (error as Error).message });
+    }
+  }
+
+  /**
+   * Process every collection that still has steps left, a few at a time. Returns how
+   * many were due, so the caller knows whether to keep sweeping.
+   */
+  static async sweep(): Promise<number> {
     const due = await prisma.wasteCollection.findMany({
       where: {
         OR: [
@@ -96,6 +116,7 @@ export class OnChainCollectionService {
     for (const { id } of due) {
       await this.process(id);
     }
+    return due.length;
   }
 
   /** Take one collection as far through the steps as it will go. Never throws. */

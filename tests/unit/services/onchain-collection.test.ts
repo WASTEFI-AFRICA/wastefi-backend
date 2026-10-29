@@ -123,7 +123,9 @@ describe('OnChainCollectionService', () => {
     expect(SorobanService.invoke.mock.calls[0][3].publicKey()).toBe(collector.publicKey());
     expect(SorobanService.invoke.mock.calls[1][3].publicKey()).toBe(admin.publicKey());
     expect(lastUpdate()).toEqual({ chainStatus: 'PAID', chainError: null });
-    const saved = prisma.wasteCollection.update.mock.calls.map((c: [{ data: unknown }]) => c[0].data);
+    const saved = prisma.wasteCollection.update.mock.calls.map(
+      (c: [{ data: unknown }]) => c[0].data
+    );
     expect(saved).toContainEqual(
       expect.objectContaining({ chainTransactionId: '7', chainAmount: '26000000' })
     );
@@ -174,7 +176,9 @@ describe('OnChainCollectionService', () => {
     await OnChainCollectionService.process('collection-1');
 
     expect(invokedMethods()).not.toContain('record_with_price_lookup');
-    const saved = prisma.wasteCollection.update.mock.calls.map((c: [{ data: unknown }]) => c[0].data);
+    const saved = prisma.wasteCollection.update.mock.calls.map(
+      (c: [{ data: unknown }]) => c[0].data
+    );
     expect(saved).toContainEqual(expect.objectContaining({ chainTransactionId: '9' }));
   });
 
@@ -240,5 +244,54 @@ describe('OnChainCollectionService helpers', () => {
     expect(reference.length).toBeLessThanOrEqual(20);
     expect(OnChainCollectionService.pseudonym('user-1').reference).toBe(reference);
     expect(OnChainCollectionService.pseudonym('user-2').reference).not.toBe(reference);
+  });
+});
+
+describe('OnChainCollectionService sweep scheduling', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    prisma.wasteCollection.findUnique.mockResolvedValue(null);
+  });
+
+  const setPending = (value: boolean) => {
+    (OnChainCollectionService as unknown as { workPending: boolean }).workPending = value;
+  };
+
+  it('does not query the database while nothing is pending', async () => {
+    setPending(false);
+
+    await OnChainCollectionService.tick();
+
+    expect(prisma.wasteCollection.findMany).not.toHaveBeenCalled();
+  });
+
+  it('stops sweeping once a sweep finds nothing due', async () => {
+    setPending(true);
+    prisma.wasteCollection.findMany.mockResolvedValue([]);
+
+    await OnChainCollectionService.tick();
+    await OnChainCollectionService.tick();
+
+    expect(prisma.wasteCollection.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps sweeping while collections are due', async () => {
+    setPending(true);
+    prisma.wasteCollection.findMany.mockResolvedValue([{ id: 'collection-1' }]);
+
+    await OnChainCollectionService.tick();
+    await OnChainCollectionService.tick();
+
+    expect(prisma.wasteCollection.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('resumes sweeping when a collection is approved', async () => {
+    setPending(false);
+    prisma.wasteCollection.findMany.mockResolvedValue([]);
+
+    OnChainCollectionService.kick('collection-2');
+    await OnChainCollectionService.tick();
+
+    expect(prisma.wasteCollection.findMany).toHaveBeenCalledTimes(1);
   });
 });
