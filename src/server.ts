@@ -36,10 +36,12 @@ dotenv.config();
 const app: Application = express();
 const httpServer = createServer(app);
 
-// Initialize database connection, then create the first administrator if configured
+// Initialize database connection, create the first administrator if configured, and
+// re-encrypt any wallet secrets still under the old scheme
 DatabaseService.connect()
   .then(() => BootstrapService.ensureInitialAdmin())
-  .catch((error: unknown) => logger.error('Initial admin setup failed', { error: error as Error }));
+  .then(() => BootstrapService.migrateWalletSecrets())
+  .catch((error: unknown) => logger.error('Startup setup failed', { error: error as Error }));
 
 // Initialize Redis connection
 RedisService.connect();

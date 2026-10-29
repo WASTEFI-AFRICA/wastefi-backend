@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 const INSECURE_JWT_SECRET = 'default-secret-change-me';
 
 /**
@@ -13,6 +15,31 @@ function resolveJwtSecret(): string {
   return secret || INSECURE_JWT_SECRET;
 }
 
+/**
+ * The key that encrypts custodial Stellar secret keys (see WalletSecretUtil).
+ * Either 64 hex characters (`openssl rand -hex 32`), used as the key directly, or
+ * any random value of at least 32 characters, hashed to a key (what Render's
+ * generated values look like). Development and tests fall back to a fixed key.
+ * Production refuses to start without one, because a wallet encrypted under a
+ * public key is not protected.
+ */
+function resolveWalletEncryptionKey(): Buffer {
+  const value = process.env.WALLET_ENCRYPTION_KEY;
+  if (value) {
+    if (/^[0-9a-fA-F]{64}$/.test(value)) return Buffer.from(value, 'hex');
+    if (value.length < 32) {
+      throw new Error(
+        'WALLET_ENCRYPTION_KEY must be at least 32 characters (openssl rand -hex 32)'
+      );
+    }
+    return crypto.createHash('sha256').update(value).digest();
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('WALLET_ENCRYPTION_KEY must be set when NODE_ENV=production');
+  }
+  return crypto.createHash('sha256').update('wastefi-development-wallet-key').digest();
+}
+
 export const config = {
   app: {
     env: process.env.NODE_ENV || 'development',
@@ -26,6 +53,9 @@ export const config = {
   jwt: {
     secret: resolveJwtSecret(),
     expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string,
+  },
+  wallet: {
+    encryptionKey: resolveWalletEncryptionKey(),
   },
   stellar: {
     network: process.env.STELLAR_NETWORK || 'testnet',

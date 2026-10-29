@@ -151,6 +151,7 @@ these variables:
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | the PostgreSQL connection string |
 | `JWT_SECRET` | a unique random value. In production the server refuses to start without one. Generate with `openssl rand -hex 32` |
+| `WALLET_ENCRYPTION_KEY` | encrypts the custodial Stellar keys stored for users. In production the server refuses to start without one. Generate with `openssl rand -hex 32`, keep a copy somewhere safe, and never change it: losing it makes stored wallets unrecoverable |
 | `REDIS_ENABLED` | `false` (Redis is optional) |
 | `CLIENT_URL` | the frontend's origin, to restrict CORS in production. Optional until the frontend exists |
 
@@ -169,7 +170,8 @@ routing traffic.
 3. Open the API service's **Variables** tab and add:
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference to the database
      service; check that the service is actually named `Postgres`)
-   - `JWT_SECRET`, `NODE_ENV=production` and `REDIS_ENABLED=false` from the table above
+   - `JWT_SECRET`, `WALLET_ENCRYPTION_KEY`, `NODE_ENV=production` and
+     `REDIS_ENABLED=false` from the table above
 4. Under **Settings > Networking**, choose **Generate Domain**.
 5. Watch the deploy logs for the three migrations being applied and the server
    starting, then check `https://<your-domain>/health`. It should report
@@ -179,7 +181,8 @@ routing traffic.
 
 `render.yaml` is a blueprint for a Docker web service plus a managed database. Choose
 **New > Blueprint** in [Render](https://render.com), select this repository, and
-supply `CLIENT_URL` when asked. `JWT_SECRET` is generated for you. On the free plan
+supply `CLIENT_URL` when asked. `JWT_SECRET` and `WALLET_ENCRYPTION_KEY` are
+generated for you. On the free plan
 the service sleeps when idle and the database is deleted after 30 days.
 
 ### Create the admin account

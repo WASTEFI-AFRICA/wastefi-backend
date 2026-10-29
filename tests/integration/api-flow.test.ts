@@ -539,10 +539,16 @@ describe('production configuration', () => {
     return config;
   };
 
-  const saved = { env: process.env.NODE_ENV, secret: process.env.JWT_SECRET };
+  const saved = {
+    env: process.env.NODE_ENV,
+    secret: process.env.JWT_SECRET,
+    walletKey: process.env.WALLET_ENCRYPTION_KEY,
+  };
   afterEach(() => {
     process.env.NODE_ENV = saved.env;
     process.env.JWT_SECRET = saved.secret;
+    if (saved.walletKey === undefined) delete process.env.WALLET_ENCRYPTION_KEY;
+    else process.env.WALLET_ENCRYPTION_KEY = saved.walletKey;
   });
 
   it('refuses to start in production without a JWT secret', () => {
@@ -560,6 +566,14 @@ describe('production configuration', () => {
   it('starts in production with a real secret', () => {
     process.env.NODE_ENV = 'production';
     process.env.JWT_SECRET = 'a-real-secret-that-is-long-enough-123456';
+    process.env.WALLET_ENCRYPTION_KEY = 'cd'.repeat(32);
     expect(load().jwt.secret).toBe('a-real-secret-that-is-long-enough-123456');
+  });
+
+  it('refuses to start in production without a wallet encryption key', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'a-real-secret-that-is-long-enough-123456';
+    delete process.env.WALLET_ENCRYPTION_KEY;
+    expect(load).toThrow(/WALLET_ENCRYPTION_KEY/);
   });
 });

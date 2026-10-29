@@ -1,6 +1,6 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { config } from '../config';
-import { EncryptionUtil } from '../utils/encryption.util';
+import { WalletSecretUtil } from '../utils/wallet-secret.util';
 import { prisma } from './database.service';
 import BigNumber from 'bignumber.js';
 
@@ -184,7 +184,7 @@ export class StellarService {
 
     if (user?.stellarPublicKey && user?.stellarSecretKey) {
       // Decrypt existing secret key
-      const decryptedSecret = EncryptionUtil.decrypt(user.stellarSecretKey, config.jwt.secret);
+      const decryptedSecret = WalletSecretUtil.decrypt(user.stellarSecretKey);
       return {
         publicKey: user.stellarPublicKey,
         secretKey: decryptedSecret,
@@ -195,7 +195,7 @@ export class StellarService {
     const wallet = this.createWallet();
 
     // Encrypt secret key before storing
-    const encryptedSecret = EncryptionUtil.encrypt(wallet.secretKey, config.jwt.secret);
+    const encryptedSecret = WalletSecretUtil.encrypt(wallet.secretKey);
 
     // Update user with wallet info
     await prisma.user.update({
@@ -230,7 +230,7 @@ export class StellarService {
     }
 
     // Decrypt secret key
-    const decryptedSecret = EncryptionUtil.decrypt(user.stellarSecretKey, config.jwt.secret);
+    const decryptedSecret = WalletSecretUtil.decrypt(user.stellarSecretKey);
 
     return {
       publicKey: user.stellarPublicKey,

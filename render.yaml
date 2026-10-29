@@ -30,6 +30,8 @@ services:
       # without a unique value here.
       - key: JWT_SECRET
         generateValue: true
+      - key: WALLET_ENCRYPTION_KEY
+        generateValue: true
       - key: REDIS_ENABLED
         value: 'false'
       - key: STELLAR_NETWORK

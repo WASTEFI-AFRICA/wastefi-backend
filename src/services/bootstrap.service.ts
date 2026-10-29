@@ -1,7 +1,9 @@
 import { UserRole } from '@prisma/client';
+import { StrKey } from '@stellar/stellar-sdk';
 import { prisma } from './database.service';
 import { EncryptionUtil } from '../utils/encryption.util';
 import { PasswordValidatorUtil } from '../utils/password-validator.util';
+import { WalletSecretUtil } from '../utils/wallet-secret.util';
 import { logger } from '../utils/logger.util';
 
 const PHONE_PATTERN = /^\+?[1-9]\d{1,14}$/;
@@ -63,5 +65,48 @@ export class BootstrapService {
     });
     // The password is never logged.
     logger.info('Initial administrator created', { phoneNumber });
+  }
+
+  /**
+   * Re-encrypt wallet secrets still stored under the old JWT-secret scheme with
+   * WALLET_ENCRYPTION_KEY. It runs at every start and does nothing once all secrets
+   * are migrated. It must run before the JWT secret is next rotated, because legacy
+   * values can only be read with the JWT secret they were written under.
+   */
+  static async migrateWalletSecrets(): Promise<void> {
+    const users = await prisma.user.findMany({
+      where: { stellarSecretKey: { not: null } },
+      select: { id: true, stellarSecretKey: true },
+    });
+    const legacy = users.filter(
+      (u): u is { id: string; stellarSecretKey: string } =>
+        u.stellarSecretKey !== null && WalletSecretUtil.isLegacy(u.stellarSecretKey)
+    );
+    if (legacy.length === 0) return;
+
+    let migrated = 0;
+    for (const user of legacy) {
+      try {
+        const secret = WalletSecretUtil.decrypt(user.stellarSecretKey);
+        // CBC under the wrong key occasionally "decrypts" to garbage instead of
+        // failing. Never overwrite the stored value unless it held a real key.
+        if (!StrKey.isValidEd25519SecretSeed(secret)) {
+          throw new Error('Decrypted value is not a Stellar secret key');
+        }
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { stellarSecretKey: WalletSecretUtil.encrypt(secret) },
+        });
+        migrated += 1;
+      } catch (error) {
+        // A value that no longer decrypts (for example after a JWT secret change)
+        // is left as it is, and the rest still migrate.
+        logger.error('Wallet secret could not be re-encrypted', {
+          userId: user.id,
+          reason: (error as Error).message,
+        });
+      }
+    }
+    logger.info('Wallet secrets re-encrypted', { migrated, failed: legacy.length - migrated });
   }
 }
