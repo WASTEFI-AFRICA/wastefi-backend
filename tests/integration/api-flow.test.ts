@@ -463,6 +463,12 @@ describe('public stats', () => {
       'verifiedValue',
       'verifiedWeightKg',
     ]);
+    expect(res.body.data.onChain).toEqual({
+      network: 'testnet',
+      explorerUrl: 'https://stellar.expert/explorer/testnet',
+      collectionsPaid: expect.any(Number),
+      wasteMinted: expect.any(Number),
+    });
   });
 
   it('counts the verified collection from the flow above', async () => {
@@ -475,7 +481,7 @@ describe('public stats', () => {
     const pet = data.byMaterial.find((m: { materialType: string }) => m.materialType === 'PET');
     expect(pet.weightKg).toBeGreaterThanOrEqual(12.5);
     expect(data.recentVerified[0]).toEqual(
-      expect.objectContaining({ materialType: 'PET', city: 'Nairobi' })
+      expect.objectContaining({ materialType: 'PET', city: 'Nairobi', onChainTxHash: null })
     );
   });
 

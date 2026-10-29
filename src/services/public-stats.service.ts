@@ -1,4 +1,5 @@
 import { prisma } from './database.service';
+import { config } from '../config';
 
 export interface PublicStats {
   generatedAt: string;
@@ -17,8 +18,21 @@ export interface PublicStats {
     weightKg: number;
     city: string;
     verifiedAt: string;
+    /** The Stellar transaction that paid it, once it is paid on-chain. */
+    onChainTxHash: string | null;
   }>;
+  /** Collections recorded and paid on the Soroban contracts. */
+  onChain: {
+    network: string;
+    explorerUrl: string;
+    collectionsPaid: number;
+    /** WASTE minted to collectors, in whole tokens. */
+    wasteMinted: number;
+  };
 }
+
+/** WASTE has 7 decimals; on-chain amounts are stored in base units. */
+const WASTE_DECIMALS = 10_000_000n;
 
 const CACHE_TTL_MS = 30_000;
 
@@ -50,6 +64,7 @@ export class PublicStatsService {
       verifiedSums,
       materials,
       recent,
+      paidOnChain,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'COLLECTOR', status: 'ACTIVE' } }),
       prisma.collectionPoint.count({ where: { isActive: true } }),
@@ -75,10 +90,22 @@ export class PublicStatsService {
           materialType: true,
           weight: true,
           verifiedAt: true,
+          chainPaymentTxHash: true,
           collectionPoint: { select: { city: true } },
         },
       }),
+      prisma.wasteCollection.findMany({
+        where: { chainStatus: 'PAID' },
+        select: { chainAmount: true },
+      }),
     ]);
+
+    // Amounts are integers too large for a database float sum to be exact, so they
+    // are summed as BigInt and converted once.
+    const mintedBaseUnits = paidOnChain.reduce(
+      (sum, row) => sum + BigInt(row.chainAmount ?? '0'),
+      0n
+    );
 
     const round = (value: number) => Math.round(value * 100) / 100;
 
@@ -103,7 +130,16 @@ export class PublicStatsService {
         weightKg: round(row.weight),
         city: row.collectionPoint.city,
         verifiedAt: (row.verifiedAt as Date).toISOString(),
+        onChainTxHash: row.chainPaymentTxHash,
       })),
+      onChain: {
+        network: config.stellar.network,
+        explorerUrl: config.soroban.explorerUrl,
+        collectionsPaid: paidOnChain.length,
+        wasteMinted:
+          Number(mintedBaseUnits / WASTE_DECIMALS) +
+          Number(mintedBaseUnits % WASTE_DECIMALS) / Number(WASTE_DECIMALS),
+      },
     };
 
     this.cache = { at: now, data };
