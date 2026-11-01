@@ -243,7 +243,8 @@ export class MPesaService {
         Remarks: remarks,
         QueueTimeOutURL: this.config.callbackUrl + '/timeout',
         ResultURL: this.config.callbackUrl + '/result',
-        Occasion: 'Withdrawal',
+        // Safaricom Daraja B2C API spells this field "Occassion" (double s); max 100 chars.
+        Occassion: 'Withdrawal',
       };
 
       logger.info('M-Pesa: Initiating B2C payment', {
