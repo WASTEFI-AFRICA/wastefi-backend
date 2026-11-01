@@ -100,6 +100,7 @@ export class WasteCollectionController {
         collectionPointId,
         materialType,
         status,
+        verified,
         startDate,
         endDate,
         page = 1,
@@ -111,6 +112,8 @@ export class WasteCollectionController {
         collectionPointId: collectionPointId as string,
         materialType: materialType as string,
         status: status as string,
+        // express-validator has already turned the query string into a boolean
+        verified: verified as unknown as boolean | undefined,
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
       };

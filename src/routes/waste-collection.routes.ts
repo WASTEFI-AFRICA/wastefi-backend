@@ -82,7 +82,8 @@ router.get(
 
 /**
  * @route   GET /api/v1/collections
- * @desc    List all collections with filters
+ * @desc    List all collections with filters. `verified=false` returns the
+ *          verification queue, oldest first; `verified=true` only reviewed ones.
  * @access  Private (Admin/Collection Point)
  */
 router.get(
@@ -94,6 +95,7 @@ router.get(
     query('collectionPointId').optional().isUUID(),
     query('materialType').optional().trim(),
     query('status').optional().isIn(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED']),
+    query('verified').optional().isBoolean().toBoolean(),
     query('startDate').optional().isISO8601(),
     query('endDate').optional().isISO8601(),
     query('page').optional().isInt({ min: 1 }).toInt(),

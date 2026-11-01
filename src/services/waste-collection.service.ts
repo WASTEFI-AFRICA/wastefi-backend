@@ -19,6 +19,8 @@ export interface CollectionFilters {
   collectionPointId?: string;
   materialType?: string;
   status?: string;
+  /** false: not yet reviewed (approved or rejected); true: reviewed */
+  verified?: boolean;
   startDate?: Date;
   endDate?: Date;
 }
@@ -137,6 +139,9 @@ export class WasteCollectionService {
 
     if (filters.status) where.paymentStatus = filters.status;
 
+    if (filters.verified === true) where.verifiedAt = { not: null };
+    if (filters.verified === false) where.verifiedAt = null;
+
     // Date range filtering
     if (filters.startDate || filters.endDate) {
       where.createdAt = {};
@@ -149,7 +154,8 @@ export class WasteCollectionService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        // The verification queue is worked oldest first; everything else newest first
+        orderBy: { createdAt: filters.verified === false ? 'asc' : 'desc' },
         include: {
           collector: {
             select: {

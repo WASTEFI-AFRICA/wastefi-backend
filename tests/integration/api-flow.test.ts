@@ -459,6 +459,47 @@ describe('waste collections', () => {
   });
 });
 
+describe('verification queue', () => {
+  const list = (query: string) =>
+    request(app).get(`${API}/collections?${query}`).set('Authorization', `Bearer ${adminToken}`);
+
+  it('lists only unreviewed collections, oldest first, with verified=false', async () => {
+    const created = [];
+    for (const weight of [3, 4]) {
+      const res = await request(app)
+        .post(`${API}/collections`)
+        .set('Authorization', `Bearer ${collectorToken}`)
+        .send({ collectionPointId, materialType: 'PET', materialCategory: 'PLASTIC', weight });
+      expect(res.status).toBe(201);
+      created.push(res.body.data.id);
+    }
+
+    const queue = (await list('verified=false&limit=100')).body.data;
+    expect(queue.every((c: { verifiedAt: string | null }) => c.verifiedAt === null)).toBe(true);
+    const ids = queue.map((c: { id: string }) => c.id);
+    expect(ids.indexOf(created[0])).toBeLessThan(ids.indexOf(created[1]));
+
+    await request(app)
+      .post(`${API}/collections/${created[0]}/verify`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ approved: true });
+
+    const after = (await list('verified=false&limit=100')).body.data.map(
+      (c: { id: string }) => c.id
+    );
+    expect(after).not.toContain(created[0]);
+    expect(after).toContain(created[1]);
+
+    const reviewed = (await list('verified=true&limit=100')).body.data;
+    expect(reviewed.map((c: { id: string }) => c.id)).toContain(created[0]);
+    expect(reviewed.every((c: { verifiedAt: string | null }) => c.verifiedAt !== null)).toBe(true);
+  });
+
+  it('rejects a verified value that is not a boolean', async () => {
+    expect((await list('verified=maybe')).status).toBe(400);
+  });
+});
+
 describe('public stats', () => {
   const stats = async () => {
     // The endpoint caches for 30 seconds; the tests change data and read it back.
