@@ -610,6 +610,27 @@ describe('public stats', () => {
   });
 });
 
+describe('public material prices', () => {
+  it('lists every accepted material with its category and price, without logging in', async () => {
+    const res = await request(app).get(`${API}/public/materials`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.currency).toBe('KES');
+    const pet = res.body.data.materials.find(
+      (m: { materialType: string }) => m.materialType === 'PET'
+    );
+    expect(pet).toEqual({
+      materialType: 'PET',
+      category: 'Plastic',
+      description: expect.any(String),
+      pricePerKg: MaterialPricingUtil.calculatePayment('PET', 1),
+    });
+    expect(res.body.data.materials.length).toBe(
+      Object.keys(MaterialPricingUtil.getAllPrices()).length
+    );
+  });
+});
+
 describe('payment calculation', () => {
   it('pays the listed price per kilogram', () => {
     expect(MaterialPricingUtil.calculatePayment('PET', 10)).toBe(250);

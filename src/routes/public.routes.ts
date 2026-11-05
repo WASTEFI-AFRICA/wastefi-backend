@@ -27,4 +27,26 @@ const router = Router();
  */
 router.get('/stats', PublicController.getStats);
 
+/**
+ * @swagger
+ * /api/v1/public/materials:
+ *   get:
+ *     summary: Materials and their prices
+ *     description: >
+ *       Every material the API accepts, with its category and the price per
+ *       kilogram it pays, so clients never keep their own copy of the price list.
+ *     tags: [Public]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: The price list
+ */
+
+/**
+ * @route   GET /api/v1/public/materials
+ * @desc    Accepted materials with their category and price per kg
+ * @access  Public
+ */
+router.get('/materials', PublicController.getMaterials);
+
 export default router;
