@@ -1,6 +1,9 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/auth.types';
 import { StellarService } from '../services/stellar.service';
+import { SorobanService, ScArg } from '../services/soroban.service';
+import { prisma } from '../services/database.service';
+import { config } from '../config';
 
 export class WalletController {
   /**
@@ -79,6 +82,61 @@ export class WalletController {
   /**
    * Get transaction history
    */
+  /**
+   * The user's WASTE balance, read from the token contract rather than summed from
+   * the database, so it is exactly what the chain says. A user without a wallet yet
+   * (nothing approved so far) has a balance of zero and no address.
+   */
+  static async getWasteBalance(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { stellarPublicKey: true },
+      });
+      const address = user?.stellarPublicKey ?? null;
+      const explorer = (path: string) => `${config.soroban.explorerUrl}/${path}`;
+
+      if (!address) {
+        res.status(200).json({
+          success: true,
+          data: { address: null, balance: '0', explorerUrl: null },
+        });
+        return;
+      }
+      if (!SorobanService.enabled) {
+        res.status(503).json({
+          success: false,
+          error: 'On-chain balances are not available on this deployment',
+        });
+        return;
+      }
+
+      const balance = await SorobanService.read(SorobanService.contracts().waste_token, 'balance', [
+        ScArg.address(address),
+      ]);
+      res.status(200).json({
+        success: true,
+        data: {
+          address,
+          // Base units (7 decimals), as a string because it can exceed 2^53
+          balance: String(balance ?? 0),
+          explorerUrl: explorer(`account/${address}`),
+        },
+      });
+    } catch (error) {
+      res.status(502).json({
+        success: false,
+        error: 'Failed to read the WASTE balance',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
   static async getTransactionHistory(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {

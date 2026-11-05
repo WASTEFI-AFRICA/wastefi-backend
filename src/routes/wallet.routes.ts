@@ -20,6 +20,13 @@ router.post('/create', authenticateJWT, WalletController.createWallet);
 router.get('/balance', authenticateJWT, WalletController.getBalance);
 
 /**
+ * @route   GET /api/v1/wallet/waste
+ * @desc    The user's WASTE balance, read from the token contract on Stellar
+ * @access  Private
+ */
+router.get('/waste', authenticateJWT, WalletController.getWasteBalance);
+
+/**
  * @route   GET /api/v1/wallet/transactions
  * @desc    Get transaction history
  * @access  Private
