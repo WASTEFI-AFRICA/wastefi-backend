@@ -12,6 +12,10 @@ import {
 } from '@stellar/stellar-sdk';
 import { config } from '../config';
 
+// How long to wait for a just-funded account to appear on the RPC node
+const ACCOUNT_VISIBLE_ATTEMPTS = 15;
+const ACCOUNT_VISIBLE_DELAY_MS = 1000;
+
 export interface InvokeResult {
   hash: string;
   value: unknown;
@@ -153,14 +157,33 @@ export class SorobanService {
 
   /** Make sure an account exists. On testnet a missing one is funded by Friendbot. */
   static async ensureAccount(publicKey: string): Promise<void> {
+    const server = this.rpcServer();
     try {
-      await this.rpcServer().getAccount(publicKey);
+      await server.getAccount(publicKey);
+      return;
     } catch {
       if (config.stellar.network !== 'testnet') {
         throw new Error(`Stellar account ${publicKey} does not exist`);
       }
-      await this.rpcServer().fundAddress(publicKey);
     }
+
+    try {
+      await server.fundAddress(publicKey);
+    } catch (error) {
+      // Friendbot refuses an account it has already funded, for example through
+      // Horizon a moment ago. The account exists; the RPC node has not seen it yet.
+      if (!/already funded/i.test((error as Error).message)) throw error;
+    }
+
+    for (let attempt = 0; attempt < ACCOUNT_VISIBLE_ATTEMPTS; attempt++) {
+      try {
+        await server.getAccount(publicKey);
+        return;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, ACCOUNT_VISIBLE_DELAY_MS));
+      }
+    }
+    throw new Error(`Stellar account ${publicKey} is not visible to the RPC node yet`);
   }
 
   private static async serialize<T>(key: string, task: () => Promise<T>): Promise<T> {
