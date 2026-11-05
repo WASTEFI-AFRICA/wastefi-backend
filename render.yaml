@@ -53,5 +53,9 @@ services:
       # DEMO_ACCOUNT_PASSWORD, and a few pending collections to approve.
       - key: SEED_DEMO_DATA
         value: 'true'
+      # New collector accounts are active at once, so visitors can sign up and try
+      # the app. Testnet only: the API ignores it when STELLAR_NETWORK is mainnet.
+      - key: DEMO_AUTO_ACTIVATE
+        value: 'true'
       - key: DEMO_ACCOUNT_PASSWORD
         sync: false

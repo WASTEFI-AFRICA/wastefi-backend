@@ -169,6 +169,39 @@ describe('registration', () => {
     expect(stored.status).toBe('PENDING');
   });
 
+  describe('on a demo with DEMO_AUTO_ACTIVATE', () => {
+    const saved = { flag: process.env.DEMO_AUTO_ACTIVATE, network: process.env.STELLAR_NETWORK };
+    afterEach(async () => {
+      process.env.DEMO_AUTO_ACTIVATE = saved.flag;
+      if (saved.flag === undefined) delete process.env.DEMO_AUTO_ACTIVATE;
+      process.env.STELLAR_NETWORK = saved.network;
+      if (saved.network === undefined) delete process.env.STELLAR_NETWORK;
+      await prisma.user.deleteMany({ where: { phoneNumber: { in: [phone(3), phone(4)] } } });
+    });
+
+    it('activates a new collector at once, so they can sign in', async () => {
+      process.env.DEMO_AUTO_ACTIVATE = 'true';
+      expect((await register(phone(3))).status).toBe(201);
+
+      const stored = await prisma.user.findUnique({ where: { phoneNumber: phone(3) } });
+      expect(stored.status).toBe('ACTIVE');
+      expect(stored.role).toBe('COLLECTOR');
+      const login = await request(app)
+        .post(`${API}/auth/login`)
+        .send({ phoneNumber: phone(3), password: PASSWORD });
+      expect(login.status).toBe(200);
+    });
+
+    it('is ignored on mainnet', async () => {
+      process.env.DEMO_AUTO_ACTIVATE = 'true';
+      process.env.STELLAR_NETWORK = 'mainnet';
+      expect((await register(phone(4))).status).toBe(201);
+
+      const stored = await prisma.user.findUnique({ where: { phoneNumber: phone(4) } });
+      expect(stored.status).toBe('PENDING');
+    });
+  });
+
   it('rejects a phone number that is already registered', async () => {
     const res = await register(COLLECTOR_PHONE);
     expect(res.status).toBeGreaterThanOrEqual(400);

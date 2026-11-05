@@ -268,6 +268,11 @@ at startup:
   `+254700000102`, both signing in with `DEMO_ACCOUNT_PASSWORD`
 - four pending collections from the demo collector
 
+With `DEMO_AUTO_ACTIVATE=true`, people who register on the demo are active
+immediately and can submit collections straight away. Without it, new accounts stay
+`PENDING` until an administrator activates them, which is what a real deployment
+needs; the setting is ignored when `STELLAR_NETWORK=mainnet`.
+
 Nothing is created already verified. Signing in as the operator and approving a
 collection runs the real flow, including the on-chain record and the WASTE payout,
 so every verified collection on the demo has a transaction to show for it. The

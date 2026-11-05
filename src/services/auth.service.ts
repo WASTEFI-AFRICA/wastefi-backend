@@ -10,6 +10,15 @@ import {
 } from '../types/auth.types';
 import { User, UserRole } from '@prisma/client';
 
+/**
+ * DEMO_AUTO_ACTIVATE=true makes new collector accounts active at once, so a visitor
+ * to the public demo can sign up and use the app. It is ignored on mainnet: a real
+ * deployment must verify people before they can be paid.
+ */
+export function demoAutoActivate(): boolean {
+  return process.env.DEMO_AUTO_ACTIVATE === 'true' && process.env.STELLAR_NETWORK !== 'mainnet';
+}
+
 export class AuthService {
   /**
    * Register a new user
@@ -62,7 +71,10 @@ export class AuthService {
         // Never taken from the request: a client choosing its own role could register
         // as ADMIN. Elevated roles are assigned by an administrator.
         role: UserRole.COLLECTOR,
-        status: 'PENDING', // Requires verification
+        // New accounts wait for verification (wastefi-backend#37 would automate it),
+        // except on a public testnet demo, where visitors should be able to try the
+        // app straight away.
+        status: demoAutoActivate() ? 'ACTIVE' : 'PENDING',
       },
     });
 
