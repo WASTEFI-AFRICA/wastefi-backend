@@ -8,6 +8,16 @@ the digital material passports that make a collection auditable.
 For the on-chain side, see
 [wastefi-contracts](https://github.com/WASTEFI-AFRICA/wastefi-contracts).
 
+## Try it
+
+The API runs at `https://wastefi-backend.onrender.com` (`/health`,
+`/api/v1/public/stats` and `/api/v1/public/materials` need no account). The easiest
+way to see it work end to end is the
+[frontend](https://wastefi-frontend.vercel.app/login): sign in with a demo account
+from the sign-in page, approve a collection, and watch it get recorded and paid on
+Stellar testnet. The free host sleeps when idle, so the first request can take up to
+a minute.
+
 ## Stack
 
 - TypeScript, Node.js
