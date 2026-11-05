@@ -1,4 +1,5 @@
 import {
+  Account,
   Address,
   BASE_FEE,
   Contract,
@@ -64,13 +65,16 @@ export class SorobanService {
     return this.server;
   }
 
-  private static async buildCall(
-    sourcePublicKey: string,
+  /**
+   * A transaction calling one contract function. `account` must carry the live
+   * sequence number when the transaction will be submitted; a simulation ignores it.
+   */
+  private static buildCall(
+    account: Account,
     contractId: string,
     method: string,
     args: xdr.ScVal[]
   ) {
-    const account = await this.rpcServer().getAccount(sourcePublicKey);
     return new TransactionBuilder(account, {
       fee: BASE_FEE,
       networkPassphrase: config.soroban.networkPassphrase,
@@ -80,9 +84,14 @@ export class SorobanService {
       .build();
   }
 
-  /** Simulate a read-only call and return its result. Nothing is submitted. */
+  /**
+   * Simulate a read-only call and return its result. Nothing is submitted, so the
+   * source account's sequence number does not matter and is not fetched, which
+   * saves a network round trip on every read.
+   */
   static async read(contractId: string, method: string, args: xdr.ScVal[] = []): Promise<unknown> {
-    const tx = await this.buildCall(this.adminKeypair().publicKey(), contractId, method, args);
+    const source = new Account(this.adminKeypair().publicKey(), '0');
+    const tx = this.buildCall(source, contractId, method, args);
     const sim = await this.rpcServer().simulateTransaction(tx);
     if (rpc.Api.isSimulationError(sim)) {
       throw new Error(`${method} failed in simulation: ${sim.error}`);
@@ -105,7 +114,8 @@ export class SorobanService {
   ): Promise<InvokeResult> {
     return this.serialize(signer.publicKey(), async () => {
       const server = this.rpcServer();
-      const tx = await this.buildCall(signer.publicKey(), contractId, method, args);
+      const account = await server.getAccount(signer.publicKey());
+      const tx = this.buildCall(account, contractId, method, args);
       const prepared = await server.prepareTransaction(tx);
       prepared.sign(signer);
 
