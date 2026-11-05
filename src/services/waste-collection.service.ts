@@ -88,6 +88,10 @@ export class WasteCollectionService {
       },
     });
 
+    // Create the collector's wallet and on-chain registration now, so approving
+    // this collection later only has to record and pay it.
+    OnChainCollectionService.prepareCollector(collectorId);
+
     return collection;
   }
 

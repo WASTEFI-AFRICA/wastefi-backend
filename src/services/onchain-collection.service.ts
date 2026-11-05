@@ -53,6 +53,8 @@ type CollectionWithRelations = Prisma.WasteCollectionGetPayload<{
  */
 export class OnChainCollectionService {
   private static inFlight = new Set<string>();
+  // One preparation per collector at a time, shared by everyone who asks.
+  private static preparing = new Map<string, Promise<Keypair>>();
   private static timer: NodeJS.Timeout | null = null;
   // Whether the sweep might find work. The sweep only queries the database while
   // this is set, so an idle server lets a scale-to-zero database (Neon's free tier)
@@ -76,6 +78,21 @@ export class OnChainCollectionService {
   static stop(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
+  }
+
+  /**
+   * Get a collector ready to record on-chain ahead of time: create and fund their
+   * wallet and register them in collector_registry. Called when they submit a
+   * collection, so these steps are not added to the wait after an approval.
+   */
+  static prepareCollector(userId: string): void {
+    if (!this.enabled) return;
+    this.readyCollector(userId).catch((error: unknown) =>
+      logger.warn('Collector could not be prepared on-chain yet', {
+        userId,
+        reason: (error as Error).message,
+      })
+    );
   }
 
   /** Process a collection in the background. Used right after it is approved. */
@@ -156,10 +173,7 @@ export class OnChainCollectionService {
     const save = (data: Prisma.WasteCollectionUpdateInput) =>
       prisma.wasteCollection.update({ where: { id: collection.id }, data });
 
-    const wallet = await StellarService.createUserWallet(collection.collectorId);
-    const collector = Keypair.fromSecret(wallet.secretKey);
-    await SorobanService.ensureAccount(collector.publicKey());
-    await this.ensureRegistered(collection.collectorId, collector);
+    const collector = await this.readyCollector(collection.collectorId);
     const pointAddress = await this.ensurePointAddress(collection.collectionPoint);
 
     // 1. Record, signed by the collector
@@ -247,6 +261,26 @@ export class OnChainCollectionService {
       collectionId: collection.id,
       transactionId,
     });
+  }
+
+  /**
+   * The collector's wallet, funded and registered as active. Concurrent callers for
+   * the same collector share one run, so nobody registers them twice.
+   */
+  private static readyCollector(userId: string): Promise<Keypair> {
+    const existing = this.preparing.get(userId);
+    if (existing) return existing;
+
+    const ready = (async () => {
+      const wallet = await StellarService.createUserWallet(userId);
+      const collector = Keypair.fromSecret(wallet.secretKey);
+      await SorobanService.ensureAccount(collector.publicKey());
+      await this.ensureRegistered(userId, collector);
+      return collector;
+    })().finally(() => this.preparing.delete(userId));
+
+    this.preparing.set(userId, ready);
+    return ready;
   }
 
   /** Register and activate the collector in collector_registry if needed. */

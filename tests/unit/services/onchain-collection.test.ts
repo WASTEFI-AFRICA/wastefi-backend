@@ -223,6 +223,50 @@ describe('OnChainCollectionService', () => {
   });
 });
 
+describe('OnChainCollectionService.prepareCollector', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    SorobanService.contracts.mockReturnValue({
+      waste_transaction: 'TX',
+      payment_distribution: 'PAY',
+      collector_registry: 'REG',
+      waste_token: 'TOKEN',
+    });
+    SorobanService.adminKeypair.mockReturnValue(admin);
+    SorobanService.ensureAccount.mockResolvedValue(undefined);
+    StellarService.createUserWallet.mockResolvedValue({
+      publicKey: collector.publicKey(),
+      secretKey: collector.secret(),
+    });
+    prisma.wasteCollection.update.mockResolvedValue({});
+    SorobanService.invoke.mockImplementation(async (_c: string, method: string) => ({
+      hash: `hash-${method}`,
+      value: method === 'record_with_price_lookup' ? 7n : method === 'process_payment' ? 3n : null,
+    }));
+  });
+
+  it('registers a new collector once, however many callers ask at the same time', async () => {
+    chain({ active: false, exists: false });
+    prisma.wasteCollection.findUnique.mockResolvedValue({ ...baseCollection });
+
+    // Two submissions and an approval for the same collector, all at once
+    OnChainCollectionService.prepareCollector('user-1');
+    OnChainCollectionService.prepareCollector('user-1');
+    await OnChainCollectionService.process('collection-1');
+
+    expect(StellarService.createUserWallet).toHaveBeenCalledTimes(1);
+    expect(invokedMethods().filter((m: string) => m === 'register')).toHaveLength(1);
+    expect(invokedMethods()).toContain('update_payment_status');
+  });
+
+  it('logs and carries on when preparation fails', async () => {
+    StellarService.createUserWallet.mockRejectedValue(new Error('friendbot down'));
+
+    expect(() => OnChainCollectionService.prepareCollector('user-2')).not.toThrow();
+    await new Promise((resolve) => setImmediate(resolve));
+  });
+});
+
 describe('OnChainCollectionService helpers', () => {
   it('maps categories to the contract material types', () => {
     expect(OnChainCollectionService.materialType('Plastic')).toBe('Plastic');
