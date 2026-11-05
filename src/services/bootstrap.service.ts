@@ -119,7 +119,8 @@ export class BootstrapService {
    * operator (both signing in with DEMO_ACCOUNT_PASSWORD), and a few pending
    * collections from the collector. Nothing is created already verified: every
    * verified collection on a demo comes from a real approval, with its on-chain
-   * record. Safe to run at every start; it only creates what is missing.
+   * record. Safe to run at every start; it only creates what is missing, and
+   * topUpDemoQueue keeps the queue full as visitors review collections.
    */
   static async ensureDemoData(): Promise<void> {
     if (process.env.SEED_DEMO_DATA !== 'true') return;
@@ -152,7 +153,7 @@ export class BootstrapService {
     }
 
     const passwordHash = await EncryptionUtil.hashPassword(password);
-    const [collector] = await Promise.all(
+    await Promise.all(
       DEMO_ACCOUNTS.map((account) =>
         prisma.user.upsert({
           where: { phoneNumber: account.phoneNumber },
@@ -167,22 +168,52 @@ export class BootstrapService {
       )
     );
 
-    if ((await prisma.wasteCollection.count({ where: { collectorId: collector.id } })) > 0) {
-      return;
-    }
-    for (const sample of DEMO_COLLECTIONS) {
+    const added = await this.topUpDemoQueue();
+    logger.info('Demo data ready', { collectionPoints: points.length, collectionsAdded: added });
+  }
+
+  /**
+   * Bring the demo collector's pending collections back up to DEMO_COLLECTIONS.length,
+   * so visitors always find something to approve. Called at startup and after every
+   * review. Returns how many were added. Does nothing unless SEED_DEMO_DATA=true.
+   */
+  static async topUpDemoQueue(): Promise<number> {
+    if (process.env.SEED_DEMO_DATA !== 'true') return 0;
+
+    const collector = await prisma.user.findUnique({
+      where: { phoneNumber: DEMO_ACCOUNTS[0].phoneNumber },
+      select: { id: true },
+    });
+    if (!collector) return 0;
+
+    const [pending, total, points] = await Promise.all([
+      prisma.wasteCollection.count({ where: { collectorId: collector.id, verifiedAt: null } }),
+      prisma.wasteCollection.count({ where: { collectorId: collector.id } }),
+      prisma.collectionPoint.findMany({
+        where: { contactPhone: { in: DEMO_POINTS.map((p) => p.contactPhone) } },
+        select: { id: true, contactPhone: true },
+      }),
+    ]);
+    const pointId = (index: number) =>
+      points.find((p) => p.contactPhone === DEMO_POINTS[index].contactPhone)?.id;
+
+    let added = 0;
+    for (let i = 0; i < DEMO_COLLECTIONS.length - pending; i++) {
+      // Rotate through the samples, and vary the weight: the contract rejects the
+      // same collector recording the same material and weight within 5 minutes.
+      const sample = DEMO_COLLECTIONS[(total + i) % DEMO_COLLECTIONS.length];
+      const collectionPointId = pointId(sample.point);
+      if (!collectionPointId) continue;
       await WasteCollectionService.recordCollection(collector.id, {
-        collectionPointId: points[sample.point].id,
+        collectionPointId,
         materialType: sample.materialType,
         materialCategory: sample.materialCategory,
-        weight: sample.weight,
+        weight: total + i === 0 ? sample.weight : demoWeight(sample.weight),
         notes: 'Demo collection',
       });
+      added += 1;
     }
-    logger.info('Demo data created', {
-      collectionPoints: points.length,
-      pendingCollections: DEMO_COLLECTIONS.length,
-    });
+    return added;
   }
 }
 
@@ -223,7 +254,7 @@ const DEMO_POINTS = [
   },
 ];
 
-/** The collector comes first; ensureDemoData relies on that order. */
+/** The collector comes first; topUpDemoQueue relies on that order. */
 const DEMO_ACCOUNTS = [
   {
     phoneNumber: '+254700000101',
@@ -238,6 +269,12 @@ const DEMO_ACCOUNTS = [
     role: UserRole.COLLECTION_POINT,
   },
 ];
+
+/** A weight within 20% of the sample's, to one decimal place. */
+function demoWeight(base: number): number {
+  const varied = base * (0.8 + Math.random() * 0.4);
+  return Math.max(0.5, Math.round(varied * 10) / 10);
+}
 
 const DEMO_COLLECTIONS = [
   { point: 0, materialType: 'PET', materialCategory: 'Plastic', weight: 6.5 },

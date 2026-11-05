@@ -12,8 +12,9 @@ jest.mock('../../../src/services/database.service', () => ({
       findMany: jest.fn(),
       update: jest.fn(),
       upsert: jest.fn(),
+      findUnique: jest.fn(),
     },
-    collectionPoint: { findFirst: jest.fn(), create: jest.fn() },
+    collectionPoint: { findFirst: jest.fn(), create: jest.fn(), findMany: jest.fn() },
     wasteCollection: { count: jest.fn() },
   },
 }));
@@ -156,6 +157,18 @@ describe('BootstrapService.ensureDemoData', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { WasteCollectionService } = require('../../../src/services/waste-collection.service');
   const saved = { seed: process.env.SEED_DEMO_DATA, password: process.env.DEMO_ACCOUNT_PASSWORD };
+  const POINT_PHONES = ['+254700000201', '+254700000202', '+254700000203'];
+
+  /** Demo collector with `pending` unreviewed and `total` collections in all. */
+  const demoState = (pending: number, total: number) => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'demo-collector' });
+    prisma.wasteCollection.count.mockImplementation(async ({ where }: { where: object }) =>
+      'verifiedAt' in where ? pending : total
+    );
+    prisma.collectionPoint.findMany.mockResolvedValue(
+      POINT_PHONES.map((contactPhone, i) => ({ id: `point-${i}`, contactPhone }))
+    );
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -163,9 +176,7 @@ describe('BootstrapService.ensureDemoData', () => {
     process.env.DEMO_ACCOUNT_PASSWORD = STRONG;
     prisma.collectionPoint.findFirst.mockResolvedValue(null);
     prisma.collectionPoint.create.mockImplementation(
-      async ({ data }: { data: { name: string } }) => ({
-        id: `point-${data.name}`,
-      })
+      async ({ data }: { data: { name: string } }) => ({ id: `point-${data.name}` })
     );
     prisma.user.upsert.mockImplementation(
       async ({ create }: { create: { phoneNumber: string; role: string } }) => ({
@@ -173,7 +184,7 @@ describe('BootstrapService.ensureDemoData', () => {
         role: create.role,
       })
     );
-    prisma.wasteCollection.count.mockResolvedValue(0);
+    demoState(0, 0);
   });
 
   afterAll(() => {
@@ -187,9 +198,11 @@ describe('BootstrapService.ensureDemoData', () => {
     delete process.env.SEED_DEMO_DATA;
 
     await BootstrapService.ensureDemoData();
+    expect(await BootstrapService.topUpDemoQueue()).toBe(0);
 
     expect(prisma.user.upsert).not.toHaveBeenCalled();
     expect(prisma.collectionPoint.create).not.toHaveBeenCalled();
+    expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
   });
 
   it('does nothing with a missing or weak demo password', async () => {
@@ -201,7 +214,7 @@ describe('BootstrapService.ensureDemoData', () => {
     expect(prisma.user.upsert).not.toHaveBeenCalled();
   });
 
-  it('creates points, a collector, an operator and pending collections', async () => {
+  it('creates points, a collector, an operator and four pending collections', async () => {
     await BootstrapService.ensureDemoData();
 
     expect(prisma.collectionPoint.create).toHaveBeenCalledTimes(3);
@@ -214,19 +227,49 @@ describe('BootstrapService.ensureDemoData', () => {
     expect(created.password).not.toBe(STRONG);
     expect(WasteCollectionService.recordCollection).toHaveBeenCalledTimes(4);
     for (const [collectorId, data] of WasteCollectionService.recordCollection.mock.calls) {
-      expect(collectorId).toBe('user-+254700000101');
+      expect(collectorId).toBe('demo-collector');
       expect(data).not.toHaveProperty('verifiedAt');
     }
   });
 
-  it('reuses existing points and adds no collections once the collector has some', async () => {
+  it('reuses existing points and accounts on a restart', async () => {
     prisma.collectionPoint.findFirst.mockResolvedValue({ id: 'existing-point' });
-    prisma.wasteCollection.count.mockResolvedValue(4);
+    demoState(4, 4);
 
     await BootstrapService.ensureDemoData();
 
     expect(prisma.collectionPoint.create).not.toHaveBeenCalled();
     expect(prisma.user.upsert.mock.calls[0][0].update).toEqual({});
+    expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
+  });
+
+  it('replaces reviewed collections so four stay pending', async () => {
+    demoState(2, 9);
+
+    expect(await BootstrapService.topUpDemoQueue()).toBe(2);
+    expect(WasteCollectionService.recordCollection).toHaveBeenCalledTimes(2);
+  });
+
+  it('varies the weight of added collections around the sample weight', async () => {
+    demoState(0, 12);
+
+    await BootstrapService.topUpDemoQueue();
+
+    const weights = WasteCollectionService.recordCollection.mock.calls.map(
+      (c: [string, { weight: number }]) => c[1].weight
+    );
+    const samples = [6.5, 2.4, 12, 8];
+    weights.forEach((weight: number, i: number) => {
+      expect(weight).toBeGreaterThanOrEqual(Math.max(0.5, samples[i] * 0.8 - 0.05));
+      expect(weight).toBeLessThanOrEqual(samples[i] * 1.2 + 0.05);
+      expect(weight * 10).toBeCloseTo(Math.round(weight * 10), 6);
+    });
+  });
+
+  it('does nothing when the demo collector does not exist yet', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    expect(await BootstrapService.topUpDemoQueue()).toBe(0);
     expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
   });
 });

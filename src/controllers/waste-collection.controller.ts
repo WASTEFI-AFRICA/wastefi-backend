@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types/auth.types';
 import { WasteCollectionService } from '../services/waste-collection.service';
 import { logger } from '../utils/logger.util';
+import { BootstrapService } from '../services/bootstrap.service';
 
 export class WasteCollectionController {
   /**
@@ -200,6 +201,11 @@ export class WasteCollectionController {
         notes,
         adjustedWeight,
         adjustedAmount
+      );
+
+      // On a demo deployment, replace the reviewed collection so the queue never empties
+      BootstrapService.topUpDemoQueue().catch((error: unknown) =>
+        logger.error('Demo queue top-up failed', { error: error as Error })
       );
 
       logger.info('Waste collection verified', {
