@@ -1,3 +1,4 @@
+import { TransactionStatus } from '@prisma/client';
 import { prisma } from './database.service';
 import { config } from '../config';
 
@@ -54,7 +55,11 @@ export class PublicStatsService {
       return this.cache.data;
     }
 
-    const verified = { verifiedAt: { not: null } };
+    // Rejections also have a review timestamp, but must not count as approvals.
+    const verified = {
+      verifiedAt: { not: null },
+      paymentStatus: { not: TransactionStatus.CANCELLED },
+    };
 
     const [
       activeCollectors,

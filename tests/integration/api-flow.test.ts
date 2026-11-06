@@ -601,6 +601,39 @@ describe('public stats', () => {
     expect(verifiedNow.verifiedWeightKg).toBeCloseTo(before.verifiedWeightKg + 7, 2);
   });
 
+  it('does not count rejected collections as verified', async () => {
+    const before = (await stats()).body.data;
+
+    const created = await request(app)
+      .post(`${API}/collections`)
+      .set('Authorization', `Bearer ${collectorToken}`)
+      .send({
+        collectionPointId,
+        materialType: 'GLASS_CLEAR',
+        materialCategory: 'GLASS',
+        weight: 7.5,
+      });
+    expect(created.status).toBe(201);
+
+    const rejected = await request(app)
+      .post(`${API}/collections/${created.body.data.id}/verify`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ approved: false, notes: 'Material was not sorted' });
+    expect(rejected.status).toBe(200);
+    // Rejections have a review timestamp too; that does not make them approved.
+    expect(rejected.body.data.verifiedAt).toEqual(expect.any(String));
+    expect(rejected.body.data.paymentStatus).toBe('CANCELLED');
+
+    const after = (await stats()).body.data;
+    expect(after.totals).toEqual({
+      ...before.totals,
+      collectionsRecorded: before.totals.collectionsRecorded + 1,
+    });
+    expect(after.byMaterial).toEqual(before.byMaterial);
+    expect(after.recentVerified).toEqual(before.recentVerified);
+    expect(after.onChain).toEqual(before.onChain);
+  });
+
   it('exposes no personal data', async () => {
     const body = JSON.stringify((await stats()).body);
 
