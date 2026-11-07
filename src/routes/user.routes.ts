@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body, query } from 'express-validator';
+import { body, checkExact, query } from 'express-validator';
 import { UserController } from '../controllers/user.controller';
 import { authenticateJWT, requireRole } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
@@ -23,11 +23,18 @@ router.put(
   '/me',
   authenticateJWT,
   [
-    body('firstName').optional().trim().notEmpty(),
-    body('lastName').optional().trim().notEmpty(),
-    body('email').optional().isEmail(),
-    body('address').optional().trim(),
-    body('city').optional().trim(),
+    body('firstName').optional().isString().bail().trim().isLength({ min: 1, max: 100 }),
+    body('lastName').optional().isString().bail().trim().isLength({ min: 1, max: 100 }),
+    body('email')
+      .optional({ values: 'null' })
+      .isString()
+      .bail()
+      .trim()
+      .isLength({ max: 254 })
+      .isEmail(),
+    body('address').optional({ values: 'null' }).isString().bail().trim().isLength({ max: 500 }),
+    body('city').optional({ values: 'null' }).isString().bail().trim().isLength({ max: 120 }),
+    checkExact([], { locations: ['body'], message: 'Only profile details can be updated here' }),
     validate,
   ],
   UserController.updateProfile

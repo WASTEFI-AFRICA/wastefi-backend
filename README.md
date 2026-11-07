@@ -50,6 +50,12 @@ material, weight, city and time of the latest verified collections, and nothing 
 identifies a person. Weight and value count verified collections only, so unverified
 submissions cannot inflate it. It is cached for 30 seconds.
 
+`GET /api/v1/users/me` returns the signed-in user's profile.
+`PUT /api/v1/users/me` accepts only `firstName`, `lastName`, `email`, `address`
+and `city`. Names must be non-empty strings; email, address and city can be
+cleared with `null`. Phone numbers, account roles, activation and wallet fields
+cannot be changed through this route. An email already in use returns 409.
+
 `/metrics` is mounted at the root, outside the version prefix, and serves
 Prometheus metrics. In production it requires a bearer token from the
 `METRICS_TOKEN` environment variable (open, e.g. for local Prometheus, in
@@ -166,7 +172,7 @@ npm test
 CI does the same with a Postgres service container. The tests create their own
 rows under a unique phone prefix and delete them afterwards.
 
-Measured coverage is 22.9% of statements, 12.4% of branches. The CI threshold sits
+Measured coverage is 30.97% of statements, 20.12% of branches. The CI threshold sits
 just under that so it cannot silently fall. The authentication and collection
 paths are covered; payments, wallet, mobile money, admin, notifications and the
 material passport service are not. `tests/integration/auth.test.ts` mocks Prisma

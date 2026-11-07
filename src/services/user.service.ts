@@ -5,9 +5,9 @@ import { FileUploadUtil } from '../utils/file-upload.util';
 export interface UpdateProfileData {
   firstName?: string;
   lastName?: string;
-  email?: string;
-  address?: string;
-  city?: string;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
 }
 
 export interface KYCSubmissionData {
@@ -61,7 +61,12 @@ export class UserService {
     return prisma.user.update({
       where: { id: userId },
       data: {
-        ...data,
+        // Request bodies can contain fields the TypeScript interface does not describe.
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        address: data.address,
+        city: data.city,
         updatedAt: new Date(),
       },
       select: {

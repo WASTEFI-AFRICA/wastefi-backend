@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { AuthRequest } from '../types/auth.types';
 import { UserService } from '../services/user.service';
 import { logger } from '../utils/logger.util';
@@ -67,6 +68,10 @@ export class UserController {
         message: 'Profile updated successfully',
       });
     } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        res.status(409).json({ success: false, error: 'This email address is already in use' });
+        return;
+      }
       logger.error('Failed to update profile', {
         error: error as Error,
         userId: req.user?.userId,
@@ -74,7 +79,6 @@ export class UserController {
       res.status(500).json({
         success: false,
         error: 'Failed to update profile',
-        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
