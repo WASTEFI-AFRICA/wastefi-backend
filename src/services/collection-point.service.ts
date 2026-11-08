@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from './database.service';
 import { GeolocationUtil } from '../utils/geolocation.util';
 
@@ -39,6 +40,28 @@ export interface CollectionPointFilters {
   radius?: number;
 }
 
+/** Explicit public projection; private wallet relations never leave the API. */
+const PUBLIC_POINT_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  latitude: true,
+  longitude: true,
+  address: true,
+  city: true,
+  country: true,
+  contactPerson: true,
+  contactPhone: true,
+  contactEmail: true,
+  isActive: true,
+  verifiedAt: true,
+  operatingHours: true,
+  acceptedMaterials: true,
+  stellarAddress: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CollectionPointSelect;
+
 export class CollectionPointService {
   /**
    * List collection points with optional filters and pagination
@@ -66,6 +89,7 @@ export class CollectionPointService {
     if (filters.latitude && filters.longitude && filters.radius) {
       const allPoints = await prisma.collectionPoint.findMany({
         where,
+        select: PUBLIC_POINT_SELECT,
       });
 
       const nearby = allPoints.filter((point) => {
@@ -110,6 +134,7 @@ export class CollectionPointService {
     const [collectionPoints, total] = await Promise.all([
       prisma.collectionPoint.findMany({
         where,
+        select: PUBLIC_POINT_SELECT,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -142,6 +167,7 @@ export class CollectionPointService {
     // Get all active collection points
     const allPoints = await prisma.collectionPoint.findMany({
       where: { isActive: true },
+      select: PUBLIC_POINT_SELECT,
     });
 
     // Calculate distances and filter
@@ -168,7 +194,8 @@ export class CollectionPointService {
   static async getCollectionPointById(id: string) {
     return prisma.collectionPoint.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...PUBLIC_POINT_SELECT,
         _count: {
           select: {
             collections: true,
@@ -188,6 +215,7 @@ export class CollectionPointService {
     }
 
     return prisma.collectionPoint.create({
+      select: PUBLIC_POINT_SELECT,
       data: {
         name: data.name,
         description: data.description,
@@ -225,7 +253,18 @@ export class CollectionPointService {
       }
     }
 
-    const updateData: any = { ...data };
+    const updateData: Prisma.CollectionPointUpdateInput = {
+      name: data.name,
+      description: data.description,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      address: data.address,
+      city: data.city,
+      contactPerson: data.contactPerson,
+      contactPhone: data.contactPhone,
+      contactEmail: data.contactEmail,
+      isActive: data.isActive,
+    };
 
     // Handle JSON fields
     if (data.operatingHours) {
@@ -237,6 +276,7 @@ export class CollectionPointService {
     }
 
     return prisma.collectionPoint.update({
+      select: PUBLIC_POINT_SELECT,
       where: { id },
       data: updateData,
     });
@@ -274,6 +314,7 @@ export class CollectionPointService {
     }
 
     return prisma.collectionPoint.update({
+      select: PUBLIC_POINT_SELECT,
       where: { id },
       data: {
         verifiedAt: new Date(),
@@ -321,6 +362,7 @@ export class CollectionPointService {
       // Return all active collection points if no user location
       return prisma.collectionPoint.findMany({
         where: { isActive: true },
+        select: PUBLIC_POINT_SELECT,
         take: 10,
       });
     }
@@ -331,6 +373,7 @@ export class CollectionPointService {
         isActive: true,
         city: { contains: user.city, mode: 'insensitive' },
       },
+      select: PUBLIC_POINT_SELECT,
       take: 10,
     });
   }

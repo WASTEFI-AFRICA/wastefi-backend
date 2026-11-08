@@ -1,3 +1,5 @@
+export type CollectionFlow = 'admin_v1' | 'point_owner_v1';
+
 /**
  * The WasteFi contracts deployed on Stellar testnet.
  *

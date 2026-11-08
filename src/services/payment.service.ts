@@ -32,7 +32,7 @@ export class PaymentService {
         where: { id: collectionId },
         include: {
           collector: true,
-          collectionPoint: true,
+          collectionPoint: { select: { name: true, city: true } },
         },
       });
 

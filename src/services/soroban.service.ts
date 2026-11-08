@@ -64,6 +64,7 @@ export class SorobanService {
     if (!this.server) {
       this.server = new rpc.Server(config.soroban.rpcUrl, {
         allowHttp: config.soroban.rpcUrl.startsWith('http://'),
+        timeout: 30_000,
       });
     }
     return this.server;
@@ -100,7 +101,8 @@ export class SorobanService {
     if (rpc.Api.isSimulationError(sim)) {
       throw new Error(`${method} failed in simulation: ${sim.error}`);
     }
-    return sim.result ? scValToNative(sim.result.retval) : undefined;
+    if (!sim.result) throw new Error(`${method} returned no simulation result`);
+    return scValToNative(sim.result.retval);
   }
 
   /**

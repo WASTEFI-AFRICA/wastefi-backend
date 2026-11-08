@@ -1,3 +1,4 @@
+import { config } from '../config';
 import { UserRole } from '@prisma/client';
 import { StrKey } from '@stellar/stellar-sdk';
 import { prisma } from './database.service';
@@ -194,7 +195,9 @@ export class BootstrapService {
           role: true,
           status: true,
           collectionPointId: true,
-          collectionPoint: { select: { isActive: true } },
+          collectionPoint: {
+            select: { isActive: true, verifiedAt: true, acceptedMaterials: true },
+          },
         },
       }),
     ]);
@@ -206,6 +209,20 @@ export class BootstrapService {
       !operator.collectionPoint?.isActive
     )
       return 0;
+    let samples = DEMO_COLLECTIONS;
+    if (config.soroban.collectionFlow === 'point_owner_v1') {
+      if (!operator.collectionPoint.verifiedAt) return 0;
+      let accepted: unknown;
+      try {
+        accepted = JSON.parse(operator.collectionPoint.acceptedMaterials || 'null');
+      } catch {
+        return 0;
+      }
+      if (!Array.isArray(accepted) || accepted.some((code) => typeof code !== 'string')) return 0;
+      const codes = new Set(accepted.map((code: string) => code.toUpperCase()));
+      samples = DEMO_COLLECTIONS.filter((sample) => codes.has(sample.materialType));
+      if (!samples.length) return 0;
+    }
     const collectionPointId = operator.collectionPointId;
     const [pending, total] = await Promise.all([
       prisma.wasteCollection.count({
@@ -215,14 +232,19 @@ export class BootstrapService {
     ]);
     let added = 0;
     for (let i = 0; i < DEMO_COLLECTIONS.length - pending; i++) {
-      // Rotate through the samples, and vary the weight: the contract rejects the
-      // same collector recording the same material and weight within 5 minutes.
-      const sample = DEMO_COLLECTIONS[(total + i) % DEMO_COLLECTIONS.length];
+      // Rotate accepted samples and vary gram weights to avoid the contract
+      // rejecting a repeated material and weight within five minutes.
+      const sample = samples[(total + i) % samples.length];
       await WasteCollectionService.recordCollection(collector.id, {
         collectionPointId,
         materialType: sample.materialType,
         materialCategory: sample.materialCategory,
-        weight: total + i === 0 ? sample.weight : demoWeight(sample.weight),
+        weight:
+          config.soroban.collectionFlow === 'point_owner_v1'
+            ? Math.round((sample.weight + ((total + i) % 1000) * 0.001) * 1000) / 1000
+            : total + i === 0
+              ? sample.weight
+              : demoWeight(sample.weight),
         notes: 'Demo collection',
       });
       added += 1;
@@ -242,7 +264,7 @@ const DEMO_POINTS = [
     city: 'Nairobi',
     contactPerson: 'Demo operator',
     contactPhone: '+254700000201',
-    acceptedMaterials: JSON.stringify(['PET', 'HDPE', 'ALUMINUM', 'GLASS_CLEAR']),
+    acceptedMaterials: JSON.stringify(['PET', 'HDPE', 'ALUMINUM', 'GLASS_CLEAR', 'CARDBOARD']),
   },
   {
     name: 'Westlands Recycling Hub',

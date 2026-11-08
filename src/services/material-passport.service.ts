@@ -30,7 +30,7 @@ export class MaterialPassportService {
         where: { id: request.wasteCollectionId },
         include: {
           collector: true,
-          collectionPoint: true,
+          collectionPoint: { select: { name: true, city: true } },
         },
       });
 

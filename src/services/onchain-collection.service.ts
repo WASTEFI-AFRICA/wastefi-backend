@@ -1,4 +1,7 @@
 import crypto from 'crypto';
+import { config } from '../config';
+import { PointSigningService } from './point-signing.service';
+import { contractMaterialType } from '../utils/contract-material.util';
 import { ChainStatus, Prisma } from '@prisma/client';
 import { Keypair } from '@stellar/stellar-sdk';
 import { prisma } from './database.service';
@@ -10,20 +13,6 @@ import { CollectionChainContextService, chainInteger } from './collection-chain-
 const MAX_ATTEMPTS = 5;
 const SWEEP_INTERVAL_MS = 60_000;
 const SWEEP_BATCH = 5;
-
-/** The MaterialType variants of the contracts, keyed by lower-case category name. */
-const MATERIAL_TYPES: Record<string, string> = {
-  plastic: 'Plastic',
-  glass: 'Glass',
-  metal: 'Metal',
-  paper: 'Paper',
-  cardboard: 'Cardboard',
-  electronics: 'Electronics',
-  'e-waste': 'Electronics',
-  organic: 'Organic',
-  textile: 'Textile',
-  rubber: 'Rubber',
-};
 
 type CollectionWithRelations = Prisma.WasteCollectionGetPayload<{
   include: { collectionPoint: true };
@@ -180,6 +169,7 @@ export class OnChainCollectionService {
       throw new Error('Existing on-chain progress needs context backfill');
     }
     const admin = SorobanService.adminKeypair();
+    let pointSigner: Keypair | null = null;
     const save = (data: Prisma.WasteCollectionUpdateInput) =>
       prisma.wasteCollection.update({ where: { id: collection.id }, data });
 
@@ -187,10 +177,19 @@ export class OnChainCollectionService {
       context?.contracts.collector_registry ?? SorobanService.contracts().collector_registry;
     let collector = await this.readyCollector(collection.collectorId, registry);
     if (!context) {
-      const pointAddress = await this.ensurePointAddress(collection.collectionPoint);
+      const flow = config.soroban.collectionFlow;
+      let pointAddress: string;
+      if (flow === 'point_owner_v1') {
+        pointSigner = await PointSigningService.ready(
+          collection.collectionPoint.id,
+          SorobanService.contracts(),
+          this.materialType(collection.materialCategory)
+        );
+        pointAddress = pointSigner.publicKey();
+      } else pointAddress = await this.ensurePointAddress(collection.collectionPoint);
       context = await CollectionChainContextService.pinNew(
         collection.id,
-        CollectionChainContextService.snapshot(collector.publicKey(), pointAddress)
+        CollectionChainContextService.snapshot(collector.publicKey(), pointAddress, flow)
       );
       // A concurrent worker may already have pinned a different deployment.
       if (registry !== context.contracts.collector_registry) {
@@ -218,6 +217,17 @@ export class OnChainCollectionService {
       }
     }
     if (!transactionId) {
+      if (
+        context.flow === 'point_owner_v1' &&
+        (!pointSigner || pointSigner.publicKey() !== pointAddress)
+      ) {
+        pointSigner = await PointSigningService.ready(
+          collection.collectionPoint.id,
+          contracts,
+          this.materialType(collection.materialCategory),
+          pointAddress
+        );
+      }
       const recorded = await SorobanService.invoke(
         contracts.waste_transaction,
         'record_with_price_lookup',
@@ -251,13 +261,30 @@ export class OnChainCollectionService {
       chainError: null,
     });
 
-    // 2. Verify, signed by the admin. This also updates the collector's reputation.
+    // 2. The pinned flow selects its signer; point failures never fall back to admin.
     if (!record.verified) {
+      const byPoint = context.flow === 'point_owner_v1';
+      if (byPoint) {
+        // Recheck current trust/material policy immediately before using the private key.
+        if (!pointSigner || pointSigner.publicKey() !== pointAddress) {
+          await PointSigningService.ready(
+            collection.collectionPoint.id,
+            contracts,
+            this.materialType(collection.materialCategory),
+            pointAddress
+          );
+        }
+        pointSigner = await PointSigningService.signer(
+          collection.collectionPoint.id,
+          this.materialType(collection.materialCategory),
+          pointAddress
+        );
+      }
       const verified = await SorobanService.invoke(
         contracts.waste_transaction,
-        'verify_transaction',
+        byPoint ? 'verify_transaction_by_point' : 'verify_transaction',
         [ScArg.u64(transactionId)],
-        admin,
+        byPoint ? pointSigner! : admin,
         (hash) => save({ chainVerifyTxHash: hash }).then(() => undefined)
       );
       await save({ chainVerifyTxHash: verified.hash });
@@ -396,7 +423,7 @@ export class OnChainCollectionService {
 
   /** The contracts' MaterialType variant for a category; unknown ones become Other. */
   static materialType(category: string): string {
-    return MATERIAL_TYPES[category.trim().toLowerCase()] ?? 'Other';
+    return contractMaterialType(category);
   }
 
   /** Kilograms in the database, whole grams on-chain. */

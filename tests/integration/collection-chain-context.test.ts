@@ -1,3 +1,4 @@
+import { config } from '../../src/config';
 import { randomUUID, randomBytes } from 'crypto';
 import { Keypair, StrKey } from '@stellar/stellar-sdk';
 import { prisma } from '../../src/services/database.service';
@@ -360,4 +361,19 @@ it('reports a conflicting payment namespace during preview without writing metad
   expect(
     (await prisma.wasteCollection.findUniqueOrThrow({ where: { id: row.id } })).chainContext
   ).toBeNull();
+});
+
+it('always backfills legacy work as admin even when the current default is point mode', async () => {
+  const row = await createRow();
+  await prisma.wasteCollection.update({ where: { id: row.id }, data: { chainTransactionId: '7' } });
+  mocked.read.mockResolvedValue(record());
+  const previous = config.soroban.collectionFlow;
+  config.soroban.collectionFlow = 'point_owner_v1';
+  try {
+    await Backfill.pin(row.id, true);
+    const stored = await prisma.wasteCollection.findUniqueOrThrow({ where: { id: row.id } });
+    expect(Context.parse(stored.chainContext).flow).toBe('admin_v1');
+  } finally {
+    config.soroban.collectionFlow = previous;
+  }
 });

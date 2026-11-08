@@ -1,14 +1,14 @@
 import { Prisma } from '@prisma/client';
 import { StrKey } from '@stellar/stellar-sdk';
 import { config } from '../config';
-import { SorobanContracts } from '../config/soroban-contracts';
+import { CollectionFlow, SorobanContracts } from '../config/soroban-contracts';
 import { prisma } from './database.service';
 import { SorobanService } from './soroban.service';
 
 /** Public deployment metadata only. Never put secrets or RPC credentials here. */
 export type CollectionChainContext = {
   version: 1;
-  flow: 'admin_v1';
+  flow: CollectionFlow;
   networkPassphrase: string;
   contracts: SorobanContracts;
   collectorAddress: string;
@@ -56,10 +56,14 @@ export function chainInteger(value: unknown): bigint {
 }
 
 export class CollectionChainContextService {
-  static snapshot(collectorAddress: string, pointAddress: string): CollectionChainContext {
+  static snapshot(
+    collectorAddress: string,
+    pointAddress: string,
+    flow: CollectionFlow = config.soroban.collectionFlow
+  ): CollectionChainContext {
     return this.parse({
       version: 1,
-      flow: 'admin_v1',
+      flow,
       networkPassphrase: config.soroban.networkPassphrase,
       contracts: { ...SorobanService.contracts() },
       collectorAddress,
@@ -72,7 +76,7 @@ export class CollectionChainContextService {
     const contracts = object(raw.contracts);
     if (
       raw.version !== 1 ||
-      raw.flow !== 'admin_v1' ||
+      (raw.flow !== 'admin_v1' && raw.flow !== 'point_owner_v1') ||
       typeof raw.networkPassphrase !== 'string' ||
       !raw.networkPassphrase.trim() ||
       typeof raw.collectorAddress !== 'string' ||
@@ -88,7 +92,7 @@ export class CollectionChainContextService {
     // Select only recognized public metadata, even if a stored JSON value has extras.
     return {
       version: 1,
-      flow: 'admin_v1',
+      flow: raw.flow as CollectionFlow,
       networkPassphrase: raw.networkPassphrase,
       contracts: Object.fromEntries(
         CONTRACT_NAMES.map((name) => [name, contracts[name]])

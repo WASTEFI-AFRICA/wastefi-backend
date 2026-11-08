@@ -136,6 +136,7 @@ model CollectionPoint {
   // Relations
   collections     WasteCollection[]
   operators       User[]
+  signingWallet   CollectionPointWallet?
   
   @@index([latitude, longitude])
   @@index([isActive])
@@ -339,4 +340,28 @@ model ChainPaymentNamespace {
 
   @@id([networkPassphrase, paymentContract], name: "network_payment")
   @@map("chain_payment_namespaces")
+}
+
+model CollectionPointWallet {
+  pointId       String @id
+  point         CollectionPoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  publicKey     String @unique
+  secretKey     String // AES-256-GCM encrypted; never select for an API response.
+  createdAt     DateTime @default(now())
+  registrations PointChainRegistration[]
+
+  @@map("collection_point_wallets")
+}
+
+model PointChainRegistration {
+  pointId              String
+  wallet               CollectionPointWallet @relation(fields: [pointId], references: [pointId], onDelete: Cascade)
+  networkPassphrase    String
+  registryContract     String
+  registrationTxHash   String?
+  leaseToken           String?
+  leaseUntil           DateTime?
+
+  @@id([pointId, networkPassphrase, registryContract], name: "point_network_registry")
+  @@map("point_chain_registrations")
 }

@@ -1,8 +1,12 @@
 import { Keypair, StrKey, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { OnChainCollectionService } from '../../../src/services/onchain-collection.service';
 import { TESTNET_CONTRACTS } from '../../../src/config/soroban-contracts';
+import { PointSigningService } from '../../../src/services/point-signing.service';
 import { config } from '../../../src/config';
 
+jest.mock('../../../src/services/point-signing.service', () => ({
+  PointSigningService: { ready: jest.fn(), signer: jest.fn() },
+}));
 jest.mock('../../../src/services/database.service', () => ({
   __esModule: true,
   prisma: {
@@ -50,7 +54,8 @@ const { StellarService } = require('../../../src/services/stellar.service');
 
 const collector = Keypair.random();
 const admin = Keypair.random();
-const POINT = Keypair.random().publicKey();
+const pointKey = Keypair.random();
+const POINT = pointKey.publicKey();
 
 const CONTEXT = {
   version: 1,
@@ -243,7 +248,8 @@ describe('OnChainCollectionService', () => {
 
   it.each([
     { version: 2 },
-    { flow: 'point_owner_v1' },
+    { flow: 'unknown_v1' },
+    { flow: ['admin_v1'] },
     { collectorAddress: 'invalid' },
     { pointAddress: 'invalid' },
     { contracts: { ...TESTNET_CONTRACTS, waste_transaction: 'invalid' } },
@@ -367,6 +373,110 @@ describe('OnChainCollectionService', () => {
     chain({});
     await OnChainCollectionService.process('collection-1');
     expect(invokedMethods()).toContain('record_with_price_lookup');
+    expect(lastUpdate().chainStatus).toBe('PAID');
+  });
+
+  it('records and verifies a new point-mode collection with its own signer', async () => {
+    const previous = config.soroban.collectionFlow;
+    config.soroban.collectionFlow = 'point_owner_v1';
+    try {
+      prisma.wasteCollection.findUnique.mockResolvedValue({ ...baseCollection });
+      prisma.wasteCollection.findUniqueOrThrow.mockResolvedValue({
+        chainContext: { ...CONTEXT, flow: 'point_owner_v1' },
+      });
+      jest.mocked(PointSigningService.ready).mockResolvedValue(pointKey);
+      jest.mocked(PointSigningService.signer).mockResolvedValue(pointKey);
+      chain({});
+      await OnChainCollectionService.process('collection-1');
+      expect(invokedMethods()).toEqual([
+        'record_with_price_lookup',
+        'verify_transaction_by_point',
+        'process_payment',
+        'update_payment_status',
+      ]);
+      expect(SorobanService.invoke.mock.calls[1][3].publicKey()).toBe(POINT);
+      expect(SorobanService.invoke.mock.calls[2][3].publicKey()).toBe(admin.publicKey());
+      expect(lastUpdate().chainStatus).toBe('PAID');
+      expect(prisma.collectionPoint.updateMany).not.toHaveBeenCalled();
+    } finally {
+      config.soroban.collectionFlow = previous;
+    }
+  });
+
+  it('keeps legacy verification explicit when new collections switch to point mode', async () => {
+    const previous = config.soroban.collectionFlow;
+    config.soroban.collectionFlow = 'point_owner_v1';
+    try {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: CONTEXT,
+        chainTransactionId: '7',
+      });
+      chain({});
+      await OnChainCollectionService.process('collection-1');
+      expect(invokedMethods()).toContain('verify_transaction');
+      expect(invokedMethods()).not.toContain('verify_transaction_by_point');
+      expect(PointSigningService.ready).not.toHaveBeenCalled();
+    } finally {
+      config.soroban.collectionFlow = previous;
+    }
+  });
+
+  it('uses a pinned point flow even when the current default is legacy', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, flow: 'point_owner_v1' },
+      chainTransactionId: '7',
+    });
+    jest.mocked(PointSigningService.ready).mockResolvedValue(pointKey);
+    jest.mocked(PointSigningService.signer).mockResolvedValue(pointKey);
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(invokedMethods()).toContain('verify_transaction_by_point');
+    expect(invokedMethods()).not.toContain('verify_transaction');
+    expect(SorobanService.invoke.mock.calls[0][3].publicKey()).toBe(POINT);
+  });
+
+  it('does not fall back to admin when the point becomes inactive before signing', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, flow: 'point_owner_v1' },
+      chainTransactionId: '7',
+    });
+    jest.mocked(PointSigningService.ready).mockResolvedValue(pointKey);
+    jest.mocked(PointSigningService.signer).mockRejectedValue(new Error('Point no longer active'));
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it('does not fall back to admin when on-chain point authorization fails', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, flow: 'point_owner_v1' },
+      chainTransactionId: '7',
+    });
+    jest.mocked(PointSigningService.ready).mockResolvedValue(pointKey);
+    jest.mocked(PointSigningService.signer).mockResolvedValue(pointKey);
+    chain({});
+    SorobanService.invoke.mockRejectedValue(new Error('Point authorization rejected'));
+    await OnChainCollectionService.process('collection-1');
+    expect(invokedMethods()).toEqual(['verify_transaction_by_point']);
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it('can finish payment for a verified record without needing the point key again', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, flow: 'point_owner_v1' },
+      chainTransactionId: '7',
+    });
+    chain({ verified: true });
+    await OnChainCollectionService.process('collection-1');
+    expect(PointSigningService.ready).not.toHaveBeenCalled();
+    expect(PointSigningService.signer).not.toHaveBeenCalled();
+    expect(invokedMethods()).toEqual(['process_payment', 'update_payment_status']);
     expect(lastUpdate().chainStatus).toBe('PAID');
   });
 

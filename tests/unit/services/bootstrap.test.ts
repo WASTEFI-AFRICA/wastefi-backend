@@ -261,6 +261,67 @@ describe('BootstrapService.ensureDemoData', () => {
     expect(WasteCollectionService.recordCollection).toHaveBeenCalledTimes(2);
   });
 
+  it('fills a point-mode queue only with accepted materials and distinct gram weights', async () => {
+    const previous = config.soroban.collectionFlow;
+    config.soroban.collectionFlow = 'point_owner_v1';
+    try {
+      demoState(0, 4);
+      prisma.user.findUnique.mockImplementation(
+        async ({ where }: { where: { phoneNumber: string } }) =>
+          where.phoneNumber === '+254700000101'
+            ? { id: 'demo-collector' }
+            : {
+                role: 'COLLECTION_POINT',
+                status: 'ACTIVE',
+                collectionPointId: 'assigned-point',
+                collectionPoint: {
+                  isActive: true,
+                  verifiedAt: new Date(),
+                  acceptedMaterials: '["PET"]',
+                },
+              }
+      );
+      expect(await BootstrapService.topUpDemoQueue()).toBe(4);
+      const calls = WasteCollectionService.recordCollection.mock.calls;
+      expect(
+        calls.every((call: [string, { materialType: string }]) => call[1].materialType === 'PET')
+      ).toBe(true);
+      expect(
+        new Set(
+          calls.map((call: [string, { weight: number }]) => Math.round(call[1].weight * 1000))
+        ).size
+      ).toBe(4);
+    } finally {
+      config.soroban.collectionFlow = previous;
+    }
+  });
+
+  it.each([null, '["unsupported"]', 'invalid-json'])(
+    'does not invent a point-mode queue from invalid accepted materials: %s',
+    async (acceptedMaterials) => {
+      const previous = config.soroban.collectionFlow;
+      config.soroban.collectionFlow = 'point_owner_v1';
+      try {
+        demoState(0, 0);
+        prisma.user.findUnique.mockImplementation(
+          async ({ where }: { where: { phoneNumber: string } }) =>
+            where.phoneNumber === '+254700000101'
+              ? { id: 'demo-collector' }
+              : {
+                  role: 'COLLECTION_POINT',
+                  status: 'ACTIVE',
+                  collectionPointId: 'assigned-point',
+                  collectionPoint: { isActive: true, verifiedAt: new Date(), acceptedMaterials },
+                }
+        );
+        expect(await BootstrapService.topUpDemoQueue()).toBe(0);
+        expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
+      } finally {
+        config.soroban.collectionFlow = previous;
+      }
+    }
+  );
+
   it('does not refill an unassigned or inactive operator point', async () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'demo-collector',

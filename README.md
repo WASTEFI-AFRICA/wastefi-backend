@@ -101,6 +101,7 @@ testnet funds it from Friendbot. To turn recording on, set:
 | Variable | Value |
 | --- | --- |
 | `SOROBAN_ADMIN_SECRET` | secret key of the contracts' admin account (the deployer in wastefi-contracts). Recording is off while this is unset |
+| `SOROBAN_COLLECTION_FLOW` | optional; `admin_v1` by default. Select `point_owner_v1` only after the matching contract rollout. Existing contexts retain their saved flow |
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
@@ -159,8 +160,46 @@ submitted again. A confirmed failed transaction may be retried, and a confirmed
 successful one resumes from its returned ID. Do not clear an unknown hash merely
 to retry it; first establish whether the original record landed.
 
-Point key custody and point-signed verification are still pending. This change
-does not deploy contracts or change the live admin verification flow.
+The source also supports point key custody and point-signed verification as
+outlined below. Contract deployment and switching the live default are separate
+rollout steps; the built-in addresses still use admin verification.
+
+### Point signing (source update, rollout pending)
+
+`SOROBAN_COLLECTION_FLOW` selects the flow for newly started collections:
+`admin_v1` is the default for the existing deployment, while `point_owner_v1`
+uses `verify_transaction_by_point`. The chosen flow is stored in `chainContext`.
+Changing the default never changes an existing collection's signer or contract
+bundle. A failed point authorization is never retried through the admin method.
+Legacy backfill always writes `admin_v1`, regardless of the current default.
+
+Point keys are custodial, encrypted with the existing `WALLET_ENCRYPTION_KEY`,
+and stored in the private `CollectionPointWallet` relation. Public point queries
+use an explicit field selection, and point updates select allowed inputs. The
+old public-only `stellarAddress` remains intact for legacy work. Keys are created
+atomically, and missing, corrupt or mismatched keys on pinned work fail closed.
+Back up the encryption key and database together; this release adds no key export
+or rotation endpoint.
+
+Before a point signs, the API checks its current activation, administrative
+verification and accepted materials. It registers the wallet under pseudonymous
+metadata, synchronizes its declared material categories and, for a trusted DB
+point, asks the registry admin to verify it. Rejected registry entries require
+administrative review. A per-registry lease coordinates provisioning between
+workers; its heartbeat runs only while a preparation is active and stops in all
+exit paths. RPC requests have a 30-second timeout. Saved registration hashes
+allow recovery after an interruption.
+Unknown outcomes and failed RPC reads are not treated as permission to register
+again. Demo refill in point mode uses only material codes accepted by the assigned
+verified point.
+
+Point mode requires a transaction contract wired to the selected registry and
+the registry source update `find_point_by_owner -> Option<u64>`. Do not enable it
+against the old addresses. Provisioning is testnet-only. Complete the legacy
+backfill first, then prepare a coordinated registry/transaction/payment rollout
+that preserves the token and existing balances. This patch updates source only;
+it does not deploy contracts, change built-in addresses or enable point mode on
+the hosted API. Admin custody and the explicit contract admin override remain.
 
 ## Operator assignments
 
@@ -189,8 +228,8 @@ exist. New demo operators receive that assignment when created. Later seeding
 preserves administrator changes, including removal of an assignment. The demo
 queue refills at the demo operator's currently assigned active point.
 
-This restriction is enforced by the API. On-chain verification still uses the
-contract admin; point identity and contract signing are the next MVP change.
+This restriction is enforced by the API. The current deployment still verifies
+as admin; the point-signing source path above awaits its coordinated rollout.
 
 ## Mobile money
 
@@ -290,7 +329,7 @@ boot on any host. Any host needs a PostgreSQL database and these variables:
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | the PostgreSQL connection string |
 | `JWT_SECRET` | a unique random value. In production the server refuses to start without one. Generate with `openssl rand -hex 32` |
-| `WALLET_ENCRYPTION_KEY` | encrypts the custodial Stellar keys stored for users. In production the server refuses to start without one. Generate with `openssl rand -hex 32`, keep a copy somewhere safe, and never change it: losing it makes stored wallets unrecoverable |
+| `WALLET_ENCRYPTION_KEY` | encrypts custodial Stellar keys stored for users and collection points. In production the server refuses to start without one. Generate with `openssl rand -hex 32`, keep a copy somewhere safe, and never change it: losing it makes stored wallets unrecoverable |
 | `REDIS_ENABLED` | `false` (Redis is optional) |
 | `CLIENT_URL` | the frontend's origin, to restrict CORS in production. Optional until the frontend exists |
 

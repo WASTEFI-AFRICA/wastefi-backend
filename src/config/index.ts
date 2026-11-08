@@ -41,6 +41,14 @@ function resolveWalletEncryptionKey(): Buffer {
   return crypto.createHash('sha256').update('wastefi-development-wallet-key').digest();
 }
 
+function resolveCollectionFlow(): 'admin_v1' | 'point_owner_v1' {
+  const value = process.env.SOROBAN_COLLECTION_FLOW || 'admin_v1';
+  if (value !== 'admin_v1' && value !== 'point_owner_v1') {
+    throw new Error('SOROBAN_COLLECTION_FLOW must be admin_v1 or point_owner_v1');
+  }
+  return value;
+}
+
 export const config = {
   app: {
     env: process.env.NODE_ENV || 'development',
@@ -59,6 +67,7 @@ export const config = {
     encryptionKey: resolveWalletEncryptionKey(),
   },
   soroban: {
+    collectionFlow: resolveCollectionFlow(),
     // On-chain recording of verified collections runs only when this is set. It is
     // the secret of the contracts' admin account, which verifies and pays.
     adminSecret: process.env.SOROBAN_ADMIN_SECRET || '',
