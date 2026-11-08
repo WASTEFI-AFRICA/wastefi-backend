@@ -1,10 +1,20 @@
-import { Keypair } from '@stellar/stellar-sdk';
+import { Keypair, StrKey, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { OnChainCollectionService } from '../../../src/services/onchain-collection.service';
+import { TESTNET_CONTRACTS } from '../../../src/config/soroban-contracts';
+import { config } from '../../../src/config';
 
 jest.mock('../../../src/services/database.service', () => ({
   __esModule: true,
   prisma: {
-    wasteCollection: { findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+    wasteCollection: {
+      findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+      findMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
+    chainPaymentNamespace: { createMany: jest.fn(), findUniqueOrThrow: jest.fn() },
     collectionPoint: { updateMany: jest.fn(), findUniqueOrThrow: jest.fn() },
   },
 }));
@@ -42,12 +52,27 @@ const collector = Keypair.random();
 const admin = Keypair.random();
 const POINT = Keypair.random().publicKey();
 
+const CONTEXT = {
+  version: 1,
+  flow: 'admin_v1',
+  networkPassphrase: config.soroban.networkPassphrase,
+  contracts: TESTNET_CONTRACTS,
+  collectorAddress: collector.publicKey(),
+  pointAddress: POINT,
+};
+const OTHER_CONTRACT = StrKey.encodeContract(Buffer.alloc(32, 8));
+
 const baseCollection = {
   id: 'collection-1',
   collectorId: 'user-1',
   materialCategory: 'Plastic',
   weight: 3.25,
   chainStatus: 'PENDING',
+  chainContext: null,
+  chainAmount: null,
+  chainPaymentId: null,
+  chainVerifyTxHash: null,
+  chainPaymentTxHash: null,
   chainTransactionId: null as string | null,
   chainRecordTxHash: null as string | null,
   collectionPoint: { id: 'point-1', stellarAddress: POINT },
@@ -60,23 +85,46 @@ function chain(state: {
   verified?: boolean;
   paymentId?: bigint | null;
   paymentStatus?: string;
+  record?: Record<string, unknown>;
+  payment?: Record<string, unknown>;
 }) {
-  SorobanService.read.mockImplementation(async (_contract: string, method: string) => {
-    switch (method) {
-      case 'is_active':
-        return state.active ?? true;
-      case 'exists':
-        return state.exists ?? true;
-      case 'get_transaction':
-        return { total_amount: 26_000_000n, verified: state.verified ?? false };
-      case 'get_payment_for_transaction':
-        return state.paymentId ?? null;
-      case 'get_payment':
-        return { status: [state.paymentStatus ?? 'Pending'] };
-      default:
-        throw new Error(`unexpected read ${method}`);
+  let transactionId = 7n;
+  SorobanService.read.mockImplementation(
+    async (_contract: string, method: string, args: xdr.ScVal[]) => {
+      switch (method) {
+        case 'is_active':
+          return state.active ?? true;
+        case 'exists':
+          return state.exists ?? true;
+        case 'get_transaction':
+          transactionId = scValToNative(args[0]);
+          return {
+            id: transactionId,
+            collector: collector.publicKey(),
+            collection_point: POINT,
+            material_type: ['Plastic'],
+            weight: 3250n,
+            total_amount: 26_000_000n,
+            verified: state.verified ?? false,
+            status: [state.verified ? 'Completed' : 'Pending'],
+            ...state.record,
+          };
+        case 'get_payment_for_transaction':
+          return state.paymentId ?? null;
+        case 'get_payment':
+          return {
+            id: scValToNative(args[0]),
+            transaction_id: transactionId,
+            recipient: collector.publicKey(),
+            amount: 26_000_000n,
+            status: [state.paymentStatus ?? 'Pending'],
+            ...state.payment,
+          };
+        default:
+          throw new Error(`unexpected read ${method}`);
+      }
     }
-  });
+  );
 }
 
 const invokedMethods = () => SorobanService.invoke.mock.calls.map((c: unknown[]) => c[1]);
@@ -88,11 +136,13 @@ const lastUpdate = () => {
 describe('OnChainCollectionService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
-    SorobanService.contracts.mockReturnValue({
-      waste_transaction: 'TX',
-      payment_distribution: 'PAY',
-      collector_registry: 'REG',
-      waste_token: 'TOKEN',
+    SorobanService.contracts.mockReturnValue(TESTNET_CONTRACTS);
+    prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
+    prisma.wasteCollection.updateMany.mockResolvedValue({ count: 1 });
+    prisma.wasteCollection.findUniqueOrThrow.mockResolvedValue({ chainContext: CONTEXT });
+    prisma.chainPaymentNamespace.createMany.mockResolvedValue({ count: 1 });
+    prisma.chainPaymentNamespace.findUniqueOrThrow.mockResolvedValue({
+      transactionContract: TESTNET_CONTRACTS.waste_transaction,
     });
     SorobanService.adminKeypair.mockReturnValue(admin);
     SorobanService.ensureAccount.mockResolvedValue(undefined);
@@ -132,6 +182,194 @@ describe('OnChainCollectionService', () => {
     expect(saved).toContainEqual({ chainPaymentId: '3' });
   });
 
+  it('keeps using the pinned deployment and point after configuration changes', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      collectionPoint: { id: 'point-1', stellarAddress: Keypair.random().publicKey() },
+    });
+    SorobanService.contracts.mockReturnValue(
+      Object.fromEntries(Object.keys(TESTNET_CONTRACTS).map((name) => [name, OTHER_CONTRACT]))
+    );
+    chain({ active: false, exists: false });
+    await OnChainCollectionService.process('collection-1');
+    expect(lastUpdate()).toEqual({ chainStatus: 'PAID', chainError: null });
+    for (const [contract, method] of SorobanService.invoke.mock.calls) {
+      expect(contract).toBe(
+        method === 'register' || method === 'update_status'
+          ? TESTNET_CONTRACTS.collector_registry
+          : method === 'record_with_price_lookup' || method === 'verify_transaction'
+            ? TESTNET_CONTRACTS.waste_transaction
+            : TESTNET_CONTRACTS.payment_distribution
+      );
+    }
+    const recording = SorobanService.invoke.mock.calls.find(
+      (call: unknown[]) => call[1] === 'record_with_price_lookup'
+    );
+    expect(scValToNative(recording[2][1])).toBe(POINT);
+  });
+
+  it('does not broadcast a delivery if its context cannot be saved', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({ ...baseCollection });
+    prisma.wasteCollection.updateMany.mockRejectedValue(new Error('database unavailable'));
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it('fails closed when existing progress has no pinned deployment', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainTransactionId: '7',
+    });
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.read).not.toHaveBeenCalled();
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainError).toContain('context backfill');
+  });
+
+  it('rejects a stored context for another network before preparing a wallet', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, networkPassphrase: 'another network' },
+    });
+    await OnChainCollectionService.process('collection-1');
+    expect(StellarService.createUserWallet).not.toHaveBeenCalled();
+    expect(SorobanService.read).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it.each([
+    { version: 2 },
+    { flow: 'point_owner_v1' },
+    { collectorAddress: 'invalid' },
+    { pointAddress: 'invalid' },
+    { contracts: { ...TESTNET_CONTRACTS, waste_transaction: 'invalid' } },
+  ])('rejects an unsupported or malformed stored context: %s', async (override) => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: { ...CONTEXT, ...override },
+    });
+    await OnChainCollectionService.process('collection-1');
+    expect(StellarService.createUserWallet).not.toHaveBeenCalled();
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainError).toContain('Invalid collection chain context');
+  });
+
+  it('does not use a replacement collector wallet for a pinned collection', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+    });
+    const replacement = Keypair.random();
+    StellarService.createUserWallet.mockResolvedValue({
+      publicKey: replacement.publicKey(),
+      secretKey: replacement.secret(),
+    });
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainError).toContain('Collector wallet');
+  });
+
+  it.each([
+    { id: 9n },
+    { collector: Keypair.random().publicKey() },
+    { collection_point: Keypair.random().publicKey() },
+    { material_type: ['Metal'] },
+    { weight: 999n },
+    { total_amount: 0n },
+    { verified: true, status: ['Pending'] },
+    { verified: false, status: ['Cancelled'] },
+    { verified: false, status: ['Disputed'] },
+  ])('rejects mismatched record metadata before verification or payment: %s', async (record) => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      chainTransactionId: '7',
+    });
+    chain({ record });
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it('rejects a changed amount when resuming a previously recorded collection', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      chainTransactionId: '7',
+      chainAmount: '1',
+    });
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it.each([
+    { id: 99n },
+    { transaction_id: 99n },
+    { recipient: Keypair.random().publicKey() },
+    { amount: 1n },
+    { status: ['Failed'] },
+    { status: ['Refunded'] },
+  ])('does not complete or mark paid a mismatched payment: %s', async (payment) => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      chainTransactionId: '7',
+    });
+    chain({ verified: true, paymentId: 3n, payment });
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainStatus).toBe('FAILED');
+  });
+
+  it.each([null, 8n])(
+    'does not replace a stored payment ID when the mapping returns %s',
+    async (paymentId) => {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: CONTEXT,
+        chainTransactionId: '7',
+        chainPaymentId: '3',
+      });
+      chain({ verified: true, paymentId });
+      await OnChainCollectionService.process('collection-1');
+      expect(SorobanService.invoke).not.toHaveBeenCalled();
+      expect(lastUpdate().chainError).toContain('Payment mapping');
+    }
+  );
+
+  it('does not record again when the saved record hash has an unknown outcome', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      chainRecordTxHash: 'unknown-hash',
+    });
+    SorobanService.lookup.mockResolvedValue({ status: 'NOT_FOUND' });
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(SorobanService.invoke).not.toHaveBeenCalled();
+    expect(lastUpdate().chainError).toContain('outcome is unknown');
+  });
+
+  it('can retry recording after the previous transaction is known to have failed', async () => {
+    prisma.wasteCollection.findUnique.mockResolvedValue({
+      ...baseCollection,
+      chainContext: CONTEXT,
+      chainRecordTxHash: 'failed-hash',
+    });
+    SorobanService.lookup.mockResolvedValue({ status: 'FAILED' });
+    chain({});
+    await OnChainCollectionService.process('collection-1');
+    expect(invokedMethods()).toContain('record_with_price_lookup');
+    expect(lastUpdate().chainStatus).toBe('PAID');
+  });
+
   it('registers and activates a collector the registry does not know', async () => {
     prisma.wasteCollection.findUnique.mockResolvedValue({ ...baseCollection });
     chain({ active: false, exists: false });
@@ -155,6 +393,7 @@ describe('OnChainCollectionService', () => {
     prisma.wasteCollection.findUnique.mockResolvedValue({
       ...baseCollection,
       chainStatus: 'FAILED',
+      chainContext: CONTEXT,
       chainTransactionId: '7',
     });
     chain({ verified: true, paymentId: 3n, paymentStatus: 'Completed' });
@@ -168,6 +407,7 @@ describe('OnChainCollectionService', () => {
   it('recovers a record that landed before the process stopped', async () => {
     prisma.wasteCollection.findUnique.mockResolvedValue({
       ...baseCollection,
+      chainContext: CONTEXT,
       chainRecordTxHash: 'hash-earlier',
     });
     SorobanService.lookup.mockResolvedValue({ status: 'SUCCESS', value: 9n });
@@ -226,11 +466,13 @@ describe('OnChainCollectionService', () => {
 describe('OnChainCollectionService.prepareCollector', () => {
   beforeEach(() => {
     jest.resetAllMocks();
-    SorobanService.contracts.mockReturnValue({
-      waste_transaction: 'TX',
-      payment_distribution: 'PAY',
-      collector_registry: 'REG',
-      waste_token: 'TOKEN',
+    SorobanService.contracts.mockReturnValue(TESTNET_CONTRACTS);
+    prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
+    prisma.wasteCollection.updateMany.mockResolvedValue({ count: 1 });
+    prisma.wasteCollection.findUniqueOrThrow.mockResolvedValue({ chainContext: CONTEXT });
+    prisma.chainPaymentNamespace.createMany.mockResolvedValue({ count: 1 });
+    prisma.chainPaymentNamespace.findUniqueOrThrow.mockResolvedValue({
+      transactionContract: TESTNET_CONTRACTS.waste_transaction,
     });
     SorobanService.adminKeypair.mockReturnValue(admin);
     SorobanService.ensureAccount.mockResolvedValue(undefined);

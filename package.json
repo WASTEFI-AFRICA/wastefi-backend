@@ -22,6 +22,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
+    "stellar:pin-collections": "ts-node scripts/pin-collection-contracts.ts",
     "stellar:generate-wallet": "ts-node scripts/generate-stellar-wallet.ts"
   },
   "keywords": [

@@ -175,6 +175,8 @@ model WasteCollection {
   
   // On-chain record (see OnChainCollectionService). Null until an approved
   // verification queues it.
+  // Immutable deployment and public signing identities, pinned before recording.
+  chainContext          Json?
   chainStatus           ChainStatus?
   chainTransactionId    String?   // waste_transaction id (u64)
   chainAmount           String?   // WASTE owed, in base units (7 decimals)
@@ -326,4 +328,15 @@ enum ChainStatus {
   VERIFIED  // verified in waste_transaction (reputation updated)
   PAID      // payment completed, WASTE minted to the collector
   FAILED    // last attempt failed; retried until the attempt limit
+}
+
+// Prevent a fresh transaction counter from reusing an old payment ID mapping.
+model ChainPaymentNamespace {
+  networkPassphrase   String
+  paymentContract     String
+  transactionContract String
+  createdAt           DateTime @default(now())
+
+  @@id([networkPassphrase, paymentContract], name: "network_payment")
+  @@map("chain_payment_namespaces")
 }

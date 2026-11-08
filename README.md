@@ -104,6 +104,64 @@ testnet funds it from Friendbot. To turn recording on, set:
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
+### Preserve existing collections before a contract rollout
+
+Every newly processed collection stores a `chainContext`: its contract bundle,
+Stellar network, flow version and public collector and point addresses. Retries
+use those stored values, including the original collector registry. Changing
+`SOROBAN_CONTRACTS` affects work that has not started recording; it does not move
+an existing record to another contract. A different configured network, changed
+collector wallet, mismatched chain record or mismatched payment stops the retry.
+The worker checks the record's collector, point, material, weight and stored
+amount, and checks the payment's transaction, recipient and amount before
+completing it or reporting it paid.
+
+The database also binds each payment contract to one transaction contract on a
+network. A fresh transaction counter needs a fresh payment mapping. Reusing a
+payment contract from another transaction deployment is rejected, even if both
+IDs happen to be the same. The token contract can remain unchanged, preserving
+existing WASTE balances.
+
+Existing rows with on-chain progress need an explicit context backfill. The API
+will refuse to resume those rows until they are pinned. Do this **before changing
+contract addresses or rotating point identities**:
+
+1. Stop API workers. Keep the original network, RPC and `SOROBAN_CONTRACTS`
+   configuration and use the database containing the old collections.
+2. Apply migrations with `npx prisma migrate deploy` and build the updated API.
+3. Preview with `npm run stellar:pin-collections`. The command simulates reads
+   against the original contracts. It does not submit Stellar transactions,
+   generate wallets or mint tokens. Review the printed public deployment values
+   and any collection IDs marked `needs_review`.
+4. Set `ORIGINAL_TRANSACTION_CONTRACT` and `ORIGINAL_PAYMENT_CONTRACT` to the
+   original public contract addresses, then apply:
+
+   ```sh
+   npm run stellar:pin-collections -- --apply \
+     --transaction-contract="$ORIGINAL_TRANSACTION_CONTRACT" \
+     --payment-contract="$ORIGINAL_PAYMENT_CONTRACT"
+   ```
+
+5. Repeat the preview until no historical rows remain unpinned. Restart the API
+   against the original deployment and confirm pending work resumes. Prepare and
+   test any new deployment before changing its pointers.
+
+The command uses `DATABASE_URL` and the existing Soroban configuration. Set the
+admin identity securely for read-only RPC simulations; never paste its secret
+into logs or source. Preview mode never writes. Apply mode only writes checked
+context metadata, a recovered transaction ID when available, and namespace
+bindings. It preserves statuses, amounts and transaction hashes. It does not
+reset the five-attempt retry limit. Work with no on-chain progress can be pinned
+by the worker when it starts recording.
+
+A saved record hash with an unknown RPC outcome is held for review rather than
+submitted again. A confirmed failed transaction may be retried, and a confirmed
+successful one resumes from its returned ID. Do not clear an unknown hash merely
+to retry it; first establish whether the original record landed.
+
+Point key custody and point-signed verification are still pending. This change
+does not deploy contracts or change the live admin verification flow.
+
 ## Operator assignments
 
 Each `COLLECTION_POINT` user has one optional `collectionPointId`. Administrators

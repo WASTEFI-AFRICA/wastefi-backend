@@ -5,6 +5,7 @@ import { prisma } from './database.service';
 import { SorobanService, ScArg } from './soroban.service';
 import { StellarService } from './stellar.service';
 import { logger } from '../utils/logger.util';
+import { CollectionChainContextService, chainInteger } from './collection-chain-context.service';
 
 const MAX_ATTEMPTS = 5;
 const SWEEP_INTERVAL_MS = 60_000;
@@ -42,6 +43,8 @@ type CollectionWithRelations = Prisma.WasteCollectionGetPayload<{
  *   4. payment_distribution.update_payment_status(Completed), signed by the admin,
  *      which mints the WASTE to the collector
  *
+ * Each delivery pins its deployment and public signing identities before recording.
+ * Retries use that context and validate chain records and payments before proceeding.
  * Every step checks the chain before acting and stores its transaction hash, so a
  * collection interrupted at any point (a crash, an RPC outage) resumes where it
  * stopped instead of recording twice. Failures are retried by a sweep every minute,
@@ -87,11 +90,12 @@ export class OnChainCollectionService {
    */
   static prepareCollector(userId: string): void {
     if (!this.enabled) return;
-    this.readyCollector(userId).catch((error: unknown) =>
-      logger.warn('Collector could not be prepared on-chain yet', {
-        userId,
-        reason: (error as Error).message,
-      })
+    this.readyCollector(userId, SorobanService.contracts().collector_registry).catch(
+      (error: unknown) =>
+        logger.warn('Collector could not be prepared on-chain yet', {
+          userId,
+          reason: (error as Error).message,
+        })
     );
   }
 
@@ -168,20 +172,50 @@ export class OnChainCollectionService {
   }
 
   private static async run(collection: CollectionWithRelations): Promise<void> {
-    const contracts = SorobanService.contracts();
+    let context = collection.chainContext
+      ? CollectionChainContextService.parse(collection.chainContext)
+      : null;
+    if (context) CollectionChainContextService.requireCurrentNetwork(context);
+    else if (CollectionChainContextService.hasProgress(collection)) {
+      throw new Error('Existing on-chain progress needs context backfill');
+    }
     const admin = SorobanService.adminKeypair();
     const save = (data: Prisma.WasteCollectionUpdateInput) =>
       prisma.wasteCollection.update({ where: { id: collection.id }, data });
 
-    const collector = await this.readyCollector(collection.collectorId);
-    const pointAddress = await this.ensurePointAddress(collection.collectionPoint);
+    const registry =
+      context?.contracts.collector_registry ?? SorobanService.contracts().collector_registry;
+    let collector = await this.readyCollector(collection.collectorId, registry);
+    if (!context) {
+      const pointAddress = await this.ensurePointAddress(collection.collectionPoint);
+      context = await CollectionChainContextService.pinNew(
+        collection.id,
+        CollectionChainContextService.snapshot(collector.publicKey(), pointAddress)
+      );
+      // A concurrent worker may already have pinned a different deployment.
+      if (registry !== context.contracts.collector_registry) {
+        collector = await this.readyCollector(
+          collection.collectorId,
+          context.contracts.collector_registry
+        );
+      }
+    }
+    if (collector.publicKey() !== context.collectorAddress) {
+      throw new Error('Collector wallet does not match the pinned chain context');
+    }
+    const contracts = context.contracts;
+    const pointAddress = context.pointAddress;
 
     // 1. Record, signed by the collector
     let transactionId = collection.chainTransactionId;
     if (!transactionId && collection.chainRecordTxHash) {
       // A previous attempt submitted the record; find out whether it landed.
       const earlier = await SorobanService.lookup(collection.chainRecordTxHash);
-      if (earlier.status === 'SUCCESS') transactionId = String(earlier.value);
+      if (earlier.status === 'SUCCESS') transactionId = chainInteger(earlier.value).toString();
+      else if (earlier.status !== 'FAILED') {
+        // A missing RPC result is not proof that the record never landed.
+        throw new Error('Recorded transaction outcome is unknown; refusing to record again');
+      }
     }
     if (!transactionId) {
       const recorded = await SorobanService.invoke(
@@ -196,11 +230,20 @@ export class OnChainCollectionService {
         collector,
         (hash) => save({ chainRecordTxHash: hash }).then(() => undefined)
       );
-      transactionId = String(recorded.value);
+      transactionId = chainInteger(recorded.value).toString();
     }
-    const record = (await SorobanService.read(contracts.waste_transaction, 'get_transaction', [
-      ScArg.u64(transactionId),
-    ])) as { total_amount: bigint; verified: boolean };
+    const record = CollectionChainContextService.assertRecord(
+      await SorobanService.read(contracts.waste_transaction, 'get_transaction', [
+        ScArg.u64(transactionId),
+      ]),
+      context,
+      {
+        id: transactionId,
+        material: this.materialType(collection.materialCategory),
+        grams: this.grams(collection.weight),
+        amount: collection.chainAmount,
+      }
+    );
     await save({
       chainTransactionId: transactionId,
       chainAmount: record.total_amount.toString(),
@@ -222,12 +265,19 @@ export class OnChainCollectionService {
     await save({ chainStatus: ChainStatus.VERIFIED });
 
     // 3. Record the payment, once per transaction
-    let paymentId = (await SorobanService.read(
+    const mappedPayment = await SorobanService.read(
       contracts.payment_distribution,
       'get_payment_for_transaction',
       [ScArg.u64(transactionId)]
-    )) as bigint | null | undefined;
-    if (paymentId === null || paymentId === undefined) {
+    );
+    let paymentId = mappedPayment == null ? null : chainInteger(mappedPayment);
+    if (
+      collection.chainPaymentId &&
+      (paymentId === null || paymentId !== chainInteger(collection.chainPaymentId))
+    ) {
+      throw new Error('Payment mapping does not match the stored payment ID');
+    }
+    if (paymentId === null) {
       const created = await SorobanService.invoke(
         contracts.payment_distribution,
         'process_payment',
@@ -238,15 +288,21 @@ export class OnChainCollectionService {
         ],
         admin
       );
-      paymentId = created.value as bigint;
+      paymentId = chainInteger(created.value);
     }
     await save({ chainPaymentId: paymentId.toString() });
 
     // 4. Complete it, which mints the WASTE to the collector
-    const payment = (await SorobanService.read(contracts.payment_distribution, 'get_payment', [
-      ScArg.u64(paymentId),
-    ])) as { status: unknown };
-    if (!this.isCompleted(payment.status)) {
+    const paymentStatus = CollectionChainContextService.assertPayment(
+      await SorobanService.read(contracts.payment_distribution, 'get_payment', [
+        ScArg.u64(paymentId),
+      ]),
+      context,
+      transactionId,
+      paymentId,
+      record.total_amount
+    );
+    if (paymentStatus !== 'Completed') {
       const paid = await SorobanService.invoke(
         contracts.payment_distribution,
         'update_payment_status',
@@ -267,25 +323,29 @@ export class OnChainCollectionService {
    * The collector's wallet, funded and registered as active. Concurrent callers for
    * the same collector share one run, so nobody registers them twice.
    */
-  private static readyCollector(userId: string): Promise<Keypair> {
-    const existing = this.preparing.get(userId);
+  private static readyCollector(userId: string, registry: string): Promise<Keypair> {
+    const key = JSON.stringify([userId, registry]);
+    const existing = this.preparing.get(key);
     if (existing) return existing;
 
     const ready = (async () => {
       const wallet = await StellarService.createUserWallet(userId);
       const collector = Keypair.fromSecret(wallet.secretKey);
       await SorobanService.ensureAccount(collector.publicKey());
-      await this.ensureRegistered(userId, collector);
+      await this.ensureRegistered(userId, collector, registry);
       return collector;
-    })().finally(() => this.preparing.delete(userId));
+    })().finally(() => this.preparing.delete(key));
 
-    this.preparing.set(userId, ready);
+    this.preparing.set(key, ready);
     return ready;
   }
 
   /** Register and activate the collector in collector_registry if needed. */
-  private static async ensureRegistered(userId: string, collector: Keypair): Promise<void> {
-    const { collector_registry: registry } = SorobanService.contracts();
+  private static async ensureRegistered(
+    userId: string,
+    collector: Keypair,
+    registry: string
+  ): Promise<void> {
     const address = ScArg.address(collector.publicKey());
 
     if (await SorobanService.read(registry, 'is_active', [address])) return;
@@ -342,10 +402,5 @@ export class OnChainCollectionService {
   /** Kilograms in the database, whole grams on-chain. */
   static grams(weightKg: number): bigint {
     return BigInt(Math.round(weightKg * 1000));
-  }
-
-  private static isCompleted(status: unknown): boolean {
-    const name = Array.isArray(status) ? status[0] : status;
-    return String(name) === 'Completed';
   }
 }
