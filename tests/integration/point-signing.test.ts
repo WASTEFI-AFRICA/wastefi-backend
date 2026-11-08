@@ -78,7 +78,7 @@ beforeAll(async () => {
   });
   adminId = user.id;
   token = JWTUtil.generateToken({ userId: user.id, phoneNumber: user.phoneNumber, role: 'ADMIN' });
-});
+}, 70_000);
 beforeEach(async () => {
   registered.clear();
   owners.clear();

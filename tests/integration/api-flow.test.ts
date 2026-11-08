@@ -2,7 +2,8 @@
  * End-to-end API tests.
  *
  * These drive the real Express app against a real PostgreSQL database; nothing is
- * mocked. They need DATABASE_URL to point at a database that has had
+ * mocked at the query boundary. Each file uses a private real database schema.
+ * They need DATABASE_URL to point at a database that has had
  * `prisma migrate deploy` applied, which is how CI runs them. They create their
  * own users, collection point and collections under a unique phone prefix and
  * delete them afterwards.
@@ -16,6 +17,16 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { EncryptionUtil } from '../../src/utils/encryption.util';
 import { MaterialPricingUtil } from '../../src/utils/material-pricing.util';
+import { prepareIsolatedDatabase, disposeIsolatedDatabase } from '../helpers/isolated-database';
+
+jest.mock('../../src/services/database.service', () => {
+  const actual = jest.requireActual('../../src/services/database.service');
+  const { prisma } = jest.requireActual('../helpers/isolated-database');
+  // Retain real connect, disconnect and health-check methods, selecting only
+  // the connection provider. Every route still runs its real Prisma queries.
+  actual.default.getInstance = () => prisma;
+  return { ...actual, __esModule: true, prisma };
+});
 
 process.env.NODE_ENV = 'test';
 process.env.REDIS_ENABLED = 'false';
@@ -66,6 +77,7 @@ async function activate(userId: string) {
 }
 
 beforeAll(async () => {
+  prepareIsolatedDatabase();
   const admin = await prisma.user.create({
     data: {
       phoneNumber: ADMIN_PHONE,
@@ -93,7 +105,7 @@ beforeAll(async () => {
   collectionPointId = point.id;
 
   adminToken = (await login(ADMIN_PHONE, PASSWORD)).body.data.accessToken;
-});
+}, 70_000);
 
 afterAll(async () => {
   const phones = [ADMIN_PHONE, COLLECTOR_PHONE, OTHER_COLLECTOR_PHONE];
@@ -105,7 +117,7 @@ afterAll(async () => {
   await prisma.wasteCollection.deleteMany({ where: { collectorId: { in: ids } } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
   await prisma.collectionPoint.deleteMany({ where: { id: collectionPointId } });
-  await prisma.$disconnect();
+  await disposeIsolatedDatabase();
 });
 
 describe('health endpoints', () => {
@@ -540,6 +552,27 @@ describe('public stats', () => {
     return request(app).get(`${API}/public/stats`);
   };
 
+  it.each(['admin_v1', 'point_owner_v1'])(
+    'reports the configured %s mode for new work without exposing signing configuration',
+    async (flow) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { config } = require('../../src/config');
+      const previous = { secret: config.soroban.adminSecret, flow: config.soroban.collectionFlow };
+      try {
+        config.soroban.adminSecret = 'configured-signing-marker';
+        config.soroban.collectionFlow = flow;
+        const res = await stats();
+        expect(res.status).toBe(200);
+        expect(res.body.data.onChain.verificationFlow).toBe(flow);
+        expect(JSON.stringify(res.body)).not.toContain('configured-signing-marker');
+      } finally {
+        config.soroban.adminSecret = previous.secret;
+        config.soroban.collectionFlow = previous.flow;
+        PublicStatsService.resetCache();
+      }
+    }
+  );
+
   it('is readable without logging in', async () => {
     const res = await stats();
 
@@ -557,6 +590,7 @@ describe('public stats', () => {
     ]);
     expect(res.body.data.onChain).toEqual({
       network: 'testnet',
+      verificationFlow: null,
       explorerUrl: 'https://stellar.expert/explorer/testnet',
       collectionsPaid: expect.any(Number),
       wasteMinted: expect.any(Number),

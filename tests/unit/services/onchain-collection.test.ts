@@ -138,6 +138,15 @@ const lastUpdate = () => {
   return calls[calls.length - 1][0].data;
 };
 
+// These legacy fixtures must not depend on the selected deployment default.
+const deployedFlow = config.soroban.collectionFlow;
+beforeEach(() => {
+  config.soroban.collectionFlow = 'admin_v1';
+});
+afterAll(() => {
+  config.soroban.collectionFlow = deployedFlow;
+});
+
 describe('OnChainCollectionService', () => {
   beforeEach(() => {
     jest.resetAllMocks();

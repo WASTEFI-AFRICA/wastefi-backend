@@ -154,6 +154,10 @@ describe('BootstrapService.migrateWalletSecrets', () => {
 });
 
 describe('BootstrapService.ensureDemoData', () => {
+  const deployedFlow = config.soroban.collectionFlow;
+  afterAll(() => {
+    config.soroban.collectionFlow = deployedFlow;
+  });
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { WasteCollectionService } = require('../../../src/services/waste-collection.service');
   const saved = { seed: process.env.SEED_DEMO_DATA, password: process.env.DEMO_ACCOUNT_PASSWORD };
@@ -183,6 +187,7 @@ describe('BootstrapService.ensureDemoData', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     process.env.SEED_DEMO_DATA = 'true';
+    config.soroban.collectionFlow = 'admin_v1';
     process.env.DEMO_ACCOUNT_PASSWORD = STRONG;
     prisma.collectionPoint.findFirst.mockResolvedValue(null);
     prisma.collectionPoint.create.mockImplementation(

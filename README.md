@@ -78,8 +78,10 @@ goes through four contract calls:
 
 1. `waste_transaction.record_with_price_lookup`, signed by the collector's
    custodial wallet. The contract prices it from `material_pricing`.
-2. `waste_transaction.verify_transaction`, signed by the contracts' admin. This
-   also updates the collector's on-chain reputation.
+2. `waste_transaction.verify_transaction_by_point`, signed by the collection
+   point's custodial wallet. The registry must verify that point and accept the
+   material. This also updates the collector's on-chain reputation. Saved legacy
+   `admin_v1` collections keep using `verify_transaction` as admin.
 3. `payment_distribution.process_payment`, signed by the admin.
 4. `payment_distribution.update_payment_status(Completed)`, signed by the admin,
    which mints the WASTE to the collector.
@@ -101,7 +103,7 @@ testnet funds it from Friendbot. To turn recording on, set:
 | Variable | Value |
 | --- | --- |
 | `SOROBAN_ADMIN_SECRET` | secret key of the contracts' admin account (the deployer in wastefi-contracts). Recording is off while this is unset |
-| `SOROBAN_COLLECTION_FLOW` | optional; `admin_v1` by default. Select `point_owner_v1` only after the matching contract rollout. Existing contexts retain their saved flow |
+| `SOROBAN_COLLECTION_FLOW` | optional; `point_owner_v1` by default for the built-in bundle. Use `admin_v1` with the original bundle. Existing contexts retain their saved flow |
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
@@ -143,9 +145,11 @@ contract addresses or rotating point identities**:
      --payment-contract="$ORIGINAL_PAYMENT_CONTRACT"
    ```
 
-5. Repeat the preview until no historical rows remain unpinned. Restart the API
-   against the original deployment and confirm pending work resumes. Prepare and
-   test any new deployment before changing its pointers.
+5. Repeat the preview until no historical rows remain unpinned. Keep workers
+   stopped while preparing the updated backend release. Deploy that release with
+   the intended default bundle, then resume workers and confirm pinned work
+   finishes on its original contracts. Do not restart an older API that can
+   create new unpinned records before the cutover.
 
 The command uses `DATABASE_URL` and the existing Soroban configuration. Set the
 admin identity securely for read-only RPC simulations; never paste its secret
@@ -160,18 +164,25 @@ submitted again. A confirmed failed transaction may be retried, and a confirmed
 successful one resumes from its returned ID. Do not clear an unknown hash merely
 to retry it; first establish whether the original record landed.
 
-The source also supports point key custody and point-signed verification as
-outlined below. Contract deployment and switching the live default are separate
-rollout steps; the built-in addresses still use admin verification.
+### Point signing and deployment defaults
 
-### Point signing (source update, rollout pending)
+The built-in testnet bundle uses point verification for newly started work.
+It reuses the existing WASTE token, collector registry, material pricing and
+reputation contracts, preserving balances. The point registry, transaction
+contract and payment map have new addresses. Legacy role grants remain so
+previously pinned work can finish. Apply the historical backfill before deploying
+these changed defaults. The original bundle is archived in
+[`deployments/testnet-2026-10-28.json`](https://github.com/WASTEFI-AFRICA/wastefi-contracts/blob/main/deployments/testnet-2026-10-28.json).
+Use that original `contracts` object as `SOROBAN_CONTRACTS` when backfilling old
+records; do not let the new built-in addresses stand in for it.
 
 `SOROBAN_COLLECTION_FLOW` selects the flow for newly started collections:
-`admin_v1` is the default for the existing deployment, while `point_owner_v1`
-uses `verify_transaction_by_point`. The chosen flow is stored in `chainContext`.
-Changing the default never changes an existing collection's signer or contract
-bundle. A failed point authorization is never retried through the admin method.
-Legacy backfill always writes `admin_v1`, regardless of the current default.
+`point_owner_v1` is the default; `admin_v1` is the explicit legacy option.
+The chosen flow is stored in `chainContext`. Changing the default never changes
+an existing collection's signer or contract bundle. A failed point authorization
+is never retried through the admin method. Legacy backfill always writes
+`admin_v1`, regardless of the current default. Check any hosting overrides before
+release. With no override, the source defaults are used.
 
 Point keys are custodial, encrypted with the existing `WALLET_ENCRYPTION_KEY`,
 and stored in the private `CollectionPointWallet` relation. Public point queries
@@ -194,12 +205,14 @@ again. Demo refill in point mode uses only material codes accepted by the assign
 verified point.
 
 Point mode requires a transaction contract wired to the selected registry and
-the registry source update `find_point_by_owner -> Option<u64>`. Do not enable it
-against the old addresses. Provisioning is testnet-only. Complete the legacy
-backfill first, then prepare a coordinated registry/transaction/payment rollout
-that preserves the token and existing balances. This patch updates source only;
-it does not deploy contracts, change built-in addresses or enable point mode on
-the hosted API. Admin custody and the explicit contract admin override remain.
+its `find_point_by_owner -> Option<u64>` method. The built-in bundle has this
+wiring; the original bundle does not. Provisioning is testnet-only. Do not
+rotate `WALLET_ENCRYPTION_KEY` during the rollout. Admin custody and the explicit
+contract admin override remain. `GET /api/v1/public/stats` reports
+`onChain.verificationFlow` for new work: the selected flow when recording is
+configured, or `null` when it is disabled. Older API versions may omit it.
+The public frontend uses this field rather than inferring the flow from its own
+release date. Historical totals can include both flows.
 
 ## Operator assignments
 

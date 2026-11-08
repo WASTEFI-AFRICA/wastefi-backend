@@ -42,7 +42,7 @@ function resolveWalletEncryptionKey(): Buffer {
 }
 
 function resolveCollectionFlow(): 'admin_v1' | 'point_owner_v1' {
-  const value = process.env.SOROBAN_COLLECTION_FLOW || 'admin_v1';
+  const value = process.env.SOROBAN_COLLECTION_FLOW || 'point_owner_v1';
   if (value !== 'admin_v1' && value !== 'point_owner_v1') {
     throw new Error('SOROBAN_COLLECTION_FLOW must be admin_v1 or point_owner_v1');
   }

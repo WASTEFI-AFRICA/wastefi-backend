@@ -1,6 +1,7 @@
 import { TransactionStatus } from '@prisma/client';
 import { prisma } from './database.service';
 import { config } from '../config';
+import type { CollectionFlow } from '../config/soroban-contracts';
 
 export interface PublicStats {
   generatedAt: string;
@@ -25,6 +26,8 @@ export interface PublicStats {
   /** Collections recorded and paid on the Soroban contracts. */
   onChain: {
     network: string;
+    /** Default for new work; existing collections retain their saved flow. */
+    verificationFlow: CollectionFlow | null;
     explorerUrl: string;
     collectionsPaid: number;
     /** WASTE minted to collectors, in whole tokens. */
@@ -139,6 +142,7 @@ export class PublicStatsService {
       })),
       onChain: {
         network: config.stellar.network,
+        verificationFlow: config.soroban.adminSecret ? config.soroban.collectionFlow : null,
         explorerUrl: config.soroban.explorerUrl,
         collectionsPaid: paidOnChain.length,
         wasteMinted:
