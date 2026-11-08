@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body, checkExact, query } from 'express-validator';
+import { body, checkExact, param, query } from 'express-validator';
 import { UserController } from '../controllers/user.controller';
 import { authenticateJWT, requireRole } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
@@ -122,6 +122,24 @@ router.get(
  * @access  Private (Admin)
  */
 router.get('/:userId', authenticateJWT, requireRole('ADMIN'), UserController.getUserById);
+
+/** Assign or unassign an existing operator. This endpoint cannot change roles. */
+router.put(
+  '/:userId/collection-point',
+  authenticateJWT,
+  requireRole('ADMIN'),
+  [
+    param('userId').isUUID(),
+    body('collectionPointId')
+      .exists({ values: 'undefined' })
+      .bail()
+      .custom((value) => value === null || typeof value === 'string'),
+    body('collectionPointId').optional({ values: 'null' }).isUUID(),
+    checkExact([], { locations: ['body'], message: 'Only collectionPointId can be updated here' }),
+    validate,
+  ],
+  UserController.assignCollectionPoint
+);
 
 /**
  * @route   PUT /api/v1/users/:userId/status

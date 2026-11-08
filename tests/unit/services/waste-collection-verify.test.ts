@@ -2,7 +2,9 @@ import { WasteCollectionService } from '../../../src/services/waste-collection.s
 
 jest.mock('../../../src/services/database.service', () => ({
   __esModule: true,
-  prisma: { wasteCollection: { findUnique: jest.fn(), update: jest.fn() } },
+  prisma: {
+    wasteCollection: { findFirst: jest.fn(), updateMany: jest.fn(), findUniqueOrThrow: jest.fn() },
+  },
 }));
 jest.mock('../../../src/services/onchain-collection.service', () => ({
   __esModule: true,
@@ -16,27 +18,36 @@ const { OnChainCollectionService } = require('../../../src/services/onchain-coll
 
 describe('WasteCollectionService.verifyCollection and the chain', () => {
   beforeEach(() => {
-    prisma.wasteCollection.findUnique.mockResolvedValue({
+    prisma.wasteCollection.findFirst.mockResolvedValue({
       id: 'c1',
       verifiedAt: null,
       materialType: 'PET',
       notes: null,
     });
-    prisma.wasteCollection.update.mockResolvedValue({ id: 'c1' });
+    prisma.wasteCollection.updateMany.mockResolvedValue({ count: 1 });
+    prisma.wasteCollection.findUniqueOrThrow.mockResolvedValue({ id: 'c1' });
     OnChainCollectionService.enabled = true;
   });
 
   it('queues an approved collection for on-chain recording', async () => {
     await WasteCollectionService.verifyCollection('c1', 'verifier', true);
 
-    expect(prisma.wasteCollection.update.mock.calls[0][0].data.chainStatus).toBe('PENDING');
+    expect(prisma.wasteCollection.updateMany.mock.calls[0][0].data.chainStatus).toBe('PENDING');
     expect(OnChainCollectionService.kick).toHaveBeenCalledWith('c1');
+  });
+
+  it('does not queue a decision that loses the conditional write', async () => {
+    prisma.wasteCollection.updateMany.mockResolvedValue({ count: 0 });
+    await expect(
+      WasteCollectionService.verifyCollection('c1', 'verifier', true)
+    ).rejects.toMatchObject({ statusCode: 409 });
+    expect(OnChainCollectionService.kick).not.toHaveBeenCalled();
   });
 
   it('does not queue a rejected collection', async () => {
     await WasteCollectionService.verifyCollection('c1', 'verifier', false);
 
-    expect(prisma.wasteCollection.update.mock.calls[0][0].data.chainStatus).toBeUndefined();
+    expect(prisma.wasteCollection.updateMany.mock.calls[0][0].data.chainStatus).toBeUndefined();
     expect(OnChainCollectionService.kick).not.toHaveBeenCalled();
   });
 
@@ -45,7 +56,7 @@ describe('WasteCollectionService.verifyCollection and the chain', () => {
 
     await WasteCollectionService.verifyCollection('c1', 'verifier', true);
 
-    expect(prisma.wasteCollection.update.mock.calls[0][0].data.chainStatus).toBeUndefined();
+    expect(prisma.wasteCollection.updateMany.mock.calls[0][0].data.chainStatus).toBeUndefined();
     expect(OnChainCollectionService.kick).not.toHaveBeenCalled();
   });
 });

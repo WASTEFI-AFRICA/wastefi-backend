@@ -139,7 +139,7 @@ export class BootstrapService {
       return;
     }
 
-    const points = [];
+    const points: { id: string }[] = [];
     for (const point of DEMO_POINTS) {
       const existing = await prisma.collectionPoint.findFirst({
         where: { contactPhone: point.contactPhone },
@@ -160,6 +160,9 @@ export class BootstrapService {
           update: {},
           create: {
             ...account,
+            ...(account.role === UserRole.COLLECTION_POINT
+              ? { collectionPointId: points[0].id }
+              : {}),
             password: passwordHash,
             status: 'ACTIVE',
             kycStatus: 'APPROVED',
@@ -180,30 +183,41 @@ export class BootstrapService {
   static async topUpDemoQueue(): Promise<number> {
     if (process.env.SEED_DEMO_DATA !== 'true') return 0;
 
-    const collector = await prisma.user.findUnique({
-      where: { phoneNumber: DEMO_ACCOUNTS[0].phoneNumber },
-      select: { id: true },
-    });
-    if (!collector) return 0;
-
-    const [pending, total, points] = await Promise.all([
-      prisma.wasteCollection.count({ where: { collectorId: collector.id, verifiedAt: null } }),
-      prisma.wasteCollection.count({ where: { collectorId: collector.id } }),
-      prisma.collectionPoint.findMany({
-        where: { contactPhone: { in: DEMO_POINTS.map((p) => p.contactPhone) } },
-        select: { id: true, contactPhone: true },
+    const [collector, operator] = await Promise.all([
+      prisma.user.findUnique({
+        where: { phoneNumber: DEMO_ACCOUNTS[0].phoneNumber },
+        select: { id: true },
+      }),
+      prisma.user.findUnique({
+        where: { phoneNumber: DEMO_ACCOUNTS[1].phoneNumber },
+        select: {
+          role: true,
+          status: true,
+          collectionPointId: true,
+          collectionPoint: { select: { isActive: true } },
+        },
       }),
     ]);
-    const pointId = (index: number) =>
-      points.find((p) => p.contactPhone === DEMO_POINTS[index].contactPhone)?.id;
-
+    if (
+      !collector ||
+      operator?.role !== UserRole.COLLECTION_POINT ||
+      operator.status !== 'ACTIVE' ||
+      !operator.collectionPointId ||
+      !operator.collectionPoint?.isActive
+    )
+      return 0;
+    const collectionPointId = operator.collectionPointId;
+    const [pending, total] = await Promise.all([
+      prisma.wasteCollection.count({
+        where: { collectorId: collector.id, collectionPointId, verifiedAt: null },
+      }),
+      prisma.wasteCollection.count({ where: { collectorId: collector.id } }),
+    ]);
     let added = 0;
     for (let i = 0; i < DEMO_COLLECTIONS.length - pending; i++) {
       // Rotate through the samples, and vary the weight: the contract rejects the
       // same collector recording the same material and weight within 5 minutes.
       const sample = DEMO_COLLECTIONS[(total + i) % DEMO_COLLECTIONS.length];
-      const collectionPointId = pointId(sample.point);
-      if (!collectionPointId) continue;
       await WasteCollectionService.recordCollection(collector.id, {
         collectionPointId,
         materialType: sample.materialType,
@@ -277,8 +291,8 @@ function demoWeight(base: number): number {
 }
 
 const DEMO_COLLECTIONS = [
-  { point: 0, materialType: 'PET', materialCategory: 'Plastic', weight: 6.5 },
-  { point: 1, materialType: 'ALUMINUM', materialCategory: 'Metal', weight: 2.4 },
-  { point: 2, materialType: 'CARDBOARD', materialCategory: 'Cardboard', weight: 12 },
-  { point: 0, materialType: 'GLASS_CLEAR', materialCategory: 'Glass', weight: 8 },
+  { materialType: 'PET', materialCategory: 'Plastic', weight: 6.5 },
+  { materialType: 'ALUMINUM', materialCategory: 'Metal', weight: 2.4 },
+  { materialType: 'CARDBOARD', materialCategory: 'Cardboard', weight: 12 },
+  { materialType: 'GLASS_CLEAR', materialCategory: 'Glass', weight: 8 },
 ];

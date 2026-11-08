@@ -104,6 +104,36 @@ testnet funds it from Friendbot. To turn recording on, set:
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
+## Operator assignments
+
+Each `COLLECTION_POINT` user has one optional `collectionPointId`. Administrators
+assign or remove it with `PUT /api/v1/users/:userId/collection-point` and a body
+such as `{"collectionPointId":"<point UUID>"}` or `{"collectionPointId":null}`.
+The endpoint accepts only existing operators and active points; it cannot change
+roles, account status or KYC. Assignment changes and the audit record commit in
+one database transaction. The admin frontend offers these controls on `/users`.
+
+The API reads current roles and assignments from the database on each request.
+Operators can list, read and review collections only at their assigned active
+point. Collection and material statistics use the same restriction. Another
+point ID in a filter is rejected; a foreign collection ID is not returned.
+Unassigned operators and those assigned to inactive points receive 403 with
+`COLLECTION_POINT_REQUIRED` or `COLLECTION_POINT_INACTIVE`. Reassignment takes
+effect with the existing access token. Reviews use a conditional write to
+prevent duplicate decisions and recheck assignment if it changes during review.
+Central `ADMIN` and `VERIFIER` accounts retain their existing review access;
+statistics remain restricted to admins and collection point operators.
+
+Deploy the Prisma migration before running this API. Existing non-demo operators
+start unassigned and need an admin assignment. The one-time migration assigns
+only the known public demo operator to Nairobi Central if both demo records
+exist. New demo operators receive that assignment when created. Later seeding
+preserves administrator changes, including removal of an assignment. The demo
+queue refills at the demo operator's currently assigned active point.
+
+This restriction is enforced by the API. On-chain verification still uses the
+contract admin; point identity and contract signing are the next MVP change.
+
 ## Mobile money
 
 Payouts reach collectors through three providers, each behind a common
@@ -282,7 +312,7 @@ at startup:
 - three collection points (two in Nairobi, one in Mombasa)
 - a demo collector, `+254700000101`, and a demo collection point operator,
   `+254700000102`, both signing in with `DEMO_ACCOUNT_PASSWORD`
-- four pending collections from the demo collector
+- four pending collections from the demo collector at the operator's assigned point
 
 With `DEMO_AUTO_ACTIVATE=true`, people who register on the demo are active
 immediately and can submit collections straight away. Without it, new accounts stay

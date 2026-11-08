@@ -12,6 +12,7 @@ export interface JWTPayload {
 
 export interface AuthRequest extends Request {
   user?: JWTPayload;
+  collectionPoint?: { id: string; name: string; isActive: boolean } | null;
   apiKey?: {
     id: string;
     userId: string;

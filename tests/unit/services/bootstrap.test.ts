@@ -161,7 +161,17 @@ describe('BootstrapService.ensureDemoData', () => {
 
   /** Demo collector with `pending` unreviewed and `total` collections in all. */
   const demoState = (pending: number, total: number) => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'demo-collector' });
+    prisma.user.findUnique.mockImplementation(
+      async ({ where }: { where: { phoneNumber: string } }) =>
+        where.phoneNumber === '+254700000101'
+          ? { id: 'demo-collector' }
+          : {
+              role: 'COLLECTION_POINT',
+              status: 'ACTIVE',
+              collectionPointId: 'assigned-point',
+              collectionPoint: { isActive: true },
+            }
+    );
     prisma.wasteCollection.count.mockImplementation(async ({ where }: { where: object }) =>
       'verifiedAt' in where ? pending : total
     );
@@ -229,6 +239,7 @@ describe('BootstrapService.ensureDemoData', () => {
     for (const [collectorId, data] of WasteCollectionService.recordCollection.mock.calls) {
       expect(collectorId).toBe('demo-collector');
       expect(data).not.toHaveProperty('verifiedAt');
+      expect(data.collectionPointId).toBe('assigned-point');
     }
   });
 
@@ -248,6 +259,17 @@ describe('BootstrapService.ensureDemoData', () => {
 
     expect(await BootstrapService.topUpDemoQueue()).toBe(2);
     expect(WasteCollectionService.recordCollection).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not refill an unassigned or inactive operator point', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'demo-collector',
+      role: 'COLLECTION_POINT',
+      status: 'ACTIVE',
+      collectionPointId: null,
+    });
+    expect(await BootstrapService.topUpDemoQueue()).toBe(0);
+    expect(WasteCollectionService.recordCollection).not.toHaveBeenCalled();
   });
 
   it('varies the weight of added collections around the sample weight', async () => {

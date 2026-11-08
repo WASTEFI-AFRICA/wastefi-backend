@@ -3,6 +3,11 @@ import { AuthRequest } from '../types/auth.types';
 import { WasteCollectionService } from '../services/waste-collection.service';
 import { logger } from '../utils/logger.util';
 import { BootstrapService } from '../services/bootstrap.service';
+import { collectionScope } from '../middleware/collection-point-scope.middleware';
+import { AppError } from '../middleware/error.middleware';
+
+const operatorPointId = (req: AuthRequest) =>
+  req.user?.role === 'COLLECTION_POINT' ? req.collectionPoint!.id : undefined;
 
 export class WasteCollectionController {
   /**
@@ -52,7 +57,7 @@ export class WasteCollectionController {
     try {
       const { id } = req.params;
 
-      const collection = await WasteCollectionService.getCollectionById(id);
+      const collection = await WasteCollectionService.getCollectionById(id, operatorPointId(req));
 
       if (!collection) {
         res.status(404).json({
@@ -110,7 +115,7 @@ export class WasteCollectionController {
 
       const filters = {
         collectorId: collectorId as string,
-        collectionPointId: collectionPointId as string,
+        collectionPointId: operatorPointId(req) ?? (collectionPointId as string),
         materialType: materialType as string,
         status: status as string,
         // express-validator has already turned the query string into a boolean
@@ -129,6 +134,7 @@ export class WasteCollectionController {
         success: true,
         data: result.collections,
         pagination: result.pagination,
+        scope: collectionScope(req),
       });
     } catch (error) {
       logger.error('Failed to list collections', { error: error as Error });
@@ -200,7 +206,8 @@ export class WasteCollectionController {
         approved,
         notes,
         adjustedWeight,
-        adjustedAmount
+        adjustedAmount,
+        operatorPointId(req)
       );
 
       // On a demo deployment, replace the reviewed collection so the queue never empties
@@ -220,6 +227,10 @@ export class WasteCollectionController {
         message: approved ? 'Collection verified successfully' : 'Collection rejected',
       });
     } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
       logger.error('Failed to verify collection', {
         error: error as Error,
         collectionId: req.params.id,
@@ -239,6 +250,19 @@ export class WasteCollectionController {
     try {
       const { collectionId } = req.params;
       const { imageUrls } = req.body;
+
+      const collection = await WasteCollectionService.getCollectionById(
+        collectionId,
+        operatorPointId(req)
+      );
+      if (!collection) {
+        res.status(404).json({ success: false, message: 'Collection not found' });
+        return;
+      }
+      if (req.user?.role === 'COLLECTOR' && collection.collectorId !== req.user.userId) {
+        res.status(403).json({ success: false, message: 'Insufficient permissions' });
+        return;
+      }
 
       if (!imageUrls || !Array.isArray(imageUrls)) {
         res.status(400).json({
@@ -282,7 +306,7 @@ export class WasteCollectionController {
 
       const filters = {
         userId: userId as string,
-        collectionPointId: collectionPointId as string,
+        collectionPointId: operatorPointId(req) ?? (collectionPointId as string),
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
       };
@@ -292,6 +316,7 @@ export class WasteCollectionController {
       res.status(200).json({
         success: true,
         data: stats,
+        scope: collectionScope(req),
       });
     } catch (error) {
       logger.error('Failed to get statistics', { error: error as Error });
@@ -312,7 +337,7 @@ export class WasteCollectionController {
       const filters = {
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
-        collectionPointId: collectionPointId as string,
+        collectionPointId: operatorPointId(req) ?? (collectionPointId as string),
       };
 
       const stats = await WasteCollectionService.getMaterialStatistics(filters);

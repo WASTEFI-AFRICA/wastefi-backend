@@ -1,6 +1,7 @@
 import { prisma } from './database.service';
 import { UserStatus, KYCStatus } from '@prisma/client';
 import { FileUploadUtil } from '../utils/file-upload.util';
+import { AppError } from '../middleware/error.middleware';
 
 export interface UpdateProfileData {
   firstName?: string;
@@ -50,6 +51,7 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
         lastLoginAt: true,
+        collectionPoint: { select: { id: true, name: true, isActive: true } },
       },
     });
   }
@@ -269,6 +271,7 @@ export class UserService {
         country: true,
         createdAt: true,
         lastLoginAt: true,
+        collectionPoint: { select: { id: true, name: true, isActive: true } },
       },
     });
 
@@ -286,6 +289,44 @@ export class UserService {
   /**
    * Update user status (Admin only)
    */
+  static async assignCollectionPoint(
+    userId: string,
+    collectionPointId: string | null,
+    adminId: string
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new AppError('User not found', 404);
+      if (user.role !== 'COLLECTION_POINT')
+        throw new AppError('Only collection point operators can be assigned', 409);
+      if (collectionPointId !== null) {
+        const point = await tx.collectionPoint.findUnique({ where: { id: collectionPointId } });
+        if (!point) throw new AppError('Collection point not found', 404);
+        if (!point.isActive) throw new AppError('Choose an active collection point', 409);
+      }
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: { collectionPointId },
+        select: { id: true, collectionPoint: { select: { id: true, name: true, isActive: true } } },
+      });
+      if (user.collectionPointId !== collectionPointId)
+        await tx.systemLog.create({
+          data: {
+            level: 'warn',
+            service: 'user-management',
+            message: 'Operator collection point assignment changed',
+            metadata: JSON.stringify({
+              userId,
+              collectionPointId,
+              previousCollectionPointId: user.collectionPointId,
+              updatedBy: adminId,
+            }),
+          },
+        });
+      return updated;
+    });
+  }
+
   static async updateUserStatus(userId: string, status: UserStatus, reason?: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },

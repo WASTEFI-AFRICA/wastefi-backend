@@ -63,6 +63,8 @@ model User {
   firstName     String
   lastName      String
   role          UserRole    @default(COLLECTOR)
+  collectionPointId String?
+  collectionPoint CollectionPoint? @relation(fields: [collectionPointId], references: [id], onDelete: SetNull)
   status        UserStatus  @default(PENDING)
   kycStatus     KYCStatus   @default(NOT_STARTED)
   
@@ -95,6 +97,7 @@ model User {
   @@index([phoneNumber])
   @@index([email])
   @@index([status])
+  @@index([collectionPointId])
   @@map("users")
 }
 
@@ -132,6 +135,7 @@ model CollectionPoint {
   
   // Relations
   collections     WasteCollection[]
+  operators       User[]
   
   @@index([latitude, longitude])
   @@index([isActive])

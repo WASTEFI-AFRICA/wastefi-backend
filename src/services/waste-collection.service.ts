@@ -3,6 +3,7 @@ import { ChainStatus, TransactionStatus } from '@prisma/client';
 import { OnChainCollectionService } from './onchain-collection.service';
 import { MaterialPricingUtil } from '../utils/material-pricing.util';
 import { cacheAside } from '../utils/cache.util';
+import { AppError } from '../middleware/error.middleware';
 
 export interface RecordCollectionData {
   collectionPointId: string;
@@ -98,9 +99,9 @@ export class WasteCollectionService {
   /**
    * Get collection by ID
    */
-  static async getCollectionById(id: string) {
-    return prisma.wasteCollection.findUnique({
-      where: { id },
+  static async getCollectionById(id: string, collectionPointId?: string) {
+    return prisma.wasteCollection.findFirst({
+      where: { id, ...(collectionPointId ? { collectionPointId } : {}) },
       include: {
         collector: {
           select: {
@@ -229,18 +230,19 @@ export class WasteCollectionService {
     approved: boolean,
     notes?: string,
     adjustedWeight?: number,
-    adjustedAmount?: number
+    adjustedAmount?: number,
+    collectionPointId?: string
   ) {
-    const collection = await prisma.wasteCollection.findUnique({
-      where: { id: collectionId },
+    const collection = await prisma.wasteCollection.findFirst({
+      where: { id: collectionId, ...(collectionPointId ? { collectionPointId } : {}) },
     });
 
     if (!collection) {
-      throw new Error('Collection not found');
+      throw new AppError('Collection not found', 404);
     }
 
     if (collection.verifiedAt) {
-      throw new Error('Collection already verified');
+      throw new AppError('Collection already reviewed', 409);
     }
 
     const updateData: any = {
@@ -270,9 +272,31 @@ export class WasteCollectionService {
       updateData.chainStatus = ChainStatus.PENDING;
     }
 
-    const updated = await prisma.wasteCollection.update({
-      where: { id: collectionId },
+    // The conditional write prevents duplicate decisions and checks assignment
+    // again if an administrator reassigns the operator while the request runs.
+    const result = await prisma.wasteCollection.updateMany({
+      where: {
+        id: collectionId,
+        verifiedAt: null,
+        ...(collectionPointId
+          ? {
+              collectionPointId,
+              collectionPoint: {
+                isActive: true,
+                operators: { some: { id: verifierId, role: 'COLLECTION_POINT', status: 'ACTIVE' } },
+              },
+            }
+          : {}),
+      },
       data: updateData,
+    });
+    if (result.count !== 1)
+      throw new AppError(
+        'Collection was already reviewed or your access changed. Refresh the queue.',
+        409
+      );
+    const updated = await prisma.wasteCollection.findUniqueOrThrow({
+      where: { id: collectionId },
       include: {
         collector: {
           select: {

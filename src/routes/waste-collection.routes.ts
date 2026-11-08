@@ -3,6 +3,7 @@ import { body, query } from 'express-validator';
 import { WasteCollectionController } from '../controllers/waste-collection.controller';
 import { authenticateJWT, requireRole } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
+import { enforcePointScope } from '../middleware/collection-point-scope.middleware';
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.get(
     query('endDate').optional().isISO8601(),
     validate,
   ],
+  enforcePointScope,
   WasteCollectionController.getStatistics
 );
 
@@ -77,6 +79,7 @@ router.get(
     query('collectionPointId').optional().isUUID().withMessage('Invalid collection point ID'),
     validate,
   ],
+  enforcePointScope,
   WasteCollectionController.getMaterialStatistics
 );
 
@@ -102,6 +105,7 @@ router.get(
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     validate,
   ],
+  enforcePointScope,
   WasteCollectionController.listCollections
 );
 
@@ -110,7 +114,7 @@ router.get(
  * @desc    Get collection by ID
  * @access  Private
  */
-router.get('/:id', authenticateJWT, WasteCollectionController.getCollectionById);
+router.get('/:id', authenticateJWT, enforcePointScope, WasteCollectionController.getCollectionById);
 
 /**
  * @route   POST /api/v1/collections/:id/verify
@@ -128,6 +132,7 @@ router.post(
     body('adjustedAmount').optional().isFloat({ min: 0 }),
     validate,
   ],
+  enforcePointScope,
   WasteCollectionController.verifyCollection
 );
 
@@ -144,6 +149,7 @@ router.post(
     body('imageUrls.*').isURL().withMessage('Invalid image URL'),
     validate,
   ],
+  enforcePointScope,
   WasteCollectionController.uploadImages
 );
 

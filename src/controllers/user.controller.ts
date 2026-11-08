@@ -4,8 +4,28 @@ import { AuthRequest } from '../types/auth.types';
 import { UserService } from '../services/user.service';
 import { logger } from '../utils/logger.util';
 import { FileUploadUtil } from '../utils/file-upload.util';
+import { AppError } from '../middleware/error.middleware';
 
 export class UserController {
+  static async assignCollectionPoint(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const updated = await UserService.assignCollectionPoint(
+        req.params.userId,
+        req.body.collectionPointId,
+        req.user!.userId
+      );
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      logger.error('Failed to assign collection point', { userId: req.params.userId });
+      res
+        .status(500)
+        .json({ success: false, message: 'Could not update the collection point assignment' });
+    }
+  }
   /**
    * Get current user details
    */

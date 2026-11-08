@@ -37,6 +37,7 @@ export const authenticateJWT = async (
         id: true,
         status: true,
         role: true,
+        collectionPoint: { select: { id: true, name: true, isActive: true } },
       },
     });
 
@@ -50,7 +51,9 @@ export const authenticateJWT = async (
     }
 
     // Attach user to request
-    req.user = decoded;
+    // Authorization follows current database permissions, never a stale token role.
+    req.user = { ...decoded, role: user.role };
+    req.collectionPoint = user.collectionPoint;
     next();
   } catch (error) {
     res.status(401).json({
