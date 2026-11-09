@@ -18,15 +18,15 @@ function configuredMode(value?: string): string {
 }
 
 describe('payout mode configuration', () => {
-  it('keeps caller-supplied amounts until a deployment opts in', () => {
-    expect(configuredMode()).toBe('caller_amount_v1');
+  it('derives payouts on-chain by default for the built-in deployment', () => {
+    expect(configuredMode()).toBe('derived_v1');
   });
 
   it('accepts derived payouts explicitly', () => {
     expect(configuredMode('derived_v1')).toBe('derived_v1');
   });
 
-  it('accepts the legacy mode explicitly', () => {
+  it('retains an explicit legacy override', () => {
     expect(configuredMode('caller_amount_v1')).toBe('caller_amount_v1');
   });
 

@@ -104,7 +104,7 @@ testnet funds it from Friendbot. To turn recording on, set:
 | --- | --- |
 | `SOROBAN_ADMIN_SECRET` | secret key of the contracts' admin account (the deployer in wastefi-contracts). Recording is off while this is unset |
 | `SOROBAN_COLLECTION_FLOW` | optional; `point_owner_v1` by default for the built-in bundle. Use `admin_v1` with the original bundle. Existing contexts retain their saved flow |
-| `SOROBAN_PAYMENT_MODE` | optional; `caller_amount_v1` by default. `derived_v1` makes new collections create their payment with `process_verified_payment`, which needs a payment contract that supports it (see [Payout mode](#payout-mode)). Existing contexts retain their saved mode |
+| `SOROBAN_PAYMENT_MODE` | optional; `derived_v1` by default for the built-in bundle, so new collections create their payment with `process_verified_payment`. Use `caller_amount_v1` with a payment contract from before derivation (see [Payout mode](#payout-mode)). Existing contexts retain their saved mode |
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
@@ -170,8 +170,9 @@ to retry it; first establish whether the original record landed.
 The built-in testnet bundle uses point verification for newly started work.
 It reuses the existing WASTE token, collector registry, material pricing and
 reputation contracts, preserving balances. The point registry, transaction
-contract and payment map have new addresses. Legacy role grants remain so
-previously pinned work can finish. Apply the historical backfill before deploying
+contract and payment map have new addresses, and the payment contract was replaced
+again on 2026-11-09 by one that derives payouts on-chain. Legacy role grants remain
+so previously pinned work can finish, including on the earlier payment contract. Apply the historical backfill before deploying
 these changed defaults. The original bundle is archived in
 [`deployments/testnet-2026-10-28.json`](https://github.com/WASTEFI-AFRICA/wastefi-contracts/blob/main/deployments/testnet-2026-10-28.json).
 Use that original `contracts` object as `SOROBAN_CONTRACTS` when backfilling old
@@ -229,9 +230,11 @@ in `chainContext.payment`:
   verified transaction record, so a payment cannot differ from what was verified.
 
 `SOROBAN_PAYMENT_MODE` selects the mode for newly started collections and defaults
-to `caller_amount_v1`. Use `derived_v1` only with a payment contract deployed with
-`set_transaction_contract` bound to the bundle's transaction contract (see the
-contracts repo's `docs/DERIVED_PAYMENTS_ROLLOUT.md`). Before recording a
+to `derived_v1`, which the built-in bundle supports: its payment contract was
+deployed with `set_transaction_contract` bound to the bundle's transaction contract
+(see the contracts repo's `docs/DERIVED_PAYMENTS_ROLLOUT.md`). Set
+`caller_amount_v1` only when pointing `SOROBAN_CONTRACTS` at a payment contract from
+before derivation. Before recording a
 `derived_v1` collection the worker reads `get_transaction_contract` and stops if the
 payment contract is unbound or bound to a different transaction contract, so a
 mismatched configuration fails before anything is recorded. Legacy backfill always

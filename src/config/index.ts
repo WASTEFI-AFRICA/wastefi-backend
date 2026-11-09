@@ -50,7 +50,7 @@ function resolveCollectionFlow(): 'admin_v1' | 'point_owner_v1' {
 }
 
 function resolvePaymentMode(): 'caller_amount_v1' | 'derived_v1' {
-  const value = process.env.SOROBAN_PAYMENT_MODE || 'caller_amount_v1';
+  const value = process.env.SOROBAN_PAYMENT_MODE || 'derived_v1';
   if (value !== 'caller_amount_v1' && value !== 'derived_v1') {
     throw new Error('SOROBAN_PAYMENT_MODE must be caller_amount_v1 or derived_v1');
   }

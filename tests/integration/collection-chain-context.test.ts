@@ -212,7 +212,9 @@ it('backfills a checked historical record and preserves its progress and hashes'
     chainAmount: '16000000',
     chainRecordTxHash: 'historic-record',
   });
-  expect(stored.chainContext).toEqual(Context.snapshot(collector, point, 'admin_v1'));
+  expect(stored.chainContext).toEqual(
+    Context.snapshot(collector, point, 'admin_v1', 'caller_amount_v1')
+  );
   expect(mocked.read.mock.calls[0][0]).toBe(bundle.waste_transaction);
   expect(mocked.invoke).not.toHaveBeenCalled();
   mocked.read.mockClear();
@@ -307,7 +309,7 @@ it('checks completed payments while pinning paid history without changing paymen
     chainStatus: 'PAID',
     chainPaymentId: '3',
     chainPaymentTxHash: 'old-payment-hash',
-    chainContext: Context.snapshot(collector, point, 'admin_v1'),
+    chainContext: Context.snapshot(collector, point, 'admin_v1', 'caller_amount_v1'),
   });
   expect(mocked.invoke).not.toHaveBeenCalled();
 });
