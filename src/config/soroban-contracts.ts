@@ -1,6 +1,14 @@
 export type CollectionFlow = 'admin_v1' | 'point_owner_v1';
 
 /**
+ * How a payment is created. `caller_amount_v1`: the admin passes the recipient and
+ * amount to `process_payment` (every payment contract before derivation).
+ * `derived_v1`: `process_verified_payment` reads both from the verified transaction,
+ * so the backend passes only the transaction id.
+ */
+export type PaymentMode = 'caller_amount_v1' | 'derived_v1';
+
+/**
  * The WasteFi contracts deployed on Stellar testnet.
  *
  * Copied from deployed_addresses_testnet.json in wastefi-contracts, which

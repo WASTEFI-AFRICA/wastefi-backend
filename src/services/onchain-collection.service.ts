@@ -28,7 +28,10 @@ type CollectionWithRelations = Prisma.WasteCollectionGetPayload<{
  *      custodial wallet; the contract prices it from material_pricing
  *   2. waste_transaction.verify_transaction, signed by the admin, which also
  *      updates the collector's reputation
- *   3. payment_distribution.process_payment, signed by the admin
+ *   3. payment_distribution.process_verified_payment (derived_v1) or
+ *      process_payment (caller_amount_v1), signed by the admin. Derived payouts
+ *      pass only the transaction id; the contract reads the collector and amount
+ *      from the verified record.
  *   4. payment_distribution.update_payment_status(Completed), signed by the admin,
  *      which mints the WASTE to the collector
  *
@@ -204,6 +207,9 @@ export class OnChainCollectionService {
     }
     const contracts = context.contracts;
     const pointAddress = context.pointAddress;
+    // Fail closed before recording if derived payouts cannot work for this bundle.
+    if (!collection.chainPaymentId)
+      await CollectionChainContextService.requireDerivedPayments(context);
 
     // 1. Record, signed by the collector
     let transactionId = collection.chainTransactionId;
@@ -305,14 +311,17 @@ export class OnChainCollectionService {
       throw new Error('Payment mapping does not match the stored payment ID');
     }
     if (paymentId === null) {
+      const derived = context.payment === 'derived_v1';
       const created = await SorobanService.invoke(
         contracts.payment_distribution,
-        'process_payment',
-        [
-          ScArg.u64(transactionId),
-          ScArg.address(collector.publicKey()),
-          ScArg.i128(record.total_amount),
-        ],
+        derived ? 'process_verified_payment' : 'process_payment',
+        derived
+          ? [ScArg.u64(transactionId)]
+          : [
+              ScArg.u64(transactionId),
+              ScArg.address(collector.publicKey()),
+              ScArg.i128(record.total_amount),
+            ],
         admin
       );
       paymentId = chainInteger(created.value);

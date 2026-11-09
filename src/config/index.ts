@@ -49,6 +49,14 @@ function resolveCollectionFlow(): 'admin_v1' | 'point_owner_v1' {
   return value;
 }
 
+function resolvePaymentMode(): 'caller_amount_v1' | 'derived_v1' {
+  const value = process.env.SOROBAN_PAYMENT_MODE || 'caller_amount_v1';
+  if (value !== 'caller_amount_v1' && value !== 'derived_v1') {
+    throw new Error('SOROBAN_PAYMENT_MODE must be caller_amount_v1 or derived_v1');
+  }
+  return value;
+}
+
 export const config = {
   app: {
     env: process.env.NODE_ENV || 'development',
@@ -68,6 +76,9 @@ export const config = {
   },
   soroban: {
     collectionFlow: resolveCollectionFlow(),
+    // How new collections create their payment. Each collection pins the mode it
+    // started with, so changing this never affects collections already in progress.
+    paymentMode: resolvePaymentMode(),
     // On-chain recording of verified collections runs only when this is set. It is
     // the secret of the contracts' admin account, which verifies and pays.
     adminSecret: process.env.SOROBAN_ADMIN_SECRET || '',

@@ -26,7 +26,14 @@ export class CollectionChainBackfillService {
     const collector = row.collector.stellarPublicKey;
     const point = row.collectionPoint.stellarAddress;
     if (!collector || !point) throw new Error('Existing signing addresses are missing');
-    const context = CollectionChainContextService.snapshot(collector, point, 'admin_v1');
+    // Old collections used admin verification and caller-supplied payment amounts, whatever
+    // the current defaults are, so pin exactly that.
+    const context = CollectionChainContextService.snapshot(
+      collector,
+      point,
+      'admin_v1',
+      'caller_amount_v1'
+    );
     const namespace = await prisma.chainPaymentNamespace.findUnique({
       where: {
         network_payment: {

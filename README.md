@@ -104,6 +104,7 @@ testnet funds it from Friendbot. To turn recording on, set:
 | --- | --- |
 | `SOROBAN_ADMIN_SECRET` | secret key of the contracts' admin account (the deployer in wastefi-contracts). Recording is off while this is unset |
 | `SOROBAN_COLLECTION_FLOW` | optional; `point_owner_v1` by default for the built-in bundle. Use `admin_v1` with the original bundle. Existing contexts retain their saved flow |
+| `SOROBAN_PAYMENT_MODE` | optional; `caller_amount_v1` by default. `derived_v1` makes new collections create their payment with `process_verified_payment`, which needs a payment contract that supports it (see [Payout mode](#payout-mode)). Existing contexts retain their saved mode |
 | `SOROBAN_RPC_URL` | optional, defaults to `https://soroban-testnet.stellar.org` |
 | `SOROBAN_CONTRACTS` | optional, the `contracts` object of `deployed_addresses_testnet.json` as JSON. Defaults to the addresses in `src/config/soroban-contracts.ts` |
 
@@ -213,6 +214,29 @@ contract admin override remain. `GET /api/v1/public/stats` reports
 configured, or `null` when it is disabled. Older API versions may omit it.
 The public frontend uses this field rather than inferring the flow from its own
 release date. Historical totals can include both flows.
+
+### Payout mode
+
+A payment can be created two ways, and each collection pins the way it started with
+in `chainContext.payment`:
+
+- `caller_amount_v1`: the admin passes the recipient and amount to
+  `payment_distribution.process_payment`. Every payment contract before derivation
+  works this way, and contexts pinned before this field existed are read as this
+  mode.
+- `derived_v1`: the backend calls `process_verified_payment(transaction_id)` and
+  passes nothing else. The contract reads the collector and the amount from the
+  verified transaction record, so a payment cannot differ from what was verified.
+
+`SOROBAN_PAYMENT_MODE` selects the mode for newly started collections and defaults
+to `caller_amount_v1`. Use `derived_v1` only with a payment contract deployed with
+`set_transaction_contract` bound to the bundle's transaction contract (see the
+contracts repo's `docs/DERIVED_PAYMENTS_ROLLOUT.md`). Before recording a
+`derived_v1` collection the worker reads `get_transaction_contract` and stops if the
+payment contract is unbound or bound to a different transaction contract, so a
+mismatched configuration fails before anything is recorded. Legacy backfill always
+pins `caller_amount_v1`. The contract's admin override (`process_payment`) and the
+token's admin `mint` remain, so the admin key is still trusted.
 
 ## Operator assignments
 

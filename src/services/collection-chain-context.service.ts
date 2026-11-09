@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { StrKey } from '@stellar/stellar-sdk';
 import { config } from '../config';
-import { CollectionFlow, SorobanContracts } from '../config/soroban-contracts';
+import { CollectionFlow, PaymentMode, SorobanContracts } from '../config/soroban-contracts';
 import { prisma } from './database.service';
 import { SorobanService } from './soroban.service';
 
@@ -9,6 +9,8 @@ import { SorobanService } from './soroban.service';
 export type CollectionChainContext = {
   version: 1;
   flow: CollectionFlow;
+  /** Absent in contexts pinned before derived payouts; those use caller_amount_v1. */
+  payment: PaymentMode;
   networkPassphrase: string;
   contracts: SorobanContracts;
   collectorAddress: string;
@@ -59,11 +61,13 @@ export class CollectionChainContextService {
   static snapshot(
     collectorAddress: string,
     pointAddress: string,
-    flow: CollectionFlow = config.soroban.collectionFlow
+    flow: CollectionFlow = config.soroban.collectionFlow,
+    payment: PaymentMode = config.soroban.paymentMode
   ): CollectionChainContext {
     return this.parse({
       version: 1,
       flow,
+      payment,
       networkPassphrase: config.soroban.networkPassphrase,
       contracts: { ...SorobanService.contracts() },
       collectorAddress,
@@ -74,9 +78,13 @@ export class CollectionChainContextService {
   static parse(value: unknown): CollectionChainContext {
     const raw = object(value);
     const contracts = object(raw.contracts);
+    // Contexts pinned before derived payouts have no payment field and paid with
+    // caller-supplied amounts. Anything else present must be a known mode.
+    const payment = raw.payment === undefined ? 'caller_amount_v1' : raw.payment;
     if (
       raw.version !== 1 ||
       (raw.flow !== 'admin_v1' && raw.flow !== 'point_owner_v1') ||
+      (payment !== 'caller_amount_v1' && payment !== 'derived_v1') ||
       typeof raw.networkPassphrase !== 'string' ||
       !raw.networkPassphrase.trim() ||
       typeof raw.collectorAddress !== 'string' ||
@@ -93,6 +101,7 @@ export class CollectionChainContextService {
     return {
       version: 1,
       flow: raw.flow as CollectionFlow,
+      payment,
       networkPassphrase: raw.networkPassphrase,
       contracts: Object.fromEntries(
         CONTRACT_NAMES.map((name) => [name, contracts[name]])
@@ -100,6 +109,22 @@ export class CollectionChainContextService {
       collectorAddress: raw.collectorAddress,
       pointAddress: raw.pointAddress,
     };
+  }
+
+  /**
+   * Derived payouts only work if the payment contract was bound to this bundle's
+   * transaction contract at setup. Check before recording anything, so a mismatched
+   * configuration fails closed instead of recording a delivery it cannot pay.
+   */
+  static async requireDerivedPayments(context: CollectionChainContext): Promise<void> {
+    if (context.payment !== 'derived_v1') return;
+    const bound = await SorobanService.read(
+      context.contracts.payment_distribution,
+      'get_transaction_contract'
+    );
+    if (bound !== context.contracts.waste_transaction) {
+      throw new Error('Payment contract is not bound to this transaction contract');
+    }
   }
 
   static requireCurrentNetwork(context: CollectionChainContext): void {

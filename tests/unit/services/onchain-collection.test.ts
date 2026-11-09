@@ -92,6 +92,8 @@ function chain(state: {
   paymentStatus?: string;
   record?: Record<string, unknown>;
   payment?: Record<string, unknown>;
+  /** What the payment contract reports as its bound transaction contract. */
+  bound?: string | null;
 }) {
   let transactionId = 7n;
   SorobanService.read.mockImplementation(
@@ -114,6 +116,8 @@ function chain(state: {
             status: [state.verified ? 'Completed' : 'Pending'],
             ...state.record,
           };
+        case 'get_transaction_contract':
+          return state.bound === undefined ? TESTNET_CONTRACTS.waste_transaction : state.bound;
         case 'get_payment_for_transaction':
           return state.paymentId ?? null;
         case 'get_payment':
@@ -167,7 +171,12 @@ describe('OnChainCollectionService', () => {
     prisma.wasteCollection.update.mockResolvedValue({});
     SorobanService.invoke.mockImplementation(async (_c: string, method: string) => ({
       hash: `hash-${method}`,
-      value: method === 'record_with_price_lookup' ? 7n : method === 'process_payment' ? 3n : null,
+      value:
+        method === 'record_with_price_lookup'
+          ? 7n
+          : method === 'process_payment' || method === 'process_verified_payment'
+            ? 3n
+            : null,
     }));
   });
 
@@ -194,6 +203,118 @@ describe('OnChainCollectionService', () => {
       expect.objectContaining({ chainTransactionId: '7', chainAmount: '26000000' })
     );
     expect(saved).toContainEqual({ chainPaymentId: '3' });
+  });
+
+  describe('payouts', () => {
+    const paymentCall = () =>
+      SorobanService.invoke.mock.calls.find(
+        (c: unknown[]) => c[1] === 'process_payment' || c[1] === 'process_verified_payment'
+      );
+
+    it('pays a derived collection with only the transaction id, signed by the admin', async () => {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: { ...CONTEXT, payment: 'derived_v1' },
+      });
+      chain({});
+
+      await OnChainCollectionService.process('collection-1');
+
+      expect(invokedMethods()).toEqual([
+        'record_with_price_lookup',
+        'verify_transaction',
+        'process_verified_payment',
+        'update_payment_status',
+      ]);
+      const call = paymentCall();
+      expect(call[0]).toBe(TESTNET_CONTRACTS.payment_distribution);
+      // No recipient and no amount: the contract reads both from the verified record.
+      expect(call[2]).toHaveLength(1);
+      expect(scValToNative(call[2][0])).toBe(7n);
+      expect(call[3].publicKey()).toBe(admin.publicKey());
+      expect(lastUpdate()).toEqual({ chainStatus: 'PAID', chainError: null });
+    });
+
+    it('still pays a collection pinned before derived payouts with the old call', async () => {
+      // CONTEXT has no payment field, like every context pinned before this change.
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: CONTEXT,
+      });
+      chain({});
+
+      await OnChainCollectionService.process('collection-1');
+
+      const call = paymentCall();
+      expect(call[1]).toBe('process_payment');
+      expect(call[2]).toHaveLength(3);
+      expect(lastUpdate()).toEqual({ chainStatus: 'PAID', chainError: null });
+    });
+
+    it.each([
+      ['unbound', null],
+      ['bound to a different transaction contract', OTHER_CONTRACT],
+    ])('records nothing when a derived payment contract is %s', async (_label, bound) => {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: { ...CONTEXT, payment: 'derived_v1' },
+      });
+      chain({ bound });
+
+      await OnChainCollectionService.process('collection-1');
+
+      expect(SorobanService.invoke).not.toHaveBeenCalled();
+      expect(lastUpdate()).toEqual({
+        chainStatus: 'FAILED',
+        chainError: 'Payment contract is not bound to this transaction contract',
+        chainAttempts: { increment: 1 },
+      });
+    });
+
+    it('does not recheck the binding for a collection whose payment already exists', async () => {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: { ...CONTEXT, payment: 'derived_v1' },
+        chainTransactionId: '7',
+        chainPaymentId: '3',
+      });
+      chain({ bound: null, verified: true, paymentId: 3n, paymentStatus: 'Completed' });
+
+      await OnChainCollectionService.process('collection-1');
+
+      expect(SorobanService.invoke).not.toHaveBeenCalled();
+      expect(lastUpdate()).toEqual({ chainStatus: 'PAID', chainError: null });
+    });
+
+    it('refuses to complete a derived payment that differs from the verified record', async () => {
+      prisma.wasteCollection.findUnique.mockResolvedValue({
+        ...baseCollection,
+        chainContext: { ...CONTEXT, payment: 'derived_v1' },
+        chainTransactionId: '7',
+      });
+      chain({ verified: true, paymentId: 3n, payment: { amount: 1n } });
+
+      await OnChainCollectionService.process('collection-1');
+
+      expect(invokedMethods()).not.toContain('update_payment_status');
+      expect(lastUpdate().chainStatus).toBe('FAILED');
+    });
+
+    it('pins the configured payout mode for a new collection', async () => {
+      const saved = config.soroban.paymentMode;
+      config.soroban.paymentMode = 'derived_v1';
+      try {
+        prisma.wasteCollection.findUnique.mockResolvedValue({ ...baseCollection });
+        chain({});
+
+        await OnChainCollectionService.process('collection-1');
+
+        const pinned = prisma.wasteCollection.updateMany.mock.calls[0][0].data.chainContext;
+        expect(pinned.payment).toBe('derived_v1');
+      } finally {
+        config.soroban.paymentMode = saved;
+      }
+    });
   });
 
   it('keeps using the pinned deployment and point after configuration changes', async () => {
@@ -602,7 +723,12 @@ describe('OnChainCollectionService.prepareCollector', () => {
     prisma.wasteCollection.update.mockResolvedValue({});
     SorobanService.invoke.mockImplementation(async (_c: string, method: string) => ({
       hash: `hash-${method}`,
-      value: method === 'record_with_price_lookup' ? 7n : method === 'process_payment' ? 3n : null,
+      value:
+        method === 'record_with_price_lookup'
+          ? 7n
+          : method === 'process_payment' || method === 'process_verified_payment'
+            ? 3n
+            : null,
     }));
   });
 
