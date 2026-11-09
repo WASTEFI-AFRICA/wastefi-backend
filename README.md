@@ -235,8 +235,10 @@ contracts repo's `docs/DERIVED_PAYMENTS_ROLLOUT.md`). Before recording a
 `derived_v1` collection the worker reads `get_transaction_contract` and stops if the
 payment contract is unbound or bound to a different transaction contract, so a
 mismatched configuration fails before anything is recorded. Legacy backfill always
-pins `caller_amount_v1`. The contract's admin override (`process_payment`) and the
-token's admin `mint` remain, so the admin key is still trusted.
+pins `caller_amount_v1`. `GET /api/v1/public/stats` reports `onChain.payoutMode`
+for new work, or `null` when recording is disabled; older API versions omit it. The
+contract's admin override (`process_payment`) and the token's admin `mint` remain,
+so the admin key is still trusted.
 
 ## Operator assignments
 

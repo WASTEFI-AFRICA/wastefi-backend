@@ -573,6 +573,28 @@ describe('public stats', () => {
     }
   );
 
+  it.each(['caller_amount_v1', 'derived_v1'])(
+    'reports the configured %s payout mode, and nothing while signing is off',
+    async (mode) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { config } = require('../../src/config');
+      const previous = { secret: config.soroban.adminSecret, mode: config.soroban.paymentMode };
+      try {
+        config.soroban.paymentMode = mode;
+        config.soroban.adminSecret = '';
+        expect((await stats()).body.data.onChain.payoutMode).toBeNull();
+
+        config.soroban.adminSecret = 'configured-signing-marker';
+        PublicStatsService.resetCache();
+        expect((await stats()).body.data.onChain.payoutMode).toBe(mode);
+      } finally {
+        config.soroban.adminSecret = previous.secret;
+        config.soroban.paymentMode = previous.mode;
+        PublicStatsService.resetCache();
+      }
+    }
+  );
+
   it('is readable without logging in', async () => {
     const res = await stats();
 
@@ -591,6 +613,7 @@ describe('public stats', () => {
     expect(res.body.data.onChain).toEqual({
       network: 'testnet',
       verificationFlow: null,
+      payoutMode: null,
       explorerUrl: 'https://stellar.expert/explorer/testnet',
       collectionsPaid: expect.any(Number),
       wasteMinted: expect.any(Number),
