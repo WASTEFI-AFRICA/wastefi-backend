@@ -413,25 +413,6 @@ when there is nothing to do).
    `https://<service>.onrender.com/ping` every 5 to 10 minutes, so visitors never
    wait for the service to wake up.
 
-### Railway
-
-`railway.toml` tells Railway to build the `Dockerfile` and wait for `/health` before
-routing traffic. Railway has no lasting free tier.
-
-1. In [Railway](https://railway.com), create a project with **New > GitHub Repo** and
-   choose this repository. Railway needs the Railway GitHub app installed on the
-   organization, which an organization owner must approve.
-2. In the same project, **New > Database > Add PostgreSQL**.
-3. Open the API service's **Variables** tab and add:
-   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference to the database
-     service; check that the service is actually named `Postgres`)
-   - `JWT_SECRET`, `WALLET_ENCRYPTION_KEY`, `NODE_ENV=production` and
-     `REDIS_ENABLED=false` from the table above
-4. Under **Settings > Networking**, choose **Generate Domain**.
-5. Watch the deploy logs for the migrations being applied and the server starting,
-   then check `https://<your-domain>/health`. It should report
-   `"database":"connected"`.
-
 ### Create the admin account
 
 Registration cannot create an administrator, so a fresh deployment starts with none.
