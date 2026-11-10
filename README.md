@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wastefi-logo-dark.svg">
+    <img src="assets/wastefi-logo.svg" alt="WasteFi" height="64">
+  </picture>
+</p>
+
 # WasteFi — Backend
 
 REST API for WasteFi, a platform that pays waste collectors in emerging markets
